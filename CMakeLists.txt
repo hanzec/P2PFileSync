@@ -60,6 +60,20 @@ add_executable(p2p_file_sync)
 add_executable(test_target)
 
 ###############################################################################
+## Compile Config #############################################################
+###############################################################################
+# compile under cxx 17 since need std::byte support
+target_compile_features(test_target PRIVATE cxx_std_17)
+target_compile_features(p2p_file_sync PRIVATE cxx_std_17)
+
+# compile defs for multi-platform compiling
+if(WIN32)
+  add_compile_definitions(UNDER_WINDOWS)
+elseif(UNIX)
+  add_compile_definitions(UNDER_UNIX)
+endif()
+
+###############################################################################
 ## Source #####################################################################
 ###############################################################################
 
