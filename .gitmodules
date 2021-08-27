@@ -1,0 +1,6 @@
+[submodule "third-party/vcpkg"]
+	path = third-party/vcpkg
+	url = https://github.com/microsoft/vcpkg.git
+[submodule "third-party/bundle"]
+	path = third-party/bundle
+	url = https://github.com/r-lyeh-archived/bundle.git
