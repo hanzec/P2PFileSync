@@ -6,9 +6,9 @@
 #include <vector>
 
 #include "sync.h"
-#include "utils/ip_addr.h"
 #include "utils/log.h"
 #include "utils/status.h"
+#include "utils/ip_addr.h"
 
 DEFINE_string(host, "", "the known host with comma-separated list");
 DEFINE_string(mount_point, "\\p2p_sync",
@@ -58,4 +58,6 @@ int main(int argc, char *argv[], const char *envp[]) {
                 << "] and message: " << return_code.Message();
     exit(-1);
   }
+
+  return 0;
 }

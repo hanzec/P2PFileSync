@@ -6,7 +6,16 @@ add_library(fuse_mount)
 ###############################################################################
 ## Dependency #################################################################
 ###############################################################################
-find_package(FUSE REQUIRED)
-target_link_libraries(fuse_mount ${FUSE_LIBRARIES})
-target_include_directories(fuse_mount PRIVATE ${FUSE_INCLUDE_DIR})
-    
+# user space filesystem will implement using fuse under maxos and unix-like system
+if(APPLE OR UNIX)
+  find_package(FUSE REQUIRED)
+  target_link_libraries(fuse_mount ${FUSE_LIBRARIES})
+  target_include_directories(fuse_mount PRIVATE ${FUSE_INCLUDE_DIR})
+endif(APPLE OR UNIX)
+
+###############################################################################
+## Library Sources ############################################################
+###############################################################################
+target_sources(fuse_mount PRIVATE
+  "fuse_op.cc"
+)

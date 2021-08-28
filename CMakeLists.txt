@@ -66,6 +66,29 @@ add_executable(p2p_file_sync)
 add_executable(test_target)
 
 ###############################################################################
+## Dependency #################################################################
+###############################################################################
+# google log
+find_package(glog CONFIG REQUIRED)
+target_link_libraries(p2p_file_sync glog::glog)
+target_include_directories(p2p_file_sync PRIVATE ${glog_INCLUDE_DIRS})
+
+# google flag
+find_package(Gflags CONFIG REQUIRED)
+target_link_libraries(p2p_file_sync gflags_static)
+target_include_directories(p2p_file_sync PRIVATE ${GFLAGS_INCLUDE_DIR})
+
+# protobuf
+find_package(protobuf CONFIG REQUIRED)
+target_link_libraries(p2p_file_sync protobuf::libprotobuf)
+target_include_directories(p2p_file_sync PRIVATE ${Protobuf_INCLUDE_DIRS})
+
+# google test deps
+find_package(GTest CONFIG REQUIRED)
+target_link_libraries(test_target ${GTest_LIBRARY})
+target_include_directories(test_target PRIVATE ${GTest_INCLUDE_DIRS})
+
+###############################################################################
 ## Compile Config #############################################################
 ###############################################################################
 # compile under cxx 17 since need std::byte support
@@ -82,31 +105,12 @@ endif()
 ###############################################################################
 ## Source #####################################################################
 ###############################################################################
-
 add_subdirectory(src)
-
-###############################################################################
-## Dependency #################################################################
-###############################################################################
-# google log
-find_package(glog CONFIG REQUIRED)
-target_link_libraries(p2p_file_sync glog)
-target_include_directories(p2p_file_sync PRIVATE ${glog_INCLUDE_DIRS})
-
-# google flag
-find_package(gflags CONFIG REQUIRED)
-target_link_libraries(p2p_file_sync gflags)
-target_include_directories(p2p_file_sync PRIVATE ${gflags_INCLUDE_DIRS})
-
-# google test
-find_package(GTest CONFIG REQUIRED)
-target_link_libraries(test_target GTest::gtest GTest::gtest_main GTest::gmock GTest::gmock_main)
-target_include_directories(test_target PRIVATE ${GTest_INCLUDE_DIRS})
 
 ###############################################################################
 ## Testing ####################################################################
 ###############################################################################
-
+# scan for possibale test
 gtest_discover_tests(test_target)
 
 ###############################################################################
