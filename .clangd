@@ -1,0 +1,11 @@
+Diagnostics:
+  ClangTidy:
+    Add:
+      [
+        performance-*,
+        bugprone-*,
+        portability-*,
+        modernize-*,
+      ]
+    CheckOptions:
+      WarnOnFloatingPointNarrowingConversion: false
