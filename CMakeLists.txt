@@ -10,6 +10,9 @@ if(GIT_CLONE_STATUS AND NOT GIT_CLONE_STATUS EQUAL 0)
     message(FATAL_ERROR "git clone submodule failed, can't get vcpkg !")
 endif()
 
+# generate compile_commands.json for clangd
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # add custom camake scrips loaction
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
