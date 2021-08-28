@@ -7,3 +7,4 @@
 [submodule "third-party/libfuse"]
 	path = third-party/libfuse
 	url = https://github.com/libfuse/libfuse.git
+	tag = fuse-3.10.4
