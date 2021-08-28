@@ -4,7 +4,3 @@
 [submodule "third-party/bundle"]
 	path = third-party/bundle
 	url = https://github.com/r-lyeh-archived/bundle.git
-[submodule "third-party/libfuse"]
-	path = third-party/libfuse
-	url = https://github.com/libfuse/libfuse.git
-	tag = fuse-3.10.4
