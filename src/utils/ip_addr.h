@@ -1,8 +1,8 @@
 /*
  * @Author: Hanze Chen 
  * @Date: 2021-08-27 20:36:52 
- * @Last Modified by:   Hanze Chen 
- * @Last Modified time: 2021-08-27 20:36:52 
+ * @Last Modified by: Hanze Chen
+ * @Last Modified time: 2021-08-29 15:53:59
  */
 #ifndef P2P_FILE_SYNC_UTILS_IP_ADDR_H
 #define P2P_FILE_SYNC_UTILS_IP_ADDR_H
@@ -57,15 +57,15 @@ public:
   }
 
   // data accessors
-  bool valid() const { return _valid;}
-  uint16_t port() const {return _port_number;}
+  [[nodiscard]] bool valid() const { return _valid;}
+  [[nodiscard]] uint16_t port() const {return _port_number;}
 
   /**
    * @brief Generated packed data for ip addr.
    * 
    * @return std::array<std::byte, 6> the packed data which will be exactly 6 bytes.
    */
-  std::array<std::byte, 6> to_bytes() const {
+  [[nodiscard]] std::array<std::byte, 6> to_bytes() const {
     std::array<std::byte, 6> result;
     memcpy(result.data(), _ip_addr.data(), sizeof(_ip_addr));
     memcpy(result.data() + sizeof(_ip_addr), &_port_number, sizeof(_port_number));
