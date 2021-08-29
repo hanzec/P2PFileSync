@@ -5,7 +5,6 @@ target_sources(p2p_file_sync
     PRIVATE
     "message.h"
     "message.cc"
-    "message_header"
 )
 
 ###############################################################################
@@ -13,5 +12,4 @@ target_sources(p2p_file_sync
 ###############################################################################
 file(GLOB TEST_SRC_FILES 
     ${CMAKE_CURRENT_LIST_DIR}/test/*_test.cc)
-    
 target_sources(test_target PRIVATE ${TEST_SRC_FILES})

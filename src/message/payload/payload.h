@@ -6,12 +6,11 @@
 #include "payload.pb.h"
 
 namespace P2PFileSync {
-template <typename payload_type>
 class AbstractPayload {
  public:
   Message();
 
-  template<payload_type>
+  template<typename payload_type>
   bool is(){return _payload_message.payload().Is<payload_type>();}
  private : 
   ProtoRequestPayload _payload_message;

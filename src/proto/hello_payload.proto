@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+package P2PFileSync;
+message ProtoHelloPayload {
+  
+}

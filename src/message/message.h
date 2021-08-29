@@ -10,6 +10,7 @@
 #include <google/protobuf/stubs/port.h>
 #include <utils/ip_addr.h>
 
+#include <ostream>
 #include <cstdint>
 
 namespace P2PFileSync {
@@ -107,6 +108,8 @@ class Message {
     IPAddr _source_ip;
     IPAddr _destination_ip;
     uint32_t _payload_size = 0;
+    
+    friend void Header::set_payload_size(uint32_t payload_size);
   };
 
  private:

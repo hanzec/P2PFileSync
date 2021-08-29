@@ -6,6 +6,7 @@
         "glog",
         "gtest",
         "gflags",
+        "openssl",
         "protobuf"
     ]
   }

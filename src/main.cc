@@ -11,8 +11,8 @@
 #include "utils/ip_addr.h"
 
 DEFINE_string(host, "", "the known host with comma-separated list");
-DEFINE_string(mount_point, "\\p2p_sync",
-              "the mounting point of sharing folder");
+DEFINE_string(data_dir, "", "the mounting point of sharing folder");
+DEFINE_string(mount_point, "\\p2p_sync", "the mounting point of sharing folder");
 
 using namespace P2PFileSync;
 
@@ -29,6 +29,11 @@ int main(int argc, char *argv[], const char *envp[]) {
   if (gflags::GetCommandLineFlagInfoOrDie("mount_point").is_default) {
     VLOG(WARRING)
         << "mount_point not set! will use default location in [\\p2p_sync]";
+  }
+
+  if (gflags::GetCommandLineFlagInfoOrDie("data_dir").is_default) {
+    VLOG(ERROR)
+        << "you must set a data dir";
   }
 
   // collect ip addr info

@@ -79,9 +79,15 @@ target_link_libraries(p2p_file_sync gflags_static)
 target_include_directories(p2p_file_sync PRIVATE ${GFLAGS_INCLUDE_DIR})
 
 # protobuf
-find_package(protobuf CONFIG REQUIRED)
+find_package(Protobuf CONFIG REQUIRED)
 target_link_libraries(p2p_file_sync protobuf::libprotobuf)
 target_include_directories(p2p_file_sync PRIVATE ${Protobuf_INCLUDE_DIRS})
+
+# openssl
+set(OPENSSL_USE_STATIC_LIBS TRUE)
+find_package(OpenSSL REQUIRED)
+target_link_libraries(p2p_file_sync OpenSSL::SSL OpenSSL::Crypto)
+target_include_directories(p2p_file_sync PRIVATE ${OPENSSL_INCLUDE_DIR})
 
 # google test deps
 find_package(GTest CONFIG REQUIRED)
