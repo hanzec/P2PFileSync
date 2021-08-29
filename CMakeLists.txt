@@ -7,7 +7,7 @@ cmake_minimum_required(VERSION 3.16.0)
 execute_process(COMMAND git submodule update --init --recursive 
                 RESULT_VARIABLE GIT_CLONE_STATUS WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 if(GIT_CLONE_STATUS AND NOT GIT_CLONE_STATUS EQUAL 0)
-    message(FATAL_ERROR "git clone submodule failed, can't get vcpkg !")
+    message(FATAL_ERROR "git clone submodule failed, can't get Third-party Dependency !")
 endif()
 
 # generate compile_commands.json for clangd
@@ -106,6 +106,8 @@ endif()
 ## Source #####################################################################
 ###############################################################################
 add_subdirectory(src)
+target_include_directories(test_target PRIVATE "${CMAKE_SOURCE_DIR}/src")
+target_include_directories(p2p_file_sync PRIVATE "${CMAKE_SOURCE_DIR}/src")
 
 ###############################################################################
 ## Testing ####################################################################
