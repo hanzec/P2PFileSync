@@ -14,7 +14,7 @@
 #include "utils/config_reader.h"
 
 DEFINE_string(host, "", "the known host with comma-separated list");
-DEFINE_string(data_dir, "", "the mounting point of sharing folder");
+DEFINE_string(config_file, "", "the location of config file");
 
 using namespace P2PFileSync;
 namespace fs = std::filesystem;
@@ -52,27 +52,8 @@ int main(int argc, char *argv[], const char *envp[]) {
     }
   }
 
-  // check data folder
-  fs::path data_dir_path(FLAGS_data_dir);
-  if (!fs::exists(data_dir_path)) {
-    if (!fs::create_directories(data_dir_path)) {
-      LOG(ERROR) << "Failed creating directory in [" << FLAGS_data_dir << "]";
-      exit(-1);
-    }
-  } else {
-    VLOG(VERBOSE) << "find exist folder in [" << FLAGS_data_dir << "]";
-  }
-
-  auto premission = fs::status(data_dir_path).permissions();
-  if (((premission & fs::perms::owner_read) != fs::perms::none) &&
-      ((premission & fs::perms::owner_write) != fs::perms::none)) {
-    LOG(ERROR) << "folder [" << FLAGS_data_dir << "] need to have both "
-               << " read/write permission for user current user";
-    exit(-1);
-  }
-
   // loading config file
-  auto config_file_path = data_dir_path/CONFIG_FILE_NAME;
+  fs::path config_file_path(FLAGS_config_file);
   if(!fs::exists(config_file_path)){
     if(!generate_default_config(config_file_path.string())){
       LOG(ERROR) << "failed to create default config file in [" << config_file_path.string()

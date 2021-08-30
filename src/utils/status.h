@@ -2,7 +2,7 @@
  * @Author: Hanze Chen
  * @Date: 2021-08-27 20:35:52
  * @Last Modified by: Hanze Chen
- * @Last Modified time: 2021-08-29 19:04:21
+ * @Last Modified time: 2021-08-30 22:14:30
  */
 
 #ifndef P2P_FILE_SYNC_UTILS_STATUS_H
@@ -21,7 +21,13 @@ enum __attribute__((__packed__)) StatusCode {
 
   /**
    * Status which means current method or parameter combination are not
-   * supported or even not implemented
+   * supported or even not implemented or resoure not found
+   */
+  NOT_FOUND = 2,
+  
+  /**
+   * Status which means current method or parameter combination are exist
+   * but does not avalibale at this time
    */
   UNAVAILABLE = 2,
 
