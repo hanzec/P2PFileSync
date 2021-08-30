@@ -37,6 +37,7 @@ target_include_directories(p2p_file_sync PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 target_sources(p2p_file_sync 
     PRIVATE
     "main.cc"
+    "common.h"
     "sync.cc" "sync.h"
     PUBLIC
     ${PROTO_SRCS} ${PROTO_HDRS}

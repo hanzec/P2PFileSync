@@ -2,7 +2,7 @@
  * @Author: Hanze Chen
  * @Date: 2021-08-27 20:35:52
  * @Last Modified by: Hanze Chen
- * @Last Modified time: 2021-08-27 20:36:20
+ * @Last Modified time: 2021-08-29 19:04:21
  */
 
 #ifndef P2P_FILE_SYNC_UTILS_STATUS_H
@@ -41,8 +41,8 @@ class Status {
     this->msg_ = std::move(msg);
   }
 
-  StatusCode Code() { return status_code_; }
-  std::string Message() const { return this->msg_; }
+  [[nodiscard]] StatusCode Code() { return status_code_; }
+  [[nodiscard]] std::string Message() const { return this->msg_; }
 
   static const Status OK() {
     return Status(StatusCode::OK, "Return Ok without error!");

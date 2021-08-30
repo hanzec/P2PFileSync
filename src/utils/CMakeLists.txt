@@ -4,8 +4,8 @@
 target_sources(p2p_file_sync 
     PRIVATE
     "log.h"
-    "ip_addr.h"
-    "ecdsa_utils.h"
+    "ip_addr.h" "ip_addr.cc"
+    "ecdsa_utils.h" "ecdsa_utils.cc"
 )
 
 ###############################################################################

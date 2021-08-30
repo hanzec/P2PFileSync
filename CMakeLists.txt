@@ -89,6 +89,12 @@ find_package(OpenSSL REQUIRED)
 target_link_libraries(p2p_file_sync OpenSSL::SSL OpenSSL::Crypto)
 target_include_directories(p2p_file_sync PRIVATE ${OPENSSL_INCLUDE_DIR})
 
+# yaml-cpp
+find_package(yaml-cpp CONFIG REQUIRED)
+target_link_libraries(p2p_file_sync ${YAML_CPP_LIBRARIES})
+target_include_directories(p2p_file_sync PRIVATE ${YAML_CPP_INCLUDE_DIR})
+
+
 # google test deps
 find_package(GTest CONFIG REQUIRED)
 target_link_libraries(test_target ${GTest_LIBRARY})
