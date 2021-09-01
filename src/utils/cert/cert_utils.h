@@ -35,7 +35,7 @@ template <typename Algorithm>
 template <typename Algorithm>
 std::array<std::byte, 32> generate_sha256_hash(const char* data_,
                                                const size_t& data_size,
-                                               const std::shared_ptr<Algorithm> signed_certific);
+                                               const std::shared_ptr<Algorithm> signed_certificat);
 }  // namespace P2PFileSync
 
 #endif

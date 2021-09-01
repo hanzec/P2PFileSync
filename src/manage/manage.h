@@ -1,9 +1,6 @@
 #ifndef P2P_FILE_SYNC_MANAGE_MANAGE_H
 #define P2P_FILE_SYNC_MANAGE_MANAGE_H
-namespace P2PFileSync {
 extern "C" {
-  
+  void P2PFileSync_start_manage_thread()
 };
-}  // namespace P2PFileSync
-
 #endif

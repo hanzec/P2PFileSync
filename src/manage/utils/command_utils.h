@@ -1,5 +1,14 @@
+/*
+ * @Author: Hanze CHen 
+ * @Date: 2021-08-30 22:37:49 
+ * @Last Modified by:   Hanze Chen 
+ * @Last Modified time: 2021-08-30 22:37:49 
+ */
 #ifndef P2P_FILE_SYNC_MANAGE_UTILS_COMMAND_UTILS_H
 #define P2P_FILE_SYNC_MANAGE_UTILS_COMMAND_UTILS_H
+
+#include <vector>
+#include <string>
 
 namespace P2PFileSync {
   using command_type_t = enum {
@@ -7,13 +16,8 @@ namespace P2PFileSync {
   };
 
   using command_t = struct command{
-    char * exec;
-    char * file_name;
-    char * * argument;
-    int background_task;
-
-    command_type_t command_type;
-    struct command * next_command;
+    command_t
+    std::vector<std::string> argumens;
 };
 } // P2PFileSync
 
