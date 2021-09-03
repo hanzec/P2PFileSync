@@ -72,7 +72,7 @@ class CommandFactory {
 
 #define NEW_COMMAND(command, description)                                     \
   namespace P2PFileSync::AUTO_GEN_COMMAND {                                   \
-  class(command) {                                                            \
+  class #command {                                                             \
    public:                                                                    \
     command() { (void)_reg_status; };                                         \
     static void do_operation(std::ostringstream& output,                      \
@@ -82,7 +82,7 @@ class CommandFactory {
     static P2PFileSync::Status _reg_status = CommandFactory::register_object( \
         "" #command "", "" #description "", &command::do_operation);          \
   };                                                                          \
-  }                                                                           \
+  };                                                                          \
   void P2PFileSync::AUTO_GEN_COMMAND::command::do_operation(                  \
       const std::vector<std::string>& args, std::ostringstream& output)
 
