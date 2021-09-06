@@ -59,6 +59,9 @@ project(p2p_file_sync VERSION 0.1.0)
 enable_testing()
 include(GoogleTest)
 
+# lib fuse extension
+add_library(fuse_mount)
+
 # exec target
 add_executable(p2p_file_sync)
 
@@ -74,7 +77,7 @@ target_link_libraries(p2p_file_sync glog::glog)
 target_include_directories(p2p_file_sync PRIVATE ${glog_INCLUDE_DIRS})
 
 # google flag
-find_package(Gflags CONFIG REQUIRED)
+find_package(gflags CONFIG REQUIRED)
 target_link_libraries(p2p_file_sync gflags_static)
 target_include_directories(p2p_file_sync PRIVATE ${GFLAGS_INCLUDE_DIR})
 
@@ -94,11 +97,10 @@ find_package(yaml-cpp CONFIG REQUIRED)
 target_link_libraries(p2p_file_sync ${YAML_CPP_LIBRARIES})
 target_include_directories(p2p_file_sync PRIVATE ${YAML_CPP_INCLUDE_DIR})
 
-
 # google test deps
-find_package(GTest CONFIG REQUIRED)
-target_link_libraries(test_target ${GTest_LIBRARY})
-target_include_directories(test_target PRIVATE ${GTest_INCLUDE_DIRS})
+find_package(GTest REQUIRED)
+target_link_libraries(test_target ${GTEST_LIBRARY})
+target_include_directories(test_target PRIVATE ${GTEST_INCLUDE_DIRS})
 
 ###############################################################################
 ## Compile Config #############################################################

@@ -49,6 +49,7 @@ class Status {
 
   [[nodiscard]] StatusCode Code() { return status_code_; }
   [[nodiscard]] std::string Message() const { return this->msg_; }
+  [[nodiscard]] bool ok() { return status_code_ == StatusCode::OK; }
 
   static const Status OK() {
     return Status(StatusCode::OK, "Return Ok without error!");

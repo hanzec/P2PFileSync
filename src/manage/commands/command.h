@@ -23,7 +23,7 @@
 
 namespace P2PFileSync {
 using COMMAND_HANDLER =
-    std::function<void(const std::vector<std::string>&, std::ostringstream&)>;
+    std::function<Status(std::ostringstream&, const std::vector<std::string>&)>;
 
 class CommandFactory {
  public:
@@ -42,9 +42,22 @@ class CommandFactory {
    * @param arguments the arguments of the command
    * @return Status return the status code after exec_command
    */
-  [[nodiscard]] static Status exec_command(std::ostringstream& output, 
-                                           const std::string& command,
+  [[nodiscard]] static Status exec_command(const std::string& command,
+                                           std::ostringstream& output, 
                                            const std::vector<std::string>& arguments);
+  
+  /**
+   * @brief Helper class for expose the private method outside
+   * 
+   */
+  class CommandBase {
+   public:
+    static Status register_object_warper(const std::string& command,
+                                         const std::string& description,
+                                         COMMAND_HANDLER command_handler) {
+      return register_object(command, description, std::move(command_handler));
+    };
+  };
 
  private:
   /**
@@ -53,8 +66,7 @@ class CommandFactory {
    *
    */
   static std::unordered_map<std::string,
-                            std::pair<std::string, COMMAND_HANDLER>>
-      _handler_map;
+                            std::pair<std::string, COMMAND_HANDLER>> _handler_map;
 
   /**
    * @brief private function which regist command dynamically
@@ -66,24 +78,28 @@ class CommandFactory {
    */
   static Status register_object(const std::string& command,
                                 const std::string& description,
-                                const COMMAND_HANDLER& command_handler);
+                                COMMAND_HANDLER command_handler);
 };
 }  // namespace P2PFileSync
 
-#define NEW_COMMAND(command, description)                                     \
-  namespace P2PFileSync::AUTO_GEN_COMMAND {                                   \
-  class #command {                                                             \
-   public:                                                                    \
-    command() { (void)_reg_status; };                                         \
-    static void do_operation(std::ostringstream& output,                      \
-                             const std::vector<std::string>& args);           \
-                                                                              \
-   private:                                                                   \
-    static P2PFileSync::Status _reg_status = CommandFactory::register_object( \
-        "" #command "", "" #description "", &command::do_operation);          \
-  };                                                                          \
-  };                                                                          \
-  void P2PFileSync::AUTO_GEN_COMMAND::command::do_operation(                  \
-      const std::vector<std::string>& args, std::ostringstream& output)
+/**
+ * @brief Macros for generating auto register command handler
+ * 
+ */
+#define NEW_COMMAND(command, description, output, args)                     \
+  namespace P2PFileSync::AUTO_GEN_COMMAND {                                 \
+  class command : private P2PFileSync::CommandFactory::CommandBase {        \
+   public:                                                                  \
+    command() { (void)_reg_status; };                                       \
+    static Status do_operation(std::ostringstream& output,                  \
+                               const std::vector<std::string>& args);       \
+                                                                            \
+   private:                                                                 \
+    const P2PFileSync::Status _reg_status = register_object_warper(         \
+        "" #command "", description, command::do_operation);                \
+  };                                                                        \
+  };                                                                        \
+  P2PFileSync::Status P2PFileSync::AUTO_GEN_COMMAND::command::do_operation( \
+      std::ostringstream& output, const std::vector<std::string>& args)
 
 #endif

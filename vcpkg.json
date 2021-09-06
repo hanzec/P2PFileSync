@@ -7,6 +7,7 @@
         "gtest",
         "gflags",
         "openssl",
+        "libevent",
         "yaml-cpp",
         "protobuf"
     ]

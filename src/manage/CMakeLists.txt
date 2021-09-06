@@ -4,20 +4,29 @@
 target_sources(p2p_file_sync 
     PRIVATE
     "manage.h" "manage.cc"
+    "handler.h" "handler.cc"
 )
 
 ###############################################################################
 ## Manage Utils ###############################################################
 ###############################################################################
-target_sources(p2p_file_sync 
-    PRIVATE
-    "utils/command_utils.h" "utils/command_utils.cc"
-)
+file(GLOB MANAGE_UTILS_SRCS 
+    ${CMAKE_CURRENT_LIST_DIR}/utils/*.cc)
+    
+target_sources(test_target PRIVATE ${MANAGE_UTILS_SRCS})
 
 ###############################################################################
 ## Supported Commands #########################################################
 ###############################################################################
 add_subdirectory(commands)
+
+###############################################################################
+## Dependency #################################################################
+###############################################################################
+# google log
+find_package(Libevent CONFIG REQUIRED)
+target_link_libraries(p2p_file_sync libevent::core libevent::extra )
+target_include_directories(p2p_file_sync PRIVATE ${Libevent_CORE_INCLUDE_DIRS})
 
 ###############################################################################
 ## Testing Source #############################################################

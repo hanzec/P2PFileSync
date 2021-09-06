@@ -9,6 +9,7 @@ Diagnostics:
       ]
     Remove: 
       [
+        bugprone-macro-parentheses,
         modernize-use-trailing-return-type,
         bugprone-easily-swappable-parameters,
       ]
