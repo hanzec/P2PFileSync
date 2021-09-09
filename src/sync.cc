@@ -10,8 +10,8 @@
 namespace P2PFileSync {
 namespace fs = std::filesystem;
 
-static Status start_app(std::vector<IPAddr> known_host,
-                        const std::shared_ptr<Config> config) {
+Status start_app(std::vector<IPAddr> known_host,
+                 const std::shared_ptr<Config> config) {
   // check data folder
   fs::path data_dir_path(config->get_sync_data_dir());
   if (!fs::exists(data_dir_path)) {

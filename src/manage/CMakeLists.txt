@@ -4,7 +4,6 @@
 target_sources(p2p_file_sync 
     PRIVATE
     "manage.h" "manage.cc"
-    "handler.h" "handler.cc"
 )
 
 ###############################################################################
@@ -13,7 +12,7 @@ target_sources(p2p_file_sync
 file(GLOB MANAGE_UTILS_SRCS 
     ${CMAKE_CURRENT_LIST_DIR}/utils/*.cc)
     
-target_sources(test_target PRIVATE ${MANAGE_UTILS_SRCS})
+target_sources(p2p_file_sync PRIVATE ${MANAGE_UTILS_SRCS})
 
 ###############################################################################
 ## Supported Commands #########################################################
@@ -34,4 +33,7 @@ target_include_directories(p2p_file_sync PRIVATE ${Libevent_CORE_INCLUDE_DIRS})
 file(GLOB TEST_SRC_FILES 
     ${CMAKE_CURRENT_LIST_DIR}/test/*_test.cc)
     
-target_sources(test_target PRIVATE ${TEST_SRC_FILES})
+target_sources(test_target PRIVATE 
+    ${TEST_SRC_FILES} 
+    "utils/parsing.h" "utils/parsing.cc"
+)

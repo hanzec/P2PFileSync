@@ -50,8 +50,7 @@ void connection_hander(int fd) {
         break;
       } else {
         std::ostringstream output_buf;
-        auto exec_ret = CommandFactory::exec_command(command.first, output_buf,
-                                                     command.second);
+        auto exec_ret = CommandFactory::exec_command(output_buf,command.first,command.second);
 
         if (exec_ret.ok()) {
           write(fd, output_buf.str().c_str(), output_buf.str().length());

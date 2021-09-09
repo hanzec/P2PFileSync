@@ -20,8 +20,8 @@ namespace P2PFileSync {
  * @param sync_data_dir program data folder
  * @return Status The status when app is stoped
  */
-static Status start_app(std::vector<IPAddr> known_host,
-                        const std::shared_ptr<Config> config);
+Status start_app(std::vector<IPAddr> known_host,
+                 const std::shared_ptr<Config> config);
 
 }  // namespace P2PFileSync
 #endif

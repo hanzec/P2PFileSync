@@ -97,8 +97,10 @@ find_package(yaml-cpp CONFIG REQUIRED)
 target_link_libraries(p2p_file_sync ${YAML_CPP_LIBRARIES})
 target_include_directories(p2p_file_sync PRIVATE ${YAML_CPP_INCLUDE_DIR})
 
-# google test deps
+# google test deps(require pthread)
 find_package(GTest REQUIRED)
+find_package(Threads REQUIRED)
+target_link_libraries(test_target Threads::Threads)
 target_link_libraries(test_target ${GTEST_LIBRARY})
 target_include_directories(test_target PRIVATE ${GTEST_INCLUDE_DIRS})
 

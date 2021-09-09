@@ -5,6 +5,7 @@ target_sources(p2p_file_sync
     PRIVATE
     "log.h"
     "ip_addr.h" "ip_addr.cc"
+    "config_reader.h" "config_reader.cc"
 )
 
 ###############################################################################
@@ -18,4 +19,7 @@ add_subdirectory(cert)
 file(GLOB TEST_SRC_FILES 
     ${CMAKE_CURRENT_LIST_DIR}/test/*_test.cc)
     
-target_sources(test_target PRIVATE ${TEST_SRC_FILES})
+target_sources(test_target PRIVATE 
+    ${TEST_SRC_FILES}
+    "ip_addr.h" "ip_addr.cc"
+)

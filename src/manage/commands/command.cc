@@ -1,11 +1,16 @@
 #include "command.h"
+#include <unordered_map>
 
 #include "utils/log.h"
 #include "utils/status.h"
 
 namespace P2PFileSync {
+// def of class static member
+std::unordered_map<std::string,
+                   std::pair<std::string, COMMAND_HANDLER>> CommandFactory::_handler_map;
+
 // print help message
-void CommandFactory::get_help_msg(std::ostringstream& output) {
+void CommandFactory::get_help_msg(std::ostringstream& output) noexcept {
   for (const auto& pair : CommandFactory::_handler_map) {
     output << std::setw(15) << pair.first << std::setw(0) << pair.second.first
            << std::endl;

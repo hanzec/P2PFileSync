@@ -18,6 +18,15 @@ Status parsing_command(const std::string& input,
 
   // fist words will be command
   size_t current = input.find(' ');
+  
+
+  // if command without arguments
+  if(current == input.npos){
+    parsed_command.first = std::string(input);
+    parsed_command.second = {};
+    return Status::OK();
+  }
+  
   std::string command = input.substr(0, current);
 
   size_t next_quotes = 0, next_spaces = 0;

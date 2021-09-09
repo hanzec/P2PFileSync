@@ -1,5 +1,6 @@
 #include <gflags/gflags.h>
 
+#include <string>
 #include <iostream>
 #include <regex>
 #include <utility>

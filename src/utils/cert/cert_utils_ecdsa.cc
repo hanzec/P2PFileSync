@@ -31,16 +31,4 @@ std::shared_ptr<EC_KEY> generate_key_pair(const std::string &pub_key_location,
   }
   return {ec_key, EC_KEY_free};
 }
-
-template <>
-std::array<std::byte, 32> generate_sha256_hash(const char* data_,
-                                               const size_t& data_size,
-<<<<<<< HEAD:src/utils/cert/ecdsa_utils.cc
-                                               const std::shared_ptr<EC_KEY> signed_certific){
-=======
-                                               const std::shared_ptr<EC_KEY> signed_certificat){
->>>>>>> 2324dc188257b578aef8bfe5360e5d0fe5a0dcde:src/utils/cert/cert_utils_ecdsa.cc
-  if(ECDSA)
-                                              
-}
 }  // namespace P2PFileSync

@@ -100,7 +100,7 @@ class Message {
      *
      * @param payload_size the payload size
      */
-    [[noreturn]] void set_payload_size(uint32_t payload_size) {
+    void set_payload_size(uint32_t payload_size) noexcept{
       _payload_size = payload_size;
     }
 
@@ -109,7 +109,7 @@ class Message {
     IPAddr _destination_ip;
     uint32_t _payload_size = 0;
     
-    friend void Header::set_payload_size(uint32_t payload_size);
+    friend void Header::set_payload_size(uint32_t payload_size) noexcept;
   };
 
  private:

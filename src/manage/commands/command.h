@@ -2,7 +2,7 @@
  * @Author: Hanze CHen
  * @Date: 2021-08-30 19:34:05
  * @Last Modified by: Hanze Chen
- * @Last Modified time: 2021-08-30 22:33:46
+ * @Last Modified time: 2021-09-09 14:24:57
  */
 #ifndef P2P_FILE_SYNC_MANAGE_COMMAND_COMMAND_H
 #define P2P_FILE_SYNC_MANAGE_COMMAND_COMMAND_H
@@ -24,7 +24,7 @@
 namespace P2PFileSync {
 using COMMAND_HANDLER =
     std::function<Status(std::ostringstream&, const std::vector<std::string>&)>;
-
+                            
 class CommandFactory {
  public:
   /**
@@ -32,7 +32,7 @@ class CommandFactory {
    *
    * @param output the outout stream which help message will print out
    */
-  [[noreturn]] static void get_help_msg(std::ostringstream& output);
+  static void get_help_msg(std::ostringstream& output) noexcept;
 
   /**
    * @brief execute the giving command
@@ -42,8 +42,8 @@ class CommandFactory {
    * @param arguments the arguments of the command
    * @return Status return the status code after exec_command
    */
-  [[nodiscard]] static Status exec_command(const std::string& command,
-                                           std::ostringstream& output, 
+  [[nodiscard]] static Status exec_command(std::ostringstream& output,
+                                           const std::string& command,
                                            const std::vector<std::string>& arguments);
   
   /**
