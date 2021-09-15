@@ -6,51 +6,47 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <iostream>
 
 #include "utils/status.h"
 
 namespace P2PFileSync {
 Status parsing_command(const std::string& input,
                        COMMAND& parsed_command) {
+
+  std::string tmp_input(input);
+
+  // trim the string
+  tmp_input.erase(0,tmp_input.find_first_not_of(' '));
+  tmp_input.erase(tmp_input.find_last_not_of(' ') + 1);
+
+  if(tmp_input.length() <= 0){
+    return {StatusCode::INVALID_ARGUMENT,"command must be not empty"};
+  }
+
   std::vector<std::string> result;
 
-  // TODO (chen): will have bugs when multiple spaces, fix later
-
   // fist words will be command
-  size_t current = input.find(' ');
+  size_t current = tmp_input.find(' ');
   
+  std::string command = tmp_input.substr(0, current);
 
-  // if command without arguments
-  if(current == input.npos){
-    parsed_command.first = std::string(input);
-    parsed_command.second = {};
-    return Status::OK();
-  }
-  
-  std::string command = input.substr(0, current);
-
-  size_t next_quotes = 0, next_spaces = 0;
-  while (((next_quotes >= next_spaces
-               ? (next_quotes = input.find(':', current))
-               : next_quotes) != input.npos) ||
-         ((next_spaces = input.find(' ', current)) == input.npos)) {
-
-    // if colon is before spaces
-    if (next_quotes < next_spaces) {
-      auto quotes_end = input.find('\"');
-
-      // if can not found other double quotes
-      if (quotes_end == input.npos) {
-        return {StatusCode::INVALID_ARGUMENT, 
-                generte_nice_error_msg("could not found pair of double quotes",next_quotes, input)};
+  while (current != tmp_input.npos) {
+    if(tmp_input[current] == '\"'){
+      auto quoter_start = current;
+      if((current = tmp_input.find('\"',quoter_start+1)) == tmp_input.npos){
+         return {StatusCode::INVALID_ARGUMENT, 
+            generte_nice_error_msg("could not found pair of double quotes",quoter_start, tmp_input)};
+      }else{
+        result.emplace_back(tmp_input.substr(quoter_start, current));
       }
-      
-      // fill in result vector
-      current = quotes_end;
-      result.emplace_back(input.substr(next_quotes + 1, quotes_end - next_quotes));
     }else{
-      current = next_spaces;
-      result.emplace_back(input.substr(current + 1, next_spaces));
+      auto argument_start = tmp_input.find_first_not_of(' ', current);
+      if((current = tmp_input.find_first_of(' ', argument_start + 1)) != tmp_input.npos){
+        result.emplace_back(tmp_input.substr(argument_start, current));
+      }else{
+        result.emplace_back(tmp_input.substr(argument_start, tmp_input.length()));
+      }
     }
   }
 

@@ -19,7 +19,7 @@ add_subdirectory(cert)
 file(GLOB TEST_SRC_FILES 
     ${CMAKE_CURRENT_LIST_DIR}/test/*_test.cc)
     
-target_sources(test_target PRIVATE 
+target_sources(p2p_file_sync_test PRIVATE 
     ${TEST_SRC_FILES}
     "ip_addr.h" "ip_addr.cc"
 )

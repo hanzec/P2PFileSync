@@ -51,4 +51,4 @@ target_sources(p2p_file_sync
 ###############################################################################
 ## Testing Source #############################################################
 ###############################################################################
-target_sources(test_target PRIVATE "test_main.cc")
+target_sources(p2p_file_sync_test PRIVATE "test_main.cc")

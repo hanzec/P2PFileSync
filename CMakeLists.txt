@@ -66,7 +66,7 @@ add_library(fuse_mount)
 add_executable(p2p_file_sync)
 
 # test target
-add_executable(test_target)
+add_executable(p2p_file_sync_test)
 
 ###############################################################################
 ## Dependency #################################################################
@@ -100,16 +100,16 @@ target_include_directories(p2p_file_sync PRIVATE ${YAML_CPP_INCLUDE_DIR})
 # google test deps(require pthread)
 find_package(GTest REQUIRED)
 find_package(Threads REQUIRED)
-target_link_libraries(test_target Threads::Threads)
-target_link_libraries(test_target ${GTEST_LIBRARY})
-target_include_directories(test_target PRIVATE ${GTEST_INCLUDE_DIRS})
+target_link_libraries(p2p_file_sync_test Threads::Threads)
+target_link_libraries(p2p_file_sync_test ${GTEST_LIBRARY})
+target_include_directories(p2p_file_sync_test PRIVATE ${GTEST_INCLUDE_DIRS})
 
 ###############################################################################
 ## Compile Config #############################################################
 ###############################################################################
 # compile under cxx 17 since need std::byte support
-target_compile_features(test_target PRIVATE cxx_std_17)
 target_compile_features(p2p_file_sync PRIVATE cxx_std_17)
+target_compile_features(p2p_file_sync_test PRIVATE cxx_std_17)
 
 # compile defs for multi-platform compiling
 if(WIN32)
@@ -122,14 +122,14 @@ endif()
 ## Source #####################################################################
 ###############################################################################
 add_subdirectory(src)
-target_include_directories(test_target PRIVATE "${CMAKE_SOURCE_DIR}/src")
 target_include_directories(p2p_file_sync PRIVATE "${CMAKE_SOURCE_DIR}/src")
+target_include_directories(p2p_file_sync_test PRIVATE "${CMAKE_SOURCE_DIR}/src")
 
 ###############################################################################
 ## Testing ####################################################################
 ###############################################################################
 # scan for possibale test
-gtest_discover_tests(test_target)
+gtest_discover_tests(p2p_file_sync_test)
 
 ###############################################################################
 ## Packing ####################################################################

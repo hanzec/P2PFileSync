@@ -33,7 +33,7 @@ target_include_directories(p2p_file_sync PRIVATE ${Libevent_CORE_INCLUDE_DIRS})
 file(GLOB TEST_SRC_FILES 
     ${CMAKE_CURRENT_LIST_DIR}/test/*_test.cc)
     
-target_sources(test_target PRIVATE 
+target_sources(p2p_file_sync_test PRIVATE 
     ${TEST_SRC_FILES} 
     "utils/parsing.h" "utils/parsing.cc"
 )

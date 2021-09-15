@@ -17,10 +17,11 @@ namespace P2PFileSync {
 using COMMAND = std::pair<std::string, std::vector<std::string>>;
 
 /**
- * @brief
- *
- * @param command
- * @return COMMAND
+ * @brief Parsring from raw string to command and its arguments vector
+ * 
+ * @param input the raw string wants to parsed
+ * @param parsed_command generated parsed string
+ * @return Status the return code while finished parsing
  */
 [[nodiscard]] Status parsing_command(const std::string& input,
                                      COMMAND& parsed_command);

@@ -12,4 +12,4 @@ target_sources(p2p_file_sync
 ###############################################################################
 file(GLOB TEST_SRC_FILES 
     ${CMAKE_CURRENT_LIST_DIR}/test/*_test.cc)
-target_sources(test_target PRIVATE ${TEST_SRC_FILES})
+target_sources(p2p_file_sync_test PRIVATE ${TEST_SRC_FILES})
