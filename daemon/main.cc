@@ -1,18 +1,22 @@
 #include <gflags/gflags.h>
+#include <sys/socket.h>
 
 #include <filesystem>
 #include <iostream>
 #include <regex>
 #include <string>
+#include <thread>
 #include <utility>
 #include <vector>
 
 #include "common.h"
+#include "daemon_state.h"
 #include "server_kit/server_kit.h"
 #include "utils/config_reader.h"
 #include "utils/ip_addr.h"
 #include "utils/log.h"
 #include "utils/status.h"
+#include "manage/manage.h"
 
 DEFINE_string(host, "", "the known host with comma-separated list");
 DEFINE_string(config_dir, "", "the location of config file");
@@ -82,13 +86,20 @@ int main(int argc, char *argv[], const char *envp[]) {
                   << "]";
   }
 
-  // initial server structure
-  P2P_SYNC_SERVER_HANDLER *server_handler;
-  if ((server_handler = P2PFileSync_SK_init(FLAGS_host.c_str(), "server_certificate.pem",FLAGS_config_dir.c_str())) == nullptr) {
-    LOG(FATAL) << "failed to init server structure !";
+  // global init server management kit
+  P2PFileSync_SK_global_init(FLAGS_host.c_str(), FLAGS_config_dir.c_str());
+
+  // trying to look for register devices
+  fs::path client_id = data_folder/"client.json";
+  fs::path client_certificate = data_folder/"client_certificate.pem";
+  if(!(fs::exists(client_id) && fs::exists(client_certificate))){
+    DaemonStatus::set_register_status(false);
   }
 
-  // initial demon global status
-
+  // staring server handler
+  auto main_handler = std::thread(&P2PFileSync_start_manage_thread, config->get_manage_sock_file_().c_str(), AF_FILE);
+  
+  // waiting server handler to stop
+  main_handler.join();
   return 0;
 }

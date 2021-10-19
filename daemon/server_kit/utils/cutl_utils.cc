@@ -97,4 +97,62 @@ error:
   // curl_easy_cleanup(curl);
   return {StatusCode::INTERNAL, curl_easy_strerror(ret)};
 };
+
+
+Status post_file_from_server(
+    void* input_data, CURLSH* curl_share, const std::string& request_url,
+    size_t (*write_function)(char*, size_t, size_t, void*), bool force_ssl) {
+  CURLcode ret;
+  CURL* curl = curl_easy_init();
+
+  if (curl) {
+    if (curl_share &&
+        (ret = curl_easy_setopt(curl, CURLOPT_SHARE, curl_share)) != CURLE_OK)
+      goto error;
+
+    if ((ret = curl_easy_setopt(curl, CURLOPT_URL, request_url.c_str())) !=
+        CURLE_OK)
+      goto error;
+
+    if ((ret = curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "GET")) !=
+        CURLE_OK)
+      goto error;
+
+    if ((ret = curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_function)) !=
+        CURLE_OK)
+      goto error;
+
+    if ((ret = curl_easy_setopt(curl, CURLOPT_WRITEDATA, input_data)) !=
+        CURLE_OK)
+      goto error;
+
+    // /* Switch on full protocol/debug output */
+    // curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+
+    // SSL configuration
+    if ((ret = curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, force_ssl)) !=
+        CURLE_OK)
+      goto error;
+    if ((ret = curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, force_ssl)) !=
+        CURLE_OK)
+      goto error;
+    if ((ret = curl_easy_setopt(curl, CURLOPT_SSL_VERIFYSTATUS, force_ssl)) !=
+        CURLE_OK)
+      goto error;
+
+    if ((ret = curl_easy_perform(curl)) != CURLE_OK) {
+      goto error;
+    }
+  } else {
+    return {StatusCode::INTERNAL, "Failed to initial curl struct"};
+  }
+
+  return Status::OK();
+
+// error handling
+error:
+  // curl_easy_cleanup(curl);
+  return {StatusCode::INTERNAL, curl_easy_strerror(ret)};
+};
+
 };  // namespace P2PFileSync::Server_kit

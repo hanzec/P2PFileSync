@@ -11,7 +11,7 @@
 namespace P2PFileSync {
 [[nodiscard]] bool generate_default_config(const std::filesystem::path& config_file) {
   static const std::string default_config =
-     "app_config:\n\tdata_dir: \"/tmp/p2p_sync/data\"\n\tmount_point: \"/p2p_sync\"\network_config:\n\ttrans_port_number: 8080\n\tmanage_port_number: 8081\n";
+     "app_config:\n\tdata_dir: \"/tmp/p2p_sync/data\"\n\tmount_point: \"/p2p_sync\"\network_config:\n\ttrans_port_number: 8080\n\tmanage_sock_file: \"/tmp/p2p_sync/manage.sock\"\n";
   std::ofstream file(config_file, std::fstream::out);
 
   if (file.fail()) {
@@ -31,6 +31,6 @@ namespace P2PFileSync {
       config["app_config"]["mount_point"].as<std::string>(),
       config["app_config"]["data_dir"].as<std::string>(),
       config["network_config"]["trans_port_number"].as<uint16_t>(),
-      config["network_config"]["manage_port_number"].as<uint16_t>());
+      config["network_config"]["manage_sock_file"].as<std::string>());
 }
 }  // namespace P2PFileSync

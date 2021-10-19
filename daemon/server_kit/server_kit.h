@@ -55,7 +55,16 @@ char * P2PFileSync_SK_get_error_message(const P2P_SYNC_RETURN message, size_t * 
  * @brief return structure for server management kit
  * 
  */
-typedef struct P2P_SYNC_SERVER_HANDLER_t P2P_SYNC_SERVER_HANDLER;
+typedef struct P2P_SYNC_SERVER_HANDLER_t P2P_SYNC_SERVER_SESSION;
+
+/**
+ * @brief the global inital function, note that the repeat call will caused unexpected behaviors
+ * 
+ * @param server_url then url of management server
+ * @param data_path the data and configuration folder of current daemon
+ */
+void P2PFileSync_SK_global_init(const char * server_url, const char * data_path);
+
 
 /**
  * @brief Create the P2P_SYNC_SERVER_HANDLER
@@ -64,19 +73,16 @@ typedef struct P2P_SYNC_SERVER_HANDLER_t P2P_SYNC_SERVER_HANDLER;
  * @param file_path the certificate path of ther server
  * @return P2P_SYNC_SERVER_HANDLER the handler of the server
  */
-P2P_SYNC_SERVER_HANDLER * P2PFileSync_SK_init(const char * server_url, const char * file_path, const char * data_path);
+P2P_SYNC_SERVER_SESSION * P2PFileSync_SK_new_session(bool enable_strict_security);
 
 // -------------------------------------------- Server Request --------------------------------------------
 
 /**
- * @brief Register client when first start server or certificate lost and return new certificate
+ * @brief Register client with remote management server
  * 
- * @param server_domain the server domain address for management server
- * @param file_path the PCSK#12 certificate location where will write to
- * @param return_link_size the size of returned activation link 
  * @return P2P_SYNC_RETURN return structure contain return code and return data
  */
-P2P_SYNC_RETURN P2PFileSync_SK_register_client(P2P_SYNC_SERVER_HANDLER server_handler, size_t * return_link_size);
+P2P_SYNC_RETURN P2PFileSync_SK_register_client();
 
 #ifdef __cplusplus
 }

@@ -17,6 +17,7 @@ void CommandFactory::get_help_msg(std::ostringstream& output) noexcept {
 // command factory producer
 Status CommandFactory::exec_command(std::ostringstream& output,
                                     const std::string& command,
+                                    DaemonStatus& daemon_status,
                                     const std::vector<std::string>& arguments) {
   // the only special case will handle by command factory
   if (command == "help") {
@@ -33,7 +34,7 @@ Status CommandFactory::exec_command(std::ostringstream& output,
   }
 
   // execute the command
-  handler->second.second(output,arguments);
+  handler->second.second(output,daemon_status,arguments);
 
   return {StatusCode::OK, "command execute successfully"};
 }

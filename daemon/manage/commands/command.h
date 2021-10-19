@@ -18,13 +18,14 @@
 #include <utility>
 #include <vector>
 
+#include "../../daemon_state.h"
 #include "../../utils/log.h"
 #include "../../utils/status.h"
 
 namespace P2PFileSync {
-using COMMAND_HANDLER =
-    std::function<Status(std::ostringstream&, const std::vector<std::string>&)>;
-                            
+using COMMAND_HANDLER = std::function<void(std::ostringstream&, DaemonStatus&,
+                                           const std::vector<std::string>&)>;
+
 class CommandFactory {
  public:
   /**
@@ -42,13 +43,13 @@ class CommandFactory {
    * @param arguments the arguments of the command
    * @return Status return the status code after exec_command
    */
-  [[nodiscard]] static Status exec_command(std::ostringstream& output,
-                                           const std::string& command,
-                                           const std::vector<std::string>& arguments);
-  
+  [[nodiscard]] static Status exec_command(
+      std::ostringstream& output, const std::string& command,
+      DaemonStatus& daemon_status, const std::vector<std::string>& arguments);
+
   /**
    * @brief Helper class for expose the private method outside
-   * 
+   *
    */
   class CommandBase {
    public:
@@ -66,7 +67,8 @@ class CommandFactory {
    *
    */
   static std::unordered_map<std::string,
-                            std::pair<std::string, COMMAND_HANDLER>> _handler_map;
+                            std::pair<std::string, COMMAND_HANDLER>>
+      _handler_map;
 
   /**
    * @brief private function which regist command dynamically
@@ -84,22 +86,24 @@ class CommandFactory {
 
 /**
  * @brief Macros for generating auto register command handler
- * 
+ *
  */
-#define NEW_COMMAND(command, description, output, args)                     \
-  namespace P2PFileSync::AUTO_GEN_COMMAND {                                 \
-  class command : private P2PFileSync::CommandFactory::CommandBase {        \
-   public:                                                                  \
-    command() { (void)_reg_status; };                                       \
-    static Status do_operation(std::ostringstream& output,                  \
-                               const std::vector<std::string>& args);       \
-                                                                            \
-   private:                                                                 \
-    const P2PFileSync::Status _reg_status = register_object_warper(         \
-        "" #command "", description, command::do_operation);                \
-  };                                                                        \
-  };                                                                        \
-  P2PFileSync::Status P2PFileSync::AUTO_GEN_COMMAND::command::do_operation( \
-      std::ostringstream& output, const std::vector<std::string>& args)
+#define NEW_COMMAND(command, description, output, args, daemon_status) \
+  namespace P2PFileSync::AUTO_GEN_COMMAND {                            \
+  class command : private P2PFileSync::CommandFactory::CommandBase {   \
+   public:                                                             \
+    command() { (void)_reg_status; };                                  \
+    static void do_operation(std::ostringstream& output,               \
+                             DaemonStatus& daemon_status,              \
+                             const std::vector<std::string>& args);    \
+                                                                       \
+   private:                                                            \
+    const P2PFileSync::Status _reg_status = register_object_warper(    \
+        "" #command "", description, command::do_operation);           \
+  };                                                                   \
+  };                                                                   \
+  void P2PFileSync::AUTO_GEN_COMMAND::command::do_operation(           \
+      std::ostringstream& output, DaemonStatus& daemon_status,         \
+      const std::vector<std::string>& args)
 
 #endif

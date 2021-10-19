@@ -4,8 +4,8 @@
  * @Last Modified by: Hanze Chen
  * @Last Modified time: 2021-10-03 00:17:15
  */
-#ifndef P2P_FILE_SYNC_SERVER_KIT_SERVER_KIT_H
-#define P2P_FILE_SYNC_SERVER_KIT_SERVER_KIT_H
+#ifndef P2P_FILE_SYNC_SERVER_KIT_SERVER_ENDPOINT_H
+#define P2P_FILE_SYNC_SERVER_KIT_SERVER_ENDPOINT_H
 #include <string>
 
 namespace P2PFileSync::Server_kit {

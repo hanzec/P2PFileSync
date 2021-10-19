@@ -5,6 +5,7 @@
 #include <array>
 #include <string>
 
+#include "../daemon_state.h"
 #include "../utils/ip_addr.h"
 
 extern "C" {

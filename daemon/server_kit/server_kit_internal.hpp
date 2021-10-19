@@ -10,15 +10,24 @@
 #define P2P_FILE_SYNC_SERVER_KIT_SERVER_KI_INTERNALT_H
 
 namespace P2PFileSync::Server_kit {
+
+  /** 
+   * Global variables will init at the call of P2PFileSync_SK_global_init()
+   */
+  // management server information
+  static const std::string * server_address_;
+  static const std::filesystem::path * configuration_path_;
+
+  // certificates
+  static const PKCS7 * client_sign_certificate_;
+
+  /**
+   * @brief The cpp class for server session per connection
+   * 
+   */
   class ServerConnection{
     public:
-      ServerConnection(const char * server_address, 
-                       const char * certificate_path,
-                       const char * configuration_path);
-
-      ServerConnection(const std::string & server_address,
-                       const std::string & certificate_path,
-                       const std::filesystem::path & configuration_path);
+      ServerConnection(bool strict_security = true);
 
       /**
        * @brief Destroy the Server Connection object
@@ -50,15 +59,8 @@ namespace P2PFileSync::Server_kit {
       //  */
       // void disbale_strict_security();
     private:
-      void init();
       bool strict_security_ = true;
       CURLSH * curl_handler = nullptr;
-      const std::string server_address_;
-      const std::string certificate_path_;
-      const std::filesystem::path configuration_path_;
-
-      // certificates
-      PKCS7 * client_sign_certificate_;
   };
 } // namespace P2PFileSync
 
