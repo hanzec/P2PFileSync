@@ -67,4 +67,4 @@ class Status {
 };
 }  // namespace P2PFileSync
 
-#endif
+#endif // P2P_FILE_SYNC_UTILS_STATUS_H

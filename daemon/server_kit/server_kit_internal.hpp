@@ -62,6 +62,6 @@ namespace P2PFileSync::Server_kit {
       bool strict_security_ = true;
       CURLSH * curl_handler = nullptr;
   };
-} // namespace P2PFileSync
+} // namespace P2PFileSync::Server_kit
 
 #endif // P2P_FILE_SYNC_SERVER_KIT_SERVER_KI_INTERNALT_H

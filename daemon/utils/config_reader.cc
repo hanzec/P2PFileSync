@@ -1,3 +1,9 @@
+/*
+ * @Author: Hanze CHen 
+ * @Date: 2021-10-23 16:57:02 
+ * @Last Modified by: Hanze Chen
+ * @Last Modified time: 2021-10-23 17:10:24
+ */
 #include "config_reader.h"
 
 #include <yaml-cpp/node/parse.h>
@@ -7,6 +13,7 @@
 #include <fstream>
 #include <memory>
 #include <string>
+#include "common.h"
 
 namespace P2PFileSync {
 [[nodiscard]] bool generate_default_config(const std::filesystem::path& config_file) {

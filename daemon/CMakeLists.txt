@@ -35,6 +35,11 @@ find_package(yaml-cpp CONFIG REQUIRED)
 target_link_libraries(p2p_file_sync ${YAML_CPP_LIBRARIES})
 target_include_directories(p2p_file_sync PRIVATE ${YAML_CPP_INCLUDE_DIR})
 
+# libevent
+find_package(Libevent CONFIG REQUIRED)
+target_link_libraries(p2p_file_sync libevent::core libevent::extra )
+target_include_directories(p2p_file_sync PRIVATE ${Libevent_CORE_INCLUDE_DIRS})
+
 # google test deps(require pthread)
 find_package(GTest REQUIRED)
 find_package(Threads REQUIRED)
@@ -50,14 +55,30 @@ target_compile_features(p2p_file_sync PRIVATE cxx_std_17)
 target_compile_features(p2p_file_sync_test PRIVATE cxx_std_17)
 
 ###############################################################################
+## Project Source #############################################################
+###############################################################################
+# command list
+file(GLOB SUPPORT_COMMAND_SRC *_command.cc)
+
+target_sources(p2p_file_sync 
+    PRIVATE
+    "main.cc"
+    "common.h"
+    "manage.cc"
+    "daemon_state.h"
+    "daemon_state.cc"
+    "commands/command.cc" "commands/command.h"
+    ${SUPPORT_COMMAND_SRC}
+    PUBLIC
+    ${PROTO_SRCS} ${PROTO_HDRS}
+)
+
+target_include_directories(p2p_file_sync PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+
+###############################################################################
 ## Project Utils ##############################################################
 ###############################################################################
 add_subdirectory(utils)
-
-###############################################################################
-## Manage Interface ###########################################################
-###############################################################################
-add_subdirectory(manage)
 
 ###############################################################################
 ## Message Packet ##############################################################
@@ -71,18 +92,6 @@ add_subdirectory(server_kit)
 target_link_libraries(p2p_file_sync server_connection)
 target_include_directories(p2p_file_sync PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/server_kit/server_kit.h")
 
-###############################################################################
-## Project Source #############################################################
-###############################################################################
-target_sources(p2p_file_sync 
-    PRIVATE
-    "main.cc"
-    "common.h"
-    PUBLIC
-    ${PROTO_SRCS} ${PROTO_HDRS}
-)
-
-target_include_directories(p2p_file_sync PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 ###############################################################################
 ## Testing ####################################################################
 ###############################################################################

@@ -9,6 +9,7 @@
 #include <utility>
 #include <vector>
 
+#include "manage.h"
 #include "common.h"
 #include "daemon_state.h"
 #include "server_kit/server_kit.h"
@@ -16,7 +17,6 @@
 #include "utils/ip_addr.h"
 #include "utils/log.h"
 #include "utils/status.h"
-#include "manage/manage.h"
 
 DEFINE_string(host, "", "the known host with comma-separated list");
 DEFINE_string(config_dir, "", "the location of config file");
@@ -89,17 +89,11 @@ int main(int argc, char *argv[], const char *envp[]) {
   // global init server management kit
   P2PFileSync_SK_global_init(FLAGS_host.c_str(), FLAGS_config_dir.c_str());
 
-  // trying to look for register devices
-  fs::path client_id = data_folder/"client.json";
-  fs::path client_certificate = data_folder/"client_certificate.pem";
-  if(!(fs::exists(client_id) && fs::exists(client_certificate))){
-    DaemonStatus::set_register_status(false);
-  }
-
   // staring server handler
-  auto main_handler = std::thread(&P2PFileSync_start_manage_thread, config->get_manage_sock_file_().c_str(), AF_FILE);
+  std::string server_sock = config->get_manage_sock_file_();
+  std::thread handler(&manage_interface_thread, std::ref(server_sock), AF_FILE);
   
   // waiting server handler to stop
-  main_handler.join();
+  handler.join();
   return 0;
 }

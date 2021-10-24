@@ -10,6 +10,7 @@ NEW_COMMAND(REGISTER, "get current time of system", output, args, daemon_status)
       if(daemon_status.exist_option("CLIENT_REGISTER_PIN")){
         if(std::stoi(args[0]) == daemon_status.get_option<int>("CLIENT_REGISTER_PIN")){
           daemon_status.set_register_status(true);
+          daemon_status.del_option("CLIENT_REGISTER_PIN");
           output << "client successful registered";
         }
       }else{
@@ -23,9 +24,8 @@ NEW_COMMAND(REGISTER, "get current time of system", output, args, daemon_status)
     if(!P2PFileSync_SK_success(ret)){
       output << "failed to register new client to management server!";
     }else{
-      int pass_code = std::stoi(P2PFileSync_SK_get_data(ret));
-      daemon_status.store_option("CLIENT_REGISTER_PIN", pass_code);
-      output << "regist request sent, please visit [" << P2PFileSync.
+      daemon_status.store_option("CLIENT_REGISTER_PIN", *static_cast<int*>(P2PFileSync_SK_get_data(ret,0)));
+      output << "regist request sent, please visit [" << static_cast<char*>(P2PFileSync_SK_get_data(ret,1)) << "]";
     }
   }else{
     output << "client is already registered!";

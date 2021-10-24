@@ -40,14 +40,13 @@ target_include_directories(server_connection PRIVATE ${glog_INCLUDE_DIRS})
 ###############################################################################
 ## UTILS ######################################################################
 ###############################################################################
-file(GLOB UTILS_SRCS
-    ${CMAKE_CURRENT_LIST_DIR}/utils/*.cc)
+file(GLOB UTILS_SRCS ${CMAKE_CURRENT_LIST_DIR}/utils/*.cc)
+file(GLOB UTILS_HDRS ${CMAKE_CURRENT_LIST_DIR}/utils/*.hpp)
     
 ###############################################################################
-## Request Models #############################################################
+## Data Models ################################################################
 ###############################################################################
-file(GLOB REQUEST_MODEL_SRCS
-    ${CMAKE_CURRENT_LIST_DIR}/request/*.cc)
+add_subdirectory(model)
 
 ###############################################################################
 ## Library Sources ############################################################
@@ -57,12 +56,11 @@ target_sources(server_connection
   "server_kit.h"
   PRIVATE
   "server_kit.h"
-  ${UTILS_SRCS}
+  ${UTILS_SRCS} ${UTILS_HDRS}
   ${REQUEST_MODEL_SRCS}
   "server_kit_c_wrap.cc"
   "server_kit_internal.cc"
-  "server_kit_internal.hpp"
-  "${PROJECT_SOURCE_DIR}/daemon/utils/status.h")
+  "server_kit_internal.hpp")
 
 target_include_directories(server_connection PRIVATE "${PROJECT_SOURCE_DIR}/src/utils/")
 

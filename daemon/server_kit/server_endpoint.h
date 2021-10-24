@@ -13,6 +13,9 @@ namespace P2PFileSync::Server_kit {
   const static std::string SERVER_CERT_NAME = "client_sign_root.crt";
 
   const static std::string SERVER_CERT_ENDPOINT_V1 = "/client_sign_root.crt";
+  
+  const static std::string SERVER_REGISTER_ENDPOINT_V1 = "/api/v1/register_client";
+
 
 } // namespace P2PFileSync::P2PFileSync::Server_kit
 #endif //P2P_FILE_SYNC_SERVER_KIT_SERVER_KIT_H

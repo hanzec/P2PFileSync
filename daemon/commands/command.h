@@ -2,10 +2,10 @@
  * @Author: Hanze CHen
  * @Date: 2021-08-30 19:34:05
  * @Last Modified by: Hanze Chen
- * @Last Modified time: 2021-09-09 14:24:57
+ * @Last Modified time: 2021-10-23 20:17:17
  */
-#ifndef P2P_FILE_SYNC_MANAGE_COMMAND_COMMAND_H
-#define P2P_FILE_SYNC_MANAGE_COMMAND_COMMAND_H
+#ifndef P2P_FILE_SYNC_MANAGE_COMMANDS_COMMAND_H
+#define P2P_FILE_SYNC_MANAGE_COMMANDS_COMMAND_H
 
 #include <glog/logging.h>
 
@@ -18,9 +18,9 @@
 #include <utility>
 #include <vector>
 
-#include "../../daemon_state.h"
-#include "../../utils/log.h"
-#include "../../utils/status.h"
+#include "daemon_state.h"
+#include "utils/log.h"
+#include "utils/status.h"
 
 namespace P2PFileSync {
 using COMMAND_HANDLER = std::function<void(std::ostringstream&, DaemonStatus&,
@@ -43,9 +43,10 @@ class CommandFactory {
    * @param arguments the arguments of the command
    * @return Status return the status code after exec_command
    */
-  [[nodiscard]] static Status exec_command(
-      std::ostringstream& output, const std::string& command,
-      DaemonStatus& daemon_status, const std::vector<std::string>& arguments);
+  static bool exec_command(std::ostringstream& output,
+                           const std::string& command,
+                           DaemonStatus& daemon_status,
+                           const std::vector<std::string>& arguments);
 
   /**
    * @brief Helper class for expose the private method outside
@@ -53,22 +54,22 @@ class CommandFactory {
    */
   class CommandBase {
    public:
-    static Status register_object_warper(const std::string& command,
-                                         const std::string& description,
-                                         COMMAND_HANDLER command_handler) {
+    static bool register_object_warper(const std::string& command,
+                                       const std::string& description,
+                                       COMMAND_HANDLER command_handler) {
       return register_object(command, description, std::move(command_handler));
     };
   };
 
  private:
+  // TODO command requirement need to be implemented
+
   /**
    * @brief static map storage command handler ptr and its description by
    * command str as key
    *
    */
-  static std::unordered_map<std::string,
-                            std::pair<std::string, COMMAND_HANDLER>>
-      _handler_map;
+  inline static std::unordered_map<std::string, std::pair<std::string, COMMAND_HANDLER>> _handler_map{};
 
   /**
    * @brief private function which regist command dynamically
@@ -76,11 +77,11 @@ class CommandFactory {
    * @param command the command in string
    * @param description the short description of the string
    * @param command_handler the pointer of command handler function
-   * @return Status the registation status of current regist process
+   * @return bool the registation status of current regist process
    */
-  static Status register_object(const std::string& command,
-                                const std::string& description,
-                                COMMAND_HANDLER command_handler);
+  static bool register_object(const std::string& command,
+                              const std::string& description,
+                              COMMAND_HANDLER command_handler);
 };
 }  // namespace P2PFileSync
 
@@ -98,7 +99,7 @@ class CommandFactory {
                              const std::vector<std::string>& args);    \
                                                                        \
    private:                                                            \
-    const P2PFileSync::Status _reg_status = register_object_warper(    \
+    const bool _reg_status = register_object_warper(                   \
         "" #command "", description, command::do_operation);           \
   };                                                                   \
   };                                                                   \
@@ -106,4 +107,4 @@ class CommandFactory {
       std::ostringstream& output, DaemonStatus& daemon_status,         \
       const std::vector<std::string>& args)
 
-#endif
+#endif // P2P_FILE_SYNC_MANAGE_COMMANDS_COMMAND_H

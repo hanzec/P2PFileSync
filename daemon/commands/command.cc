@@ -1,11 +1,8 @@
 #include "command.h"
+
 #include <unordered_map>
 
 namespace P2PFileSync {
-// def of class static member
-std::unordered_map<std::string,
-                   std::pair<std::string, COMMAND_HANDLER>> CommandFactory::_handler_map;
-
 // print help message
 void CommandFactory::get_help_msg(std::ostringstream& output) noexcept {
   for (const auto& pair : CommandFactory::_handler_map) {
@@ -15,14 +12,14 @@ void CommandFactory::get_help_msg(std::ostringstream& output) noexcept {
 };
 
 // command factory producer
-Status CommandFactory::exec_command(std::ostringstream& output,
-                                    const std::string& command,
-                                    DaemonStatus& daemon_status,
-                                    const std::vector<std::string>& arguments) {
+bool CommandFactory::exec_command(std::ostringstream& output,
+                                  const std::string& command,
+                                  DaemonStatus& daemon_status,
+                                  const std::vector<std::string>& arguments) {
   // the only special case will handle by command factory
   if (command == "help") {
     CommandFactory::get_help_msg(output);
-    return Status::OK();
+    return true;
   }
 
   auto handler = CommandFactory::_handler_map.find(command);
@@ -30,28 +27,28 @@ Status CommandFactory::exec_command(std::ostringstream& output,
   // if command not found
   if (handler != CommandFactory::_handler_map.end()) {
     output << "command[" << command << "] not found!" << std::endl;
-    return {StatusCode::UNAVAILABLE, "command not found"};
+    return false;
   }
 
   // execute the command
-  handler->second.second(output,daemon_status,arguments);
+  handler->second.second(output, daemon_status, arguments);
 
-  return {StatusCode::OK, "command execute successfully"};
+  return true;
 }
 
 // register avaliable command
-Status CommandFactory::register_object(const std::string& command,
-                                       const std::string& description,
-                                       COMMAND_HANDLER command_handler) {
+bool CommandFactory::register_object(const std::string& command,
+                                     const std::string& description,
+                                     COMMAND_HANDLER command_handler) {
   auto handler = CommandFactory::_handler_map.find(command);
   if (handler != CommandFactory::_handler_map.end()) {
     LOG(ERROR) << "Command [" << command << "] Already Registered !";
-    return {StatusCode::INVALID_ARGUMENT, "Command name already registered!"};
+    return false;
   } else {
     VLOG(VERBOSE) << "Command name [" << command << "] registered !";
   }
-  _handler_map.emplace(command, std::make_pair(description, std::move(command_handler)));
-  return Status::OK();
+  CommandFactory::_handler_map.emplace(command,std::make_pair(description, std::move(command_handler)));
+  return true;
 }
 
 }  // namespace P2PFileSync

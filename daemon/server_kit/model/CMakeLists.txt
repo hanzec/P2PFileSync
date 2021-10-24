@@ -1,27 +1,17 @@
 ###############################################################################
-## Project Source #############################################################
+## Request Model Source #######################################################
 ###############################################################################
-target_sources(p2p_file_sync 
-    PRIVATE
-    "log.h"
-    "ip_addr.h" "ip_addr.cc"
-    "parsing.h" "parsing.cc"
-    "config_reader.h" "config_reader.cc"
-)
+file(GLOB REQUEST_MODEL_SRCS ${CMAKE_CURRENT_LIST_DIR}/request/*.cc)
+
+target_sources(server_connection PRIVATE ${REQUEST_MODEL_SRCS})
 
 ###############################################################################
-## Cert Utils #################################################################
+## Response Model Source ######################################################
 ###############################################################################
-add_subdirectory(cert)
+file(GLOB RESPONSE_MODEL_SRCS ${CMAKE_CURRENT_LIST_DIR}/response/*.cc)
+
+target_sources(server_connection PRIVATE ${RESPONSE_MODEL_SRCS})
 
 ###############################################################################
 ## Testing Source #############################################################
 ###############################################################################
-file(GLOB TEST_SRC_FILES 
-    ${CMAKE_CURRENT_LIST_DIR}/test/*_test.cc)
-    
-target_sources(p2p_file_sync_test PRIVATE 
-    ${TEST_SRC_FILES}
-    "ip_addr.h" "ip_addr.cc"
-    "parsing.h" "parsing.cc"
-)

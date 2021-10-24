@@ -33,12 +33,21 @@ typedef struct P2P_SYNC_RETURN_t * P2P_SYNC_RETURN;
 bool P2PFileSync_SK_success(const P2P_SYNC_RETURN message);
 
 /**
+ * @brief Get the total number of returned data;
+ * 
+ * @param message return structure contain return code and return data
+ * @return size_t the number of data including in the return structure
+ */
+size_t P2PFileSync_SK_get_data_num(const P2P_SYNC_RETURN message);
+
+/**
  * @brief return the return data if success or null if return contains error
  *
  * @param message return structure contain return code and return data
- * @return char* 
+ * @param data_size  the index of the data which wants to get
+ * @return void* returned data
  */
-char * P2PFileSync_SK_get_data(const P2P_SYNC_RETURN message);
+void * P2PFileSync_SK_get_data(const P2P_SYNC_RETURN message, const size_t& data_index);
 
 /**
  * @brief get the error message of the giving P2P_SYNC_RETURN

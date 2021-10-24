@@ -1,17 +1,17 @@
 /*
  * @Author: Hanze CHen
  * @Date: 2021-08-30 22:37:49
- * @Last Modified by:   Hanze Chen
- * @Last Modified time: 2021-08-30 22:37:49
+ * @Last Modified by: Hanze Chen
+ * @Last Modified time: 2021-10-23 16:57:47
  */
-#ifndef P2P_FILE_SYNC_MANAGE_UTILS_PARSING_H
-#define P2P_FILE_SYNC_MANAGE_UTILS_PARSING_H
+#ifndef P2P_FILE_SYNC_UTILS_PARSING_H
+#define P2P_FILE_SYNC_UTILS_PARSING_H
 
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "../../utils/status.h"
+#include "status.h"
 
 namespace P2PFileSync {
 using COMMAND = std::pair<std::string, std::vector<std::string>>;
@@ -40,4 +40,4 @@ using COMMAND = std::pair<std::string, std::vector<std::string>>;
 
 }  // namespace P2PFileSync
 
-#endif
+#endif // P2P_FILE_SYNC_UTILS_PARSING_H
