@@ -86,6 +86,18 @@ P2P_SYNC_SERVER_SESSION * P2PFileSync_SK_new_session(bool enable_strict_security
 
 // -------------------------------------------- Server Request --------------------------------------------
 
+
+/**
+ * @brief Check if client is registered or not by following rules:
+ *  1. check if there exist a file under config folder called client.cfg 
+ *  2. check if there exist a file under config folder called client.pem
+ *  3. //TODO check with server to validate the validation of the client certificate
+ *  4. //TODO verify the client machine id is matching the cfg file and certificate
+ * @return true the client is registed with server
+ * @return false ther client is not registed with server
+ */
+bool P2PFileSync_SK_is_registered();
+
 /**
  * @brief Register client with remote management server
  * 

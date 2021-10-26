@@ -5,9 +5,6 @@
 #include <array>
 #include <string>
 
-#include "daemon_state.h"
-#include "utils/ip_addr.h"
-
 namespace  P2PFileSync{
 /**
  * @brief Start manage interface for P2PFileSync with socket address

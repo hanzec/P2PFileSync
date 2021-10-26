@@ -10,6 +10,10 @@
 
 namespace P2PFileSync::Server_kit {
 
+  const static std::string CLIENT_CFG_NAME = "client.cfg";
+
+  const static std::string CLIENT_CERT_NAME = "client.p12";
+
   const static std::string SERVER_CERT_NAME = "client_sign_root.crt";
 
   const static std::string SERVER_CERT_ENDPOINT_V1 = "/client_sign_root.crt";

@@ -15,7 +15,7 @@ class RegisterClientRequest : public IJsonModel {
  public:
 /**
   * @brief Construct a new Register Client Request object
-  * 
+  * //TODO changed its constructor with argument instread using setter
   */
   RegisterClientRequest() = default;
 

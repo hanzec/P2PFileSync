@@ -62,5 +62,5 @@ target_sources(server_connection
   "server_kit_internal.cc"
   "server_kit_internal.hpp")
 
-target_include_directories(server_connection PRIVATE "${PROJECT_SOURCE_DIR}/src/utils/")
+target_include_directories(server_connection PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 

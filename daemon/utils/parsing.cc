@@ -15,41 +15,41 @@
 #include <iostream>
 
 namespace P2PFileSync {
-Status parsing_command(const std::string& input,
+Status parsing_command(std::string& input,
                        COMMAND& parsed_command) {
 
-  std::string tmp_input(input);
 
-  // trim the string
-  tmp_input.erase(0,tmp_input.find_first_not_of(' '));
-  tmp_input.erase(tmp_input.find_last_not_of(' ') + 1);
+  // fix the string format
+  input.erase(0,input.find_first_not_of(' '));
+  input.erase(input.find_last_not_of(' ') + 1);
+  input.erase(input.find_last_not_of('\n') + 1);
 
-  if(tmp_input.length() <= 0){
+  if(input.length() <= 0){
     return {StatusCode::INVALID_ARGUMENT,"command must be not empty"};
   }
 
   std::vector<std::string> result;
 
   // fist words will be command
-  size_t current = tmp_input.find(' ');
+  size_t current = input.find(' ');
   
-  std::string command = tmp_input.substr(0, current);
+  std::string command = input.substr(0, current);
 
-  while (current != tmp_input.npos) {
-    if(tmp_input[current] == '\"'){
+  while (current != input.npos) {
+    if(input[current] == '\"'){
       auto quoter_start = current;
-      if((current = tmp_input.find('\"',quoter_start+1)) == tmp_input.npos){
+      if((current = input.find('\"',quoter_start+1)) == input.npos){
          return {StatusCode::INVALID_ARGUMENT, 
-            generte_nice_error_msg("could not found pair of double quotes",quoter_start, tmp_input)};
+            generte_nice_error_msg("could not found pair of double quotes",quoter_start, input)};
       }else{
-        result.emplace_back(tmp_input.substr(quoter_start, current));
+        result.emplace_back(input.substr(quoter_start, current));
       }
     }else{
-      auto argument_start = tmp_input.find_first_not_of(' ', current);
-      if((current = tmp_input.find_first_of(' ', argument_start + 1)) != tmp_input.npos){
-        result.emplace_back(tmp_input.substr(argument_start, current));
+      auto argument_start = input.find_first_not_of(' ', current);
+      if((current = input.find_first_of(' ', argument_start + 1)) != input.npos){
+        result.emplace_back(input.substr(argument_start, current));
       }else{
-        result.emplace_back(tmp_input.substr(argument_start, tmp_input.length()));
+        result.emplace_back(input.substr(argument_start, input.length()));
       }
     }
   }

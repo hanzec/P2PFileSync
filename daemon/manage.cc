@@ -2,115 +2,136 @@
 #include "manage.h"
 
 #include <event.h>
+#include <event2/bufferevent.h>
+#include <fcntl.h>
 #include <glog/logging.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <unistd.h>
 
+#include <cstddef>
 #include <cstring>
+#include <memory>
 #include <thread>
+#include <tuple>
+#include <unordered_map>
+#include <utility>
 
-#include "commands/command.h"
+#include "interface/command_executor.h"
 #include "utils/log.h"
 #include "utils/parsing.h"
 
 namespace P2PFileSync {
-inline std::string read_by_line(int fd) {
+
+std::unordered_map<int, std::shared_ptr<CommandExecuter>> executor_map;
+
+inline std::string read_by_line(struct bufferevent *bev) {
   std::ostringstream output_buf;
 
   char char_buf;
-  while (read(fd, &char_buf, 1) > 0) {
-    output_buf << char_buf;
+  while (bufferevent_read(bev, &char_buf, 1) > 0) {
     if (char_buf == '\0' || char_buf == EOF) {
       break;
     }
+    output_buf << char_buf;
   }
   return output_buf.str();
 };
 
-void connection_hander(int fd) {
-  // first init new management session
-  DaemonStatus daemon_status;
+void read_handler(struct bufferevent *bev, void *ce_ptr) {
+  std::shared_ptr<CommandExecuter> ce;
 
-  // print header info
-  write(fd, "P2PFileSync\n>", 13);
-
-  while (true) {
-    // recv new incoming command
-    auto raw_command = read_by_line(fd);
-
-    // parsing command
-    COMMAND command;
-    auto parse_ret = P2PFileSync::parsing_command(raw_command, command);
-
-    // check if parsing is failed
-    if (!parse_ret.ok()) {
-      auto err_msg = parse_ret.Message();
-      write(fd, err_msg.c_str(), err_msg.length());
+  // looking fot exist connamd executor object
+  {
+    auto fd = bufferevent_getfd(bev);
+    auto ce_index = executor_map.find(fd);
+    if (ce_index == executor_map.end()) {
+      DLOG(INFO) << "create new command executor object for fd " << fd;
+      executor_map.emplace(fd, (ce = std::make_shared<CommandExecuter>()));
     } else {
-      // execute the command from factory
-      if (command.first == "EXIT") {
-        break;
-      } else {
-        std::ostringstream output_buf;
-
-        CommandFactory::exec_command(output_buf, command.first, daemon_status,
-                                     command.second);
-
-        write(fd, output_buf.str().c_str(), output_buf.str().length());
-      }
+      ce = ce_index->second;
     }
+  }
+
+  // recv new incoming command
+  auto raw_command = read_by_line(bev);
+
+  // parsing command
+  COMMAND command;
+  auto parse_ret = P2PFileSync::parsing_command(raw_command, command);
+
+  // check if parsing is failed
+  if (!parse_ret.ok()) {
+    auto err_msg = parse_ret.Message();
+    bufferevent_write(bev, err_msg.c_str(), err_msg.length());
+  } else {
+    std::ostringstream os;
+    ce->exec(os, command.first, command.second);
+    bufferevent_write(bev, os.str().c_str(), os.str().size());
   }
 };
 
-void accept_handler(int sock, short event, void* arg) {
-  struct sockaddr_in remote_addr;
-  int sin_size = sizeof(struct sockaddr_in);
-  int new_fd =
-      accept(sock, (struct sockaddr*)&remote_addr, (socklen_t*)&sin_size);
+void error_handler(struct bufferevent *bev, short event, void *arg) {}
 
-  if (new_fd < 0) {
+void accept_handler(evutil_socket_t fd, short event, void *arg) {
+  struct sockaddr_un sin;
+  socklen_t slen = sizeof(sin);
+  auto *base = (struct event_base *)arg;
+
+  LOG(ERROR) << "socket fd = " << fd;
+  // waiting for new connection accepted
+  int new_fd;
+  if ((new_fd = accept(fd, (struct sockaddr *)&sin, (socklen_t *)&slen)) < 0) {
     LOG(ERROR) << "Error when handling incoming connection";
     return;
   }
 
-  // using std thread will have better compatibility
-  std::thread new_command_handler(&connection_hander, new_fd);
+  auto *bev = bufferevent_socket_new(base, new_fd, BEV_OPT_CLOSE_ON_FREE);
+  bufferevent_setcb(bev, read_handler, nullptr, error_handler, nullptr);
+  bufferevent_enable(bev, EV_READ | EV_WRITE | EV_PERSIST);
 }
 
-void manage_interface_thread(const std::string& sockets, int listen_type) {
+// TODO supoort AF_INET type connection
+void manage_interface_thread(const std::string &sockets, int listen_type) {
   VLOG(INFO) << "starting manage thread listen on [" << sockets << "]";
 
   if (sockets.length() > 108) {
     LOG(FATAL) << "socket file path cannot be longer than 108 character";
   }
 
-  // init structure
-  struct sockaddr_un saddr;
-  saddr.sun_family = listen_type;
-  memset(saddr.sun_path, '\0', 108);
-  memcpy(saddr.sun_path, sockets.c_str(), sockets.length());
-
   // set up file descripter
-  int fd = 0;
-  if ((fd = socket(listen_type, SOCK_STREAM, 0)) == -1) {
+  int listen_fd = 0;
+  if ((listen_fd = socket(listen_type, SOCK_STREAM, 0)) == -1) {
     LOG(FATAL) << "can not create socket";
   }
 
+  // init structure
+  unlink(sockets.c_str());
+  struct sockaddr_un addr;
+  addr.sun_family = listen_type;
+  memcpy(addr.sun_path, sockets.c_str(), sockets.length());
+
   // bind socket between socket and file discriptor
-  if (bind(fd, (struct sockaddr*)&saddr, sizeof(saddr)) == -1) {
+  if (bind(listen_fd, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
     LOG(FATAL) << "cannot bind open socket to [" << sockets << "]";
   }
 
+  // connect
+  if (listen(listen_fd, 10) < 0) { /* tell kernel we're a server */
+    LOG(FATAL) << "cannot bind set [" << sockets << "] as connect";
+  }
+
   // libevent
-  struct event_base* base = event_base_new();
-  struct event listen_ev;
+  auto *base = event_base_new();
 
-  event_set(&listen_ev, fd, EV_READ | EV_PERSIST, accept_handler, nullptr);
-  event_base_set(base, &listen_ev);
-  event_add(&listen_ev, nullptr);
+  if (base == nullptr) LOG(FATAL) << "libevent base event create failed!";
+
+  auto *listen_ev = event_new(base, listen_fd, EV_READ | EV_PERSIST,
+                              accept_handler, (void *)base);
+
+  event_add(listen_ev, nullptr);
   event_base_dispatch(base);
-
-  event_del(&listen_ev);
+  event_del(listen_ev);
   event_base_free(base);
 }
 }  // namespace P2PFileSync

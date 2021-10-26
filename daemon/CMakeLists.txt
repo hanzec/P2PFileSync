@@ -57,23 +57,22 @@ target_compile_features(p2p_file_sync_test PRIVATE cxx_std_17)
 ###############################################################################
 ## Project Source #############################################################
 ###############################################################################
-# command list
-file(GLOB SUPPORT_COMMAND_SRC *_command.cc)
-
 target_sources(p2p_file_sync 
     PRIVATE
     "main.cc"
     "common.h"
     "manage.cc"
-    "daemon_state.h"
-    "daemon_state.cc"
-    "commands/command.cc" "commands/command.h"
     ${SUPPORT_COMMAND_SRC}
     PUBLIC
     ${PROTO_SRCS} ${PROTO_HDRS}
 )
 
 target_include_directories(p2p_file_sync PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+
+###############################################################################
+## Commands ###################################################################
+###############################################################################
+add_subdirectory(interface)
 
 ###############################################################################
 ## Project Utils ##############################################################

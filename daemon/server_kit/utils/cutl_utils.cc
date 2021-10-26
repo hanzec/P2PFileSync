@@ -90,7 +90,10 @@ void * POST_and_save_to_ptr(CURLSH * curl_handler, const std::string& request_ur
   data->current_size = 1024*1024;
 
   if(get_file_from_server("POST", data, post_data, curl_handler, request_url, write_to_ptr,force_ssl)){
-    return data;
+    VLOG(3) << "total of [" << data->head << "] bytes downloaded!";
+    auto ret = data->data;
+    free(data);
+    return ret;
   }else{
     free(data);
     return nullptr;
@@ -101,6 +104,9 @@ inline bool get_file_from_server(const std::string& http_method, const void* inp
                           CURLSH* curl_share, const std::string& request_url,
                           size_t (*write_function)(char*, size_t, size_t, void*), bool force_ssl) {
   
+  VLOG(3) << "seeding request to [" << request_url << "] with " << http_method << " request";
+
+
   CURLcode ret;
   CURL* curl = curl_easy_init();
 

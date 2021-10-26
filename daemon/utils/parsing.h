@@ -23,7 +23,7 @@ using COMMAND = std::pair<std::string, std::vector<std::string>>;
  * @param parsed_command generated parsed string
  * @return Status the return code while finished parsing
  */
-[[nodiscard]] Status parsing_command(const std::string& input,
+[[nodiscard]] Status parsing_command(std::string& input,
                                      COMMAND& parsed_command);
 
 /**

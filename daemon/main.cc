@@ -11,12 +11,11 @@
 
 #include "manage.h"
 #include "common.h"
-#include "daemon_state.h"
-#include "server_kit/server_kit.h"
-#include "utils/config_reader.h"
-#include "utils/ip_addr.h"
 #include "utils/log.h"
+#include "utils/ip_addr.h"
 #include "utils/status.h"
+#include "utils/config_reader.h"
+#include "server_kit/server_kit.h"
 
 DEFINE_string(host, "", "the known host with comma-separated list");
 DEFINE_string(config_dir, "", "the location of config file");
@@ -82,16 +81,15 @@ int main(int argc, char *argv[], const char *envp[]) {
                  << config->get_sync_data_dir() << "]";
     }
   } else {
-    VLOG(VERBOSE) << "find exist folder in [" << config->get_sync_data_dir()
-                  << "]";
+    VLOG(VERBOSE) << "find exist folder in [" << config->get_sync_data_dir() << "]";
   }
 
   // global init server management kit
-  P2PFileSync_SK_global_init(FLAGS_host.c_str(), FLAGS_config_dir.c_str());
+  P2PFileSync_SK_global_init(FLAGS_server.c_str(), FLAGS_config_dir.c_str());
 
   // staring server handler
   std::string server_sock = config->get_manage_sock_file_();
-  std::thread handler(&manage_interface_thread, std::ref(server_sock), AF_FILE);
+  std::thread handler(&manage_interface_thread, std::ref(server_sock), AF_UNIX);
   
   // waiting server handler to stop
   handler.join();

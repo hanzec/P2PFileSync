@@ -1,5 +1,5 @@
-#ifndef P2P_FILE_SYNC_DAEMON_STATUS_H
-#define P2P_FILE_SYNC_DAEMON_STATUS_H
+#ifndef P2P_FILE_SYNC_INTERFACE_CONNECTION_SESSION_H
+#define P2P_FILE_SYNC_INTERFACE_CONNECTION_SESSION_H
 
 #include <any>
 #include <filesystem>
@@ -7,18 +7,17 @@
 #include <unordered_map>
 #include <utility>
 
-#include "common.h"
-#include "server_kit/server_kit.h"
-#include "utils/ip_addr.h"
 #include "utils/status.h"
+#include "utils/ip_addr.h"
+#include "server_kit/server_kit.h"
 
 namespace P2PFileSync {
-class DaemonStatus {
+class ConnectionSession {
  public:
-  DaemonStatus();
+  ConnectionSession();
 
   template <typename T>
-  T get_option(const std::string& key);
+  T get_option(const char * key);
 
   void del_option(const std::string& key);
 
@@ -29,7 +28,7 @@ class DaemonStatus {
   void set_register_status(bool status);
 
   static bool get_register_status() {
-    return P2PFileSync::DaemonStatus::register_status;
+    return P2PFileSync::ConnectionSession::register_status;
   }
 
  private:
@@ -45,4 +44,4 @@ class DaemonStatus {
 };
 
 }  // namespace P2PFileSync
-#endif  // P2P_FILE_SYNC_DAEMON_STATUS_H
+#endif  // P2P_FILE_SYNC_INTERFACE_CONNECTION_SESSION_H
