@@ -3,7 +3,11 @@
 
 namespace P2PFileSync {
 
-ConnectionSession::ConnectionSession() : management_(P2PFileSync_SK_new_session(false)){};
+ConnectionSession::ConnectionSession() : management_(P2PFileSync_SK_new_session(false)){
+  if(!get_register_status()){
+    set_register_status(P2PFileSync_SK_is_registered());
+  }
+};
 
 template <typename T>
 T ConnectionSession::get_option(const char* key) {
