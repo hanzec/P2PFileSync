@@ -38,9 +38,9 @@ class ConnectionSession {
   /**
    *  Following variables are genearted per session
    */
-  P2P_SYNC_SERVER_SESSION* management_;
+  Serverkit::ManagementContext* _management;
 
-  std::unordered_map<std::string, std::any> session_storage;
+  std::unordered_map<std::string, std::any> _session_storage;
 };
 
 }  // namespace P2PFileSync

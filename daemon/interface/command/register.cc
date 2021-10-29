@@ -1,20 +1,13 @@
 #include <climits>
+#include <cstddef>
 #include <memory>
 #include <utility>
 
 #include "../command_executor.h"
-#include "server_kit/server_kit.h"
 
 namespace P2PFileSync {
 class RegisterCommand : public AutoRegCommand<RegisterCommand> {
- public:
-  RegisterCommand(std::shared_ptr<ConnectionSession> session)
-      : AutoRegCommand<RegisterCommand>(std::move(session)){};
-
-  static const constexpr std::string_view COMMAND_NAME = "REGISTER";
-
-  static const constexpr std::string_view COMMAND_DESCRIPTION = "REGISTER";
-
+  REGISTER_COMMAND(RegisterCommand, REGISTER, DEFAULT);
   void exec(std::ostringstream& out,
             const std::vector<std::string>& args) final {
     auto ds = get_demon_status();
@@ -29,14 +22,13 @@ class RegisterCommand : public AutoRegCommand<RegisterCommand> {
           out << "Error: you should run REGISTER without argument first";
         }
       } else if (args.size() == 0) {
-        auto ret = P2PFileSync_SK_register_client();
+        auto ret = Serverkit::regist_client();
 
-        if (!P2PFileSync_SK_success(ret)) {
+        if (ret == nullptr) {
           out << "failed to register new client to management server!";
         } else {
-          _register_pin = *static_cast<int*>(P2PFileSync_SK_get_data(ret, 0));
-          out << "regist request sent, please visit ["
-              << static_cast<char*>(P2PFileSync_SK_get_data(ret, 1)) << "]";
+          _register_pin = ret->get_register_code();
+          out << "regist request sent, please visit ["  << ret->get_enable_url() << "]";
         }
       } else {
         out << "Error: [REGISTER] will only take at most 1 arguments";

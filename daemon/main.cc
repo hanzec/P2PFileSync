@@ -85,7 +85,7 @@ int main(int argc, char *argv[], const char *envp[]) {
   }
 
   // global init server management kit
-  P2PFileSync_SK_global_init(FLAGS_server.c_str(), FLAGS_config_dir.c_str());
+  Serverkit::global_init(FLAGS_server.c_str(), FLAGS_config_dir.c_str());
 
   // staring server handler
   std::string server_sock = config->get_manage_sock_file_();

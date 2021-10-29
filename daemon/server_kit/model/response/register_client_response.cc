@@ -1,9 +1,9 @@
-#include "register_client_response.hpp"
 #include <memory>
 #include <string>
 #include <string_view>
 
-namespace P2PFileSync::Server_kit {
+#include "register_client_response.h"
+namespace P2PFileSync::Serverkit {
 
 RegisterClientResponse::RegisterClientResponse(char* json) : IJsonModel(json){};
 
@@ -22,4 +22,4 @@ std::string RegisterClientResponse::get_enable_url() {
 std::string RegisterClientResponse::get_raw_psck12_certificate() {
   return get_value<std::string>("PSCK12_certificate");
 }
-}  // namespace P2PFileSync::Server_kit
+}  // namespace P2PFileSync::Serverkit

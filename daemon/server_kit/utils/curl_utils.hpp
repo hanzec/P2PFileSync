@@ -12,7 +12,7 @@
 
 #include "functional"
 
-namespace P2PFileSync::Server_kit {
+namespace P2PFileSync::Serverkit {
 
 /**
  * @brief Perform HTTP GET for giving address and saving the response body to
@@ -63,6 +63,6 @@ inline bool get_file_from_server(const std::string& http_method, const void* inp
                           CURLSH* curl_share, const std::string& request_url,
                           size_t (*write_function)(char*, size_t, size_t, void*), bool force_ssl);
 
-};  // namespace P2PFileSync::Server_kit
+};  // namespace P2PFileSync::Serverkit
 
 #endif  // P2P_FILE_SYNC_SERVER_KIT_SERVER_KIT_UTILS_CURL_UTILS_H

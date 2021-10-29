@@ -1,11 +1,11 @@
-#ifndef P2P_FILE_SYNC_SERVER_KIT_MODEL_REQUEST_REGISTER_CLIENT_REQUEST_H
-#define P2P_FILE_SYNC_SERVER_KIT_MODEL_REQUEST_REGISTER_CLIENT_REQUEST_H
+#ifndef P2P_FILE_SYNC_Serverkit_MODEL_REQUEST_REGISTER_CLIENT_REQUEST_H
+#define P2P_FILE_SYNC_Serverkit_MODEL_REQUEST_REGISTER_CLIENT_REQUEST_H
 
 #include <string>
 
 #include "../IJsonModel.hpp"
 
-namespace P2PFileSync::Server_kit {
+namespace P2PFileSync::Serverkit {
 
 /**
  * @brief Request Model of Client Register
@@ -42,6 +42,6 @@ class RegisterClientRequest : public IJsonModel {
    */
   void setIPAddress(const std::string& ipaddress);
 };
-}  // namespace P2PFileSync::Server_kit
+}  // namespace P2PFileSync::Serverkit
 
-#endif  // P2P_FILE_SYNC_SERVER_KIT_MODEL_REQUEST_REGISTER_CLIENT_REQUEST_H
+#endif  // P2P_FILE_SYNC_Serverkit_MODEL_REQUEST_REGISTER_CLIENT_REQUEST_H

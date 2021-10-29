@@ -1,18 +1,16 @@
 #include <chrono>
 #include <ctime>
 #include <utility>
+
 #include "../command_executor.h"
 
 namespace P2PFileSync {
 class TimeCommand : public AutoRegCommand<TimeCommand> {
+  REGISTER_COMMAND(TimeCommand, TIME, DEFAULT);
+
  public:
-  TimeCommand(std::shared_ptr<ConnectionSession> session):AutoRegCommand<TimeCommand>(std::move(session)){};
-
-  static const constexpr std::string_view COMMAND_NAME =  "TIME";
-  
-  static const constexpr std::string_view COMMAND_DESCRIPTION =  "DEFAULT";
-
-  void exec(std::ostringstream& out, const std::vector<std::string>& args) final {
+  void exec(std::ostringstream& out,
+            const std::vector<std::string>& args) final {
     if (args.size() > 0) {
       out << "TIME command does not need any arguments!";
     }

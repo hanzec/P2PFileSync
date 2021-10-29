@@ -3,7 +3,7 @@
 
 #include <array>
 
-namespace P2PFileSync::Server_kit::Base64 {
+namespace P2PFileSync::Serverkit::Base64 {
 
   /**
    * @brief return a new string object contains the Base64 encoded string

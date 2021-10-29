@@ -19,8 +19,8 @@
 #include <utility>
 #include <vector>
 
-#include "utils/log.h"
 #include "connection_session.h"
+#include "utils/log.h"
 
 namespace P2PFileSync {
 using COMMAND_ARG = const std::vector<std::string>;
@@ -156,7 +156,7 @@ class AutoRegCommand : public CommandBase,
  public:
   AutoRegCommand(std::shared_ptr<ConnectionSession> session)
       : CommandBase(session) {
-    (void) AutoRegCommand<T>::_reg_status;
+    (void)AutoRegCommand<T>::_reg_status;
   };
 
   /**
@@ -186,6 +186,15 @@ template <typename T>
 const bool AutoRegCommand<T>::_reg_status =
     AutoRegCommand<T>::reg_command_warper(T::COMMAND_NAME,
                                           T::COMMAND_DESCRIPTION,
-                                          [](auto a){return new T(a);});
+                                          [](auto a) { return new T(a); });
 }  // namespace P2PFileSync
+
+#define REGISTER_COMMAND(class, name, description)                    \
+ public:                                                              \
+  class(std::shared_ptr<ConnectionSession> session)                   \
+      : AutoRegCommand<class>(std::move(session)){};                  \
+  static const constexpr std::string_view COMMAND_NAME = "" #name ""; \
+  static const constexpr std::string_view COMMAND_DESCRIPTION =       \
+      "" #description "";
+
 #endif  // P2P_FILE_SYNC_MANAGE_INTERFACE_COMMAND_EXECTORS_H

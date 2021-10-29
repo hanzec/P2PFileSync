@@ -1,4 +1,5 @@
-#include "server_kit_internal.hpp"
+
+#include "server_kit.h"
 
 #include <curl/curl.h>
 #include <glog/logging.h>
@@ -7,23 +8,29 @@
 #include <algorithm>
 #include <filesystem>
 
-#include "server_endpoint.h"
+#include "server_kit_const.h"
+#include "utils/base64_utils.hpp"
 #include "utils/curl_utils.hpp"
 #include "utils/machine_id.hpp"
-#include "utils/base64_utils.hpp"
 
 namespace fs = std::filesystem;
 
-namespace P2PFileSync::Server_kit {
+namespace P2PFileSync::Serverkit {
 
-ServerConnection::ServerConnection(bool strict_security)
-    : strict_security_(strict_security) {
-  if ((curl_handler = curl_share_init()) == nullptr) {
-    LOG(FATAL) << "failed to init curl sh!";
-  }
-};
+//------------------------ Global Variable ---------------------------------
+// client self identifiers
+static const std::string *client_id = nullptr;
 
-bool ServerConnection::is_registered() {
+// management server information
+static const std::string *server_address_ = nullptr;
+static const std::filesystem::path *configuration_path_ = nullptr;
+
+// certificates
+static const PKCS12 *client_certificate_ = nullptr;
+static const PKCS7 *client_sign_certificate_ = nullptr;
+//---------------------------------------------------------------------------
+
+bool register_status() {
   // check client cfg
   fs::path client_cfg(*configuration_path_ / CLIENT_CFG_NAME);
   if (!fs::exists(client_cfg)) {
@@ -42,8 +49,7 @@ bool ServerConnection::is_registered() {
 
 // TODO client configuration file and client certificate permission check and
 // warring
-void ServerConnection::global_init(const char *server_url,
-                                   const char *data_path) {
+void global_init(const char *server_url, const char *data_path) {
   // initial curl
   if (curl_global_init(CURL_GLOBAL_DEFAULT) != CURLE_OK) {
     LOG(FATAL) << "failed to init libcurl!";
@@ -75,7 +81,7 @@ void ServerConnection::global_init(const char *server_url,
   }
 
   // init to find client conf and certificates
-  if (ServerConnection::is_registered()) {
+  if (register_status()) {
     // load client id
     fs::path client_cfg(*configuration_path_ / CLIENT_CFG_NAME);
     std::ifstream filein(client_cfg);
@@ -97,23 +103,26 @@ void ServerConnection::global_init(const char *server_url,
   }
 }
 
-std::pair<std::string,int> ServerConnection::regist_client() {
+std::shared_ptr<RegisterClientResponse> regist_client() {
   RegisterClientRequest reques_model;
 
   // TODO: replace moke data to actual data
   srand(time(nullptr));
   reques_model.setIPAddress("127.0.0." + std::to_string(rand() % 255));
-  reques_model.setMachineID(P2PFileSync::Server_kit::get_device_id());
+  reques_model.setMachineID(P2PFileSync::Serverkit::get_device_id());
 
   void *raw_json = POST_and_save_to_ptr(
-      nullptr, *server_address_ + SERVER_REGISTER_ENDPOINT_V1, static_cast<const void *>(reques_model.get_json().c_str()),false);
+      nullptr, *server_address_ + SERVER_REGISTER_ENDPOINT_V1,
+      static_cast<const void *>(reques_model.get_json().c_str()), false);
 
   if (raw_json == nullptr) {
-    return {nullptr,0};
+    LOG(ERROR) << "empty response";
+    return nullptr;
   }
 
   // parse response
-  auto resp = std::make_shared<RegisterClientResponse>(static_cast<char *>(raw_json));
+  auto resp =
+      std::make_shared<RegisterClientResponse>(static_cast<char *>(raw_json));
 
   // save data to file
   fs::path client_cfg(*configuration_path_ / CLIENT_CFG_NAME);
@@ -129,19 +138,26 @@ std::pair<std::string,int> ServerConnection::regist_client() {
 
   // load the certificate
   FILE *certificate_file = fopen(client_cert.c_str(), "r");
-    if ((client_certificate_ = d2i_PKCS12_fp(certificate_file, nullptr)) !=
-        nullptr) {
-      LOG(FATAL) << "unable to loading certificate [" << client_cert
-                 << "] failed!";
-    } else {
-      LOG(INFO) << "success loading client certificate to memory!";
-    }
+  if ((client_certificate_ = d2i_PKCS12_fp(certificate_file, nullptr)) !=
+      nullptr) {
+    LOG(FATAL) << "unable to loading certificate [" << client_cert
+               << "] failed!";
+  } else {
+    LOG(INFO) << "success loading client certificate to memory!";
+  }
 
-  return {resp->get_enable_url(), resp->get_register_code()};
+  return resp;
 }
+
+ManagementContext::ManagementContext(bool strict_security)
+    : strict_security_(strict_security) {
+  if ((curl_handler = curl_share_init()) == nullptr) {
+    LOG(FATAL) << "failed to init curl sh!";
+  }
+};
 
 // Status ServerConnection::register_client(){
 
 // };
 
-}  // namespace P2PFileSync::Server_kit
+}  // namespace P2PFileSync::Serverkit

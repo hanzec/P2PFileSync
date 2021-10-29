@@ -1,5 +1,5 @@
-#ifndef P2P_FILE_SYNC_SERVER_KIT_MODEL_JSON_MODEL_H
-#define P2P_FILE_SYNC_SERVER_KIT_MODEL_JSON_MODEL_H
+#ifndef P2P_FILE_SYNC_Serverkit_MODEL_JSON_MODEL_H
+#define P2P_FILE_SYNC_Serverkit_MODEL_JSON_MODEL_H
 
 #include <glog/logging.h>
 #include <rapidjson/allocators.h>
@@ -16,7 +16,9 @@
 #include <unordered_map>
 #include <vector>
 
-namespace P2PFileSync::Server_kit {
+#include "../export.h"
+
+namespace P2PFileSync::Serverkit {
 /**
  * @brief base model of request/response model which used in server
  * communication
@@ -175,5 +177,5 @@ class IJsonModel {
    */
   rapidjson::Document document;
 };
-}  // namespace P2PFileSync::Server_kit
-#endif  // P2P_FILE_SYNC_SERVER_KIT_MODEL_JSON_MODEL_H
+}  // namespace P2PFileSync::Serverkit
+#endif  // P2P_FILE_SYNC_Serverkit_MODEL_JSON_MODEL_H

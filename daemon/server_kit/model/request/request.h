@@ -1,0 +1,6 @@
+#ifndef P2P_FILE_SYNC_Serverkit_MODEL_REQUEST_REQUEST_H
+#define P2P_FILE_SYNC_Serverkit_MODEL_REQUEST_REQUEST_H
+
+#include "register_client_request.h"
+
+#endif

@@ -71,19 +71,22 @@ void read_handler(struct bufferevent *bev, void *ce_ptr) {
   }
 };
 
-void error_handler(struct bufferevent *bev, short event, void *arg) {}
+void error_handler(struct bufferevent *bev, short event, void *arg) {
+  executor_map.erase(bufferevent_getfd(bev));
+}
 
 void accept_handler(evutil_socket_t fd, short event, void *arg) {
   struct sockaddr_un sin;
   socklen_t slen = sizeof(sin);
   auto *base = (struct event_base *)arg;
 
-  LOG(ERROR) << "socket fd = " << fd;
   // waiting for new connection accepted
   int new_fd;
   if ((new_fd = accept(fd, (struct sockaddr *)&sin, (socklen_t *)&slen)) < 0) {
     LOG(ERROR) << "Error when handling incoming connection";
     return;
+  }else{
+    VLOG(3) << "Handle incoming connection for fd:[" << fd << "]";
   }
 
   auto *bev = bufferevent_socket_new(base, new_fd, BEV_OPT_CLOSE_ON_FREE);

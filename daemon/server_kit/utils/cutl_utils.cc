@@ -10,7 +10,7 @@
 
 #include "curl_utils.hpp"
 
-namespace P2PFileSync::Server_kit {
+namespace P2PFileSync::Serverkit {
 
 using ptr_data = struct ptr_data_t{
   void * data;
@@ -173,4 +173,4 @@ error:
   return false;
 };
 
-};  // namespace P2PFileSync::Server_kit
+};  // namespace P2PFileSync::Serverkit
