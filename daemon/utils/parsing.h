@@ -11,8 +11,7 @@
 #include <utility>
 #include <vector>
 
-#include "status.h"
-
+#include <status.h>
 namespace P2PFileSync {
 using COMMAND = std::pair<std::string, std::vector<std::string>>;
 

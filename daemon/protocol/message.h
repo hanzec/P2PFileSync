@@ -7,12 +7,11 @@
 #ifndef P2P_FILE_SYNC_MESSAGE_MESSAGE_H
 #define P2P_FILE_SYNC_MESSAGE_MESSAGE_H
 
-#include <google/protobuf/stubs/port.h>
-#include "utils/ip_addr.h"
-
 #include <cstdint>
 #include <ostream>
+#include <ip_addr.h>
 #include "payload.pb.h"
+#include <google/protobuf/stubs/port.h>
 
 namespace P2PFileSync {
 class Message {

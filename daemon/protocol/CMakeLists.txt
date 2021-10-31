@@ -3,11 +3,17 @@
 ###############################################################################
 add_library(p2p_protocol)
 
+# test target
+# add_executable(p2p_protocol_test)
+
 ###############################################################################
 ## Compile Config #############################################################
 ###############################################################################
 # compile under cxx 17 since need std::byte support
 target_compile_features(p2p_protocol PRIVATE cxx_std_17)
+
+# set by default will not export symbols
+set_target_properties(p2p_protocol PROPERTIES CXX_VISIBILITY_PRESET hidden)
 
 ###############################################################################
 ## Dependency #################################################################
@@ -18,11 +24,16 @@ target_link_libraries(p2p_protocol protobuf::libprotobuf)
 target_include_directories(p2p_protocol PRIVATE ${Protobuf_INCLUDE_DIRS})
 
 ###############################################################################
+## Internal dependancy ########################################################
+###############################################################################
+target_link_libraries(p2p_protocol common)
+
+###############################################################################
 ## Message Wraps ##############################################################
 ###############################################################################
 file(GLOB MESSAGE_WRAP_SRC_FILES 
     ${CMAKE_CURRENT_LIST_DIR}/msg_wrap/*.h)
-target_sources(p2p_file_sync_test PRIVATE ${MESSAGE_WRAP_SRC_FILES})
+target_sources(p2p_protocol PRIVATE ${MESSAGE_WRAP_SRC_FILES})
 
 ###############################################################################
 ## Generate Protobuf ##########################################################
@@ -49,16 +60,14 @@ target_include_directories(p2p_protocol PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 ###############################################################################
 target_sources(p2p_protocol 
     PRIVATE
-    "message.h"
-    "message.cc"
-    ${PROJECT_SOURCE_DIR}/daemon/utils/ip_addr.cc
+    "message.h" "message.cc"
+    "protocol.h" "protocol.cc"
 )
-
 target_include_directories(p2p_protocol PRIVATE ${PROJECT_SOURCE_DIR}/daemon/utils/)
 
 ###############################################################################
 ## Testing Source #############################################################
 ###############################################################################
-file(GLOB TEST_SRC_FILES 
-    ${CMAKE_CURRENT_LIST_DIR}/test/*_test.cc)
-target_sources(p2p_file_sync_test PRIVATE ${TEST_SRC_FILES})
+#file(GLOB TEST_SRC_FILES 
+#    ${CMAKE_CURRENT_LIST_DIR}/test/*_test.cc)
+#target_sources(p2p_protocol_test PRIVATE ${TEST_SRC_FILES})

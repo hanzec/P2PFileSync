@@ -1,10 +1,9 @@
 ###############################################################################
 ## Project Source #############################################################
 ###############################################################################
-target_sources(p2p_file_sync 
+target_sources(daemon 
     PRIVATE
     "log.h"
-    "ip_addr.h" "ip_addr.cc"
     "parsing.h" "parsing.cc"
     "config_reader.h" "config_reader.cc"
 )
@@ -20,8 +19,7 @@ add_subdirectory(cert)
 file(GLOB TEST_SRC_FILES 
     ${CMAKE_CURRENT_LIST_DIR}/test/*_test.cc)
     
-target_sources(p2p_file_sync_test PRIVATE 
+target_sources(daemon PRIVATE 
     ${TEST_SRC_FILES}
-    "ip_addr.h" "ip_addr.cc"
     "parsing.h" "parsing.cc"
 )

@@ -2,62 +2,62 @@
 ## Daemon Targets #############################################################
 ###############################################################################
 # exec target
-add_executable(p2p_file_sync)
+add_executable(daemon)
 
 # test target
-add_executable(p2p_file_sync_test)
+add_executable(daemon_test)
 
 ###############################################################################
 ## Shared Dependency ##########################################################
 ###############################################################################
 # google log
 find_package(glog CONFIG REQUIRED)
-target_link_libraries(p2p_file_sync glog::glog)
-target_include_directories(p2p_file_sync PRIVATE ${glog_INCLUDE_DIRS})
+target_link_libraries(daemon glog::glog)
+target_include_directories(daemon PRIVATE ${glog_INCLUDE_DIRS})
 
 # google flag
 find_package(gflags CONFIG REQUIRED)
-target_link_libraries(p2p_file_sync gflags_static)
-target_include_directories(p2p_file_sync PRIVATE ${GFLAGS_INCLUDE_DIR})
+target_link_libraries(daemon gflags_static)
+target_include_directories(daemon PRIVATE ${GFLAGS_INCLUDE_DIR})
 
 # protobuf
 find_package(Protobuf CONFIG REQUIRED)
-target_link_libraries(p2p_file_sync protobuf::libprotobuf)
-target_include_directories(p2p_file_sync PRIVATE ${Protobuf_INCLUDE_DIRS})
+target_link_libraries(daemon protobuf::libprotobuf)
+target_include_directories(daemon PRIVATE ${Protobuf_INCLUDE_DIRS})
 
 # openssl
 find_package(OpenSSL REQUIRED)
-target_link_libraries(p2p_file_sync OpenSSL::SSL OpenSSL::Crypto)
-target_include_directories(p2p_file_sync PRIVATE ${OPENSSL_INCLUDE_DIR})
+target_link_libraries(daemon OpenSSL::SSL OpenSSL::Crypto)
+target_include_directories(daemon PRIVATE ${OPENSSL_INCLUDE_DIR})
 
 # yaml-cpp
 find_package(yaml-cpp CONFIG REQUIRED)
-target_link_libraries(p2p_file_sync ${YAML_CPP_LIBRARIES})
-target_include_directories(p2p_file_sync PRIVATE ${YAML_CPP_INCLUDE_DIR})
+target_link_libraries(daemon ${YAML_CPP_LIBRARIES})
+target_include_directories(daemon PRIVATE ${YAML_CPP_INCLUDE_DIR})
 
 # libevent
 find_package(Libevent CONFIG REQUIRED)
-target_link_libraries(p2p_file_sync libevent::core libevent::extra )
-target_include_directories(p2p_file_sync PRIVATE ${Libevent_CORE_INCLUDE_DIRS})
+target_link_libraries(daemon libevent::core libevent::extra )
+target_include_directories(daemon PRIVATE ${Libevent_CORE_INCLUDE_DIRS})
 
 # google test deps(require pthread)
 find_package(GTest REQUIRED)
 find_package(Threads REQUIRED)
-target_link_libraries(p2p_file_sync_test Threads::Threads)
-target_link_libraries(p2p_file_sync_test ${GTEST_LIBRARY})
-target_include_directories(p2p_file_sync_test PRIVATE ${GTEST_INCLUDE_DIRS})
+target_link_libraries(daemon_test Threads::Threads)
+target_link_libraries(daemon_test ${GTEST_LIBRARY})
+target_include_directories(daemon_test PRIVATE ${GTEST_INCLUDE_DIRS})
 
 ###############################################################################
 ## Compile Config #############################################################
 ###############################################################################
 # compile under cxx 17 since need std::byte support
-target_compile_features(p2p_file_sync PRIVATE cxx_std_17)
-target_compile_features(p2p_file_sync_test PRIVATE cxx_std_17)
+target_compile_features(daemon PRIVATE cxx_std_17)
+target_compile_features(daemon_test PRIVATE cxx_std_17)
 
 ###############################################################################
 ## Project Source #############################################################
 ###############################################################################
-target_sources(p2p_file_sync 
+target_sources(daemon 
     PRIVATE
     "main.cc"
     "common.h"
@@ -67,7 +67,12 @@ target_sources(p2p_file_sync
     ${PROTO_SRCS} ${PROTO_HDRS}
 )
 
-target_include_directories(p2p_file_sync PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(daemon PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+
+###############################################################################
+## Internal dependancy ########################################################
+###############################################################################
+target_link_libraries(daemon common)
 
 ###############################################################################
 ## Commands ###################################################################
@@ -88,14 +93,14 @@ add_subdirectory(protocol)
 ## Server Protocol Kit ########################################################
 ###############################################################################
 add_subdirectory(server_kit)
-target_link_libraries(p2p_file_sync server_connection)
-target_include_directories(p2p_file_sync PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/server_kit/server_kit.h")
+target_link_libraries(daemon server_connection)
+target_include_directories(daemon PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/server_kit/server_kit.h")
 
 ###############################################################################
 ## Testing ####################################################################
 ###############################################################################
 # test main
-target_sources(p2p_file_sync_test PRIVATE "test_main.cc")
+target_sources(daemon_test PRIVATE "test_main.cc")
 
 # scan for possibale test
-gtest_discover_tests(p2p_file_sync_test)
+gtest_discover_tests(daemon_test)

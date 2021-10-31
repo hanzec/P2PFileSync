@@ -2,7 +2,7 @@
 ## Sources ####################################################################
 ###############################################################################
 # project sources
-target_sources(p2p_file_sync 
+target_sources(daemon 
     PRIVATE
     ${COMMAND_SRCS}
     "command_executor.cc" "command_executor.h"
@@ -11,4 +11,4 @@ target_sources(p2p_file_sync
 
 # commans sources
 file(GLOB COMMAND_SRCS command/*.cc)
-target_sources(p2p_file_sync PRIVATE ${COMMAND_SRCS})
+target_sources(daemon PRIVATE ${COMMAND_SRCS})

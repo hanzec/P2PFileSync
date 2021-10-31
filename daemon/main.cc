@@ -8,12 +8,12 @@
 #include <thread>
 #include <utility>
 #include <vector>
+#include <ip_addr.h>
+#include <status.h>
 
 #include "manage.h"
 #include "common.h"
 #include "utils/log.h"
-#include "utils/ip_addr.h"
-#include "utils/status.h"
 #include "utils/config_reader.h"
 #include "server_kit/server_kit.h"
 
