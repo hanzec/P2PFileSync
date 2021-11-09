@@ -19,7 +19,7 @@ std::string RegisterClientResponse::get_enable_url() {
   return get_value<std::string>("enable_url");
 }
 
-std::string RegisterClientResponse::get_raw_psck12_certificate() {
-  return get_value<std::string>("PSCK12_certificate");
+std::string RegisterClientResponse::get_login_token() {
+  return get_value<std::string>("login_token");
 }
 }  // namespace P2PFileSync::Serverkit

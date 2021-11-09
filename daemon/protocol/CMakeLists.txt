@@ -1,39 +1,9 @@
 ###############################################################################
-## P2P Protocol Utils #########################################################
-###############################################################################
-add_library(p2p_protocol)
-
-# test target
-# add_executable(p2p_protocol_test)
-
-###############################################################################
-## Compile Config #############################################################
-###############################################################################
-# compile under cxx 17 since need std::byte support
-target_compile_features(p2p_protocol PRIVATE cxx_std_17)
-
-# set by default will not export symbols
-set_target_properties(p2p_protocol PROPERTIES CXX_VISIBILITY_PRESET hidden)
-
-###############################################################################
-## Dependency #################################################################
-###############################################################################
-# protobuf
-find_package(Protobuf CONFIG REQUIRED)
-target_link_libraries(p2p_protocol protobuf::libprotobuf)
-target_include_directories(p2p_protocol PRIVATE ${Protobuf_INCLUDE_DIRS})
-
-###############################################################################
-## Internal dependancy ########################################################
-###############################################################################
-target_link_libraries(p2p_protocol common)
-
-###############################################################################
 ## Message Wraps ##############################################################
 ###############################################################################
 file(GLOB MESSAGE_WRAP_SRC_FILES 
     ${CMAKE_CURRENT_LIST_DIR}/msg_wrap/*.h)
-target_sources(p2p_protocol PRIVATE ${MESSAGE_WRAP_SRC_FILES})
+target_sources(daemon PRIVATE ${MESSAGE_WRAP_SRC_FILES})
 
 ###############################################################################
 ## Generate Protobuf ##########################################################
@@ -53,17 +23,21 @@ if(PROTO_BUILD_STATE AND NOT PROTO_BUILD_STATE EQUAL 0)
 endif(PROTO_BUILD_STATE AND NOT PROTO_BUILD_STATE EQUAL 0)
 
 # include protobuf generated folders
-target_include_directories(p2p_protocol PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(daemon PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 ###############################################################################
 ## Project Source #############################################################
 ###############################################################################
-target_sources(p2p_protocol 
+set_target_properties(daemon PROPERTIES
+    VERSION ${PROJECT_VERSION}
+    PUBLIC_HEADER "protocol.h")
+
+target_sources(daemon 
     PRIVATE
     "message.h" "message.cc"
-    "protocol.h" "protocol.cc"
+    "protocol.h" "protocol_server.cc" "peer_session.cc"
 )
-target_include_directories(p2p_protocol PRIVATE ${PROJECT_SOURCE_DIR}/daemon/utils/)
+target_include_directories(daemon PRIVATE ${PROJECT_SOURCE_DIR}/daemon/utils/)
 
 ###############################################################################
 ## Testing Source #############################################################

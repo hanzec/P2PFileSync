@@ -87,6 +87,12 @@ class IPAddr {
     return os;
   };
 
+  // comparator for unordered map
+  bool operator==(const IPAddr &other_ip) const {
+    return _port_number == other_ip._port_number &&
+           _ip_addr == other_ip._ip_addr;
+  }
+
  private:
   bool _valid = false;
   std::string _ip_str;

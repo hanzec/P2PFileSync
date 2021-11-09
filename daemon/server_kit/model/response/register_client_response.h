@@ -18,7 +18,7 @@ class RegisterClientResponse : public IJsonModel {
    * @brief Construct a new Register Client Response object
    *
    */
-  RegisterClientResponse() = default;
+  RegisterClientResponse() = delete;
 
   /**
    * @brief Construct a new Register Client Response object from exist json ptr,
@@ -41,25 +41,25 @@ class RegisterClientResponse : public IJsonModel {
   /**
    * @brief Get the client id ection in RegisterClientResponse request
    *
-   * @return std::shared_ptr<std::string> the client id registered in server
+   * @return std::string the client id registered in server
    */
   EXPORT_FUNC std::string get_client_id();
 
   /**
    * @brief Get the enable url ection in RegisterClientResponse request
    *
-   * @return std::shared_ptr<std::string> the url for enabling this client
+   * @return std::string the url for enabling this client
    */
   EXPORT_FUNC std::string get_enable_url();
 
   /**
-   * @brief Get the raw psck12 certificate section in RegisterClientResponse
+   * @brief Get the jwt login token section in RegisterClientResponse
    * request
    *
-   * @return std::shared_ptr<std::string> the raw psck12 certificate encoded by
+   * @return std::string the raw jwt login token certificate encoded by
    * BASE64
    */
-  EXPORT_FUNC std::string get_raw_psck12_certificate();
+  EXPORT_FUNC std::string get_login_token();
 };
 }  // namespace P2PFileSync::Serverkit
 

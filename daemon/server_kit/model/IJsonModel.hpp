@@ -4,14 +4,18 @@
 #include <glog/logging.h>
 #include <rapidjson/allocators.h>
 #include <rapidjson/document.h>
+#include <rapidjson/filereadstream.h>
+#include <rapidjson/filewritestream.h>
 #include <rapidjson/rapidjson.h>
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
 
 #include <algorithm>
 #include <cstddef>
+#include <filesystem>
 #include <limits>
 #include <string>
+#include <string_view>
 #include <type_traits>
 #include <unordered_map>
 #include <vector>
@@ -27,10 +31,17 @@ namespace P2PFileSync::Serverkit {
  */
 class IJsonModel {
  public:
+  /**
+   * @brief Construct a new IJsonModel object
+   *
+   */
   IJsonModel() { document.SetObject(); };
-  ~IJsonModel() {
-    if (json_buf) free(json_buf);
-  }
+
+  /**
+   * @brief Construct a new IJsonModel object
+   *
+   * @param json
+   */
   IJsonModel(char* json) : json_buf(json) {
     document.Parse(json);
 
@@ -42,6 +53,27 @@ class IJsonModel {
     if (VLOG_IS_ON(3)) {
       VLOG(3) << "parsed new JSON :" << std::endl << get_json();
     }
+  }
+
+  /**
+   * @brief Construct a new IJsonModel object
+   *
+   * @param json
+   */
+  IJsonModel(const std::filesystem::path& json_file) {
+#ifdef UNDER_UNIX
+    FILE* fp = fopen(json_file.c_str(), "rb");  // non-Windows use "r"
+#elifdef UNDER_WINDOWS
+    FILE* fp = fopen(json_file.c_str(), "r");  // non-Windows use "r"
+#endif
+    std::array<char, 1024> readBuffer;
+    rapidjson::FileReadStream is(fp, readBuffer.begin(), readBuffer.size());
+
+    document.ParseStream(is);
+  }
+
+  ~IJsonModel() {
+    if (json_buf) free(json_buf);
   }
 
   /**
@@ -58,6 +90,26 @@ class IJsonModel {
   };
 
   /**
+   * @brief Write current json object to file
+   *
+   * @param file the path of the file
+   */
+  void save_to_disk(const std::filesystem::path& file) {
+#ifdef UNDER_UNIX
+    FILE* fp = fopen(file.c_str(), "wb");  // non-Windows use "w"
+#elifdef UNDER_WINDOWS
+    FILE* fp = fopen(file.c_str(), "w");       // non-Windows use "w"
+#endif
+
+    std::array<char, 1024> writeBuffer;
+    rapidjson::FileWriteStream os(fp, writeBuffer.begin(), writeBuffer.size());
+
+    rapidjson::Writer<rapidjson::FileWriteStream> writer(os);
+    document.Accept(writer);
+    fclose(fp);
+  }
+
+  /**
    * @brief Return the response return a server error or not
    * @note this function only return meaningful return value only when this json
    * object are convert from raw json and as an reponse model
@@ -68,7 +120,7 @@ class IJsonModel {
     if (_response_flag) {
       return document["success"].GetBool();
     } else {
-      return true;
+      return false;
     }
   }
 
@@ -84,69 +136,113 @@ class IJsonModel {
    */
   template <typename T>
   T get_value(const char* key) {
-    if (_response_flag) {
-      if (document["responseBody"].HasMember(key)) {
-        return document["responseBody"][key].Get<T>();
+    auto& root_node = document["responseBody"];
+
+    if (!_response_flag) {
+      auto& root_node = document;
+    }
+
+    if (root_node.HasMember(key)) {
+      if (!std::is_same_v<T, std::string>) {
+        return root_node[root_node].Get<T>();
       } else {
-        return 0;
+        return root_node[root_node].GetString();
       }
     } else {
-      if (document.HasMember(key)) {
-        return document[key].Get<T>();
-      } else {
-        return 0;
-      }
+      return 0;
     }
   }
 
   /**
-   * @brief Get the value object
-   * @note by defult if key is not exist then this fuction will return nullptr
-   * for object and 0/0.0 or nurmical values. And fot string variables, this
-   * function will return an empty string contains NOTHINS which size=0
-   * @tparam T the type of the values saved to json document
-   * @param key the key of the json object
-   * @return T the value of key in the json document
+   * @brief Get the list of value
+   * @note by default if the key is not exist then will return an empty vector
+   * contains nothing
+   * @note this function will skip any sub-nodes with array-like type(map or array)
+   * @tparam T the datatype of vector
+   * @param key key of the array
+   * @return std::unordered_map<std::string,T> map of list value with key-value pair
    */
-  template <>
-  std::string get_value<std::string>(const char* key) {
-    if (_response_flag) {
-      if (document["responseBody"].HasMember(key)) {
-        return document["responseBody"][key].GetString();
-      } else {
-        return "";
+  template <typename T>
+  std::unordered_map<std::string,T> get_map(const char* key) {
+    std::unordered_map<std::string,T> ret;
+    auto& root_node = document["responseBody"];
+
+    if (!_response_flag) {
+      auto& root_node = document;
+    }
+
+    if (root_node.HasMember(key)) {
+      for (auto const& in : root_node[key].GetArray()) {
+        // skip if current node is a list
+        if (in.IsArray()) break;
+
+        // add key and values to return
+        auto key = in.MemberBegin()->name.GetString();
+        if (!std::is_same_v<T, std::string>) {
+          ret.emplace_back(key, in.Get<T>());
+        } else {
+          ret.emplace_back(key, in.GetString());
+        }
       }
     } else {
-      if (document.HasMember(key)) {
-        return document[key].GetString();
-      } else {
-        return "";
+      return {};
+    }
+  }
+
+  /**
+   * @brief Get the list of value
+   * @note by default if the key is not exist then will return an empty vector
+   * contains nothing
+   * @note this function will skip any sub-nodes with array-like type(map or array)
+   * @tparam T the datatype of vector
+   * @param key key of the array
+   * @return std::vector<T> vector of list value
+   */
+  template <typename T>
+  std::vector<T> get_array(const char* key) {
+    std::vector<T> ret;
+    auto& root_node = document["responseBody"];
+
+    if (!_response_flag) {
+      auto& root_node = document;
+    }
+
+    if (root_node.HasMember(key)) {
+      for (auto const& in : root_node[key].GetArray()) {
+        // skip if current node is a list
+        if (in.IsArray()) break;
+
+        // add key and values to return
+        if (!std::is_same_v<T, std::string>) {
+          ret.emplace_back(in.Get<T>());
+        } else {
+          ret.emplace_back(in.GetString());
+        }
       }
+    } else {
+      return {};
     }
   }
 
   template <typename T>
-  typename std::enable_if<std::numeric_limits<T>::is_integer>::type addValue(
-      const char* name, const T& number) {
+  void add_value(const char* name, const T& number) {
     rapidjson::Value value;
     rapidjson::Value value_name(rapidjson::kStringType);
-    document.AddMember(value_name.SetString(name, strlen(name)),
-                       value.Set(number), document.GetAllocator());
+
+    if (!std::is_same_v<T, std::string>) {
+      document.AddMember(value_name.SetString(name, strlen(name)),
+                         value.Set(number), document.GetAllocator());
+    } else {
+      rapidjson::Value string_value(rapidjson::kStringType);
+      document.AddMember(value_name.SetString(name, strlen(name)),
+                         string_value.SetString(number.c_str(), number.size(),
+                                                document.GetAllocator()),
+                         document.GetAllocator());
+    }
   }
 
   template <typename T>
-  typename std::enable_if<std::is_same<std::string, T>::value>::type addValue(
-      const char* name, const T& number) {
-    rapidjson::Value value_name(rapidjson::kStringType);
-    rapidjson::Value string_value(rapidjson::kStringType);
-    document.AddMember(value_name.SetString(name, strlen(name)),
-                       string_value.SetString(number.c_str(), number.size(),
-                                              document.GetAllocator()),
-                       document.GetAllocator());
-  }
-
-  template <typename T>
-  void addArray(const std::string& name, const std::vector<T>& array) {
+  void add_array(const std::string& name, const std::vector<T>& array) {
     rapidjson::Value json_array(rapidjson::kArrayType);
     rapidjson::Value array_name(rapidjson::kStringType);
 
@@ -163,7 +259,7 @@ class IJsonModel {
 
  private:
   /**
-   * Indecates this model is an response model or request model
+   * Indicated this model is an response model or request model
    */
   bool _response_flag = false;
 

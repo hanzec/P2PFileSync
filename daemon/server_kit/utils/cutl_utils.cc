@@ -8,7 +8,7 @@
 #include <filesystem>
 #include <fstream>
 
-#include "curl_utils.hpp"
+#include "curl_utils.h"
 
 namespace P2PFileSync::Serverkit {
 
@@ -69,7 +69,7 @@ bool GET_and_save_to_path(CURLSH* curl_handler,
   std::ofstream file_stream(file, std::ios::out | std::ios::binary);
 
   // preform downloading
-  bool ret = get_file_from_server("GET",&file_stream,nullptr, curl_handler,  request_url,
+  bool ret = get_file_from_server("GET",&file_stream,nullptr, curl_handler,  request_url, {},
                                   write_to_disk, force_ssl);
 
   file_stream.close();
@@ -89,7 +89,26 @@ void * POST_and_save_to_ptr(CURLSH * curl_handler, const std::string& request_ur
   data->head = 0;
   data->current_size = 1024*1024;
 
-  if(get_file_from_server("POST", data, post_data, curl_handler, request_url, write_to_ptr,force_ssl)){
+  if(get_file_from_server("POST", data, post_data, curl_handler, request_url, {}, write_to_ptr,force_ssl)){
+    VLOG(3) << "total of [" << data->head << "] bytes downloaded!";
+    auto ret = data->data;
+    free(data);
+    return ret;
+  }else{
+    free(data);
+    return nullptr;
+  }
+}
+
+void * GET_and_save_to_ptr(CURLSH * curl_handler, const std::string& request_url, const std::vector<std::string>& header, bool force_ssl){
+  auto * data = static_cast<ptr_data *>(malloc(sizeof(ptr_data)));
+  
+  //assign spaces
+  data->data = malloc(1024*1024);
+  data->head = 0;
+  data->current_size = 1024*1024;
+
+  if(get_file_from_server("GET", data, nullptr, curl_handler, request_url,header, write_to_ptr,force_ssl)){
     VLOG(3) << "total of [" << data->head << "] bytes downloaded!";
     auto ret = data->data;
     free(data);
@@ -101,7 +120,7 @@ void * POST_and_save_to_ptr(CURLSH * curl_handler, const std::string& request_ur
 }
 
 inline bool get_file_from_server(const std::string& http_method, const void* input_data, const void * post_data,
-                          CURLSH* curl_share, const std::string& request_url,
+                          CURLSH* curl_share, const std::string& request_url, const std::vector<std::string>& header,
                           size_t (*write_function)(char*, size_t, size_t, void*), bool force_ssl) {
   
   VLOG(3) << "seeding request to [" << request_url << "] with " << http_method << " request";
@@ -109,13 +128,15 @@ inline bool get_file_from_server(const std::string& http_method, const void* inp
 
   CURLcode ret;
   CURL* curl = curl_easy_init();
+  struct curl_slist *list = nullptr;
+
 
   if (curl) {
     if (curl_share && (ret = curl_easy_setopt(curl, CURLOPT_SHARE, curl_share)) != CURLE_OK)
       goto error;
 
+    // set post header
     if(post_data){
-      // set post header
       // by default all post_data are type of json in server kit
       struct curl_slist *list = curl_slist_append(nullptr, "Content-Type:application/json");
 
@@ -124,6 +145,14 @@ inline bool get_file_from_server(const std::string& http_method, const void* inp
 
       if((ret = curl_easy_setopt(curl, CURLOPT_POSTFIELDS , post_data)) != CURLE_OK)
         goto error;
+    }
+
+    // add headers to curl request
+    if(header.size() != 0){
+      for(const auto& line :header){
+        list = curl_slist_append(list, line.c_str());
+      }
+      curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list);
     }
 
     if ((ret = curl_easy_setopt(curl, CURLOPT_URL, request_url.c_str())) !=

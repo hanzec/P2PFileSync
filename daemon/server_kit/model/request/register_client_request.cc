@@ -2,13 +2,15 @@
 
 namespace P2PFileSync::Serverkit {
 
-RegisterClientRequest::RegisterClientRequest(char* json) : IJsonModel(json){};
+RegisterClientRequest::RegisterClientRequest():IJsonModel(){
+  this->add_value("group", std::string("DEFAULT_GROUP"));
+}
 
 void RegisterClientRequest::setMachineID(const std::string& machine_id) {
-  this->addValue("machineID", machine_id);
+  this->add_value("machineID", machine_id);
 };
 
 void RegisterClientRequest::setIPAddress(const std::string& ipaddress) {
-  this->addValue("ip", ipaddress);
+  this->add_value("ip", ipaddress);
 };
 }  // namespace P2PFileSync::Serverkit

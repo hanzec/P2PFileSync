@@ -60,19 +60,13 @@ target_compile_features(daemon_test PRIVATE cxx_std_17)
 target_sources(daemon 
     PRIVATE
     "main.cc"
-    "common.h"
     "manage.cc"
     ${SUPPORT_COMMAND_SRC}
     PUBLIC
     ${PROTO_SRCS} ${PROTO_HDRS}
 )
-
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(daemon PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-
-###############################################################################
-## Internal dependancy ########################################################
-###############################################################################
-target_link_libraries(daemon common)
 
 ###############################################################################
 ## Commands ###################################################################
@@ -95,6 +89,7 @@ add_subdirectory(protocol)
 add_subdirectory(server_kit)
 target_link_libraries(daemon server_connection)
 target_include_directories(daemon PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/server_kit/server_kit.h")
+target_include_directories(daemon PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/server_kit/model/response")
 
 ###############################################################################
 ## Testing ####################################################################

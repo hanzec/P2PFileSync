@@ -1,0 +1,7 @@
+syntax = "proto3";
+package P2PFileSync.Protocol;
+
+enum RequestType{
+  HELLO_MESSAGE = 0;
+  REDIRECT_MESSAGE = 1;
+}

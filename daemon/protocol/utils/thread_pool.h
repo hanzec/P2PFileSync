@@ -22,8 +22,8 @@ class ThreadPool {
    */
   ThreadPool(const uint8_t thread_size)
       : _worker_pool(std::vector<std::thread>(thread_size)) {
-    // initilized working thread
-    for (uint8_t i = 0; i < _worker_pool.size(); ++i) {
+    // initialize working thread
+    for (size_t i = 0; i < _worker_pool.size(); ++i) {
       _worker_pool[i] = std::thread(ThreadWorker(this, i));
     }
   };

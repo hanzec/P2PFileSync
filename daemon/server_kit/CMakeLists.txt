@@ -3,18 +3,21 @@
 ###############################################################################
 add_library(server_connection)
 
+# response model should be expose as public header
+file(GLOB RESPONSE_MODEL_HDRS ${CMAKE_CURRENT_LIST_DIR}/model/request/*.h)
+
 set_target_properties(server_connection PROPERTIES
     VERSION ${PROJECT_VERSION}
-    PUBLIC_HEADER "Serverkit.h")
-
-set_source_files_properties("Serverkit.h" LANGUAGE C)
-target_compile_features(server_connection PRIVATE cxx_std_17)
-
+    PUBLIC_HEADER "server_kit.h" ${RESPONSE_MODEL_HDRS})
+    
 ###############################################################################
 ## Compile Options ############################################################
 ###############################################################################
 # compile options
 add_compile_options(-Wall -Wextra -Bsymbolic -fPIC)
+
+# compile as c++ 17
+target_compile_features(server_connection PRIVATE cxx_std_17)
 
 # set by default will not export symbols
 set_target_properties(server_connection PROPERTIES CXX_VISIBILITY_PRESET hidden)
@@ -62,7 +65,7 @@ target_sources(server_connection
   "export.h"
   ${UTILS_SRCS} ${UTILS_HDRS}
   ${REQUEST_MODEL_SRCS}
-  "server_kit.cc" "server_kit.h")
+  "managent_context.cc" "device_context.cc")
 
 target_include_directories(server_connection PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 

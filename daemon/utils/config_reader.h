@@ -9,7 +9,7 @@
 
 #include <memory>
 #include <filesystem>
-#include "../common.h"
+#include <common.h>
 
 namespace P2PFileSync {
   /**
