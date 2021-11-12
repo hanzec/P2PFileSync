@@ -5,14 +5,14 @@ import "google/protobuf/timestamp.proto";
 
 package P2PFileSync.Protocol;
 
-message Message {
+message ProtoMessage {
     // sender/receiver information
     string sender_id = 5;
     string receiver_id = 6;
 
     // packet information
     string packet_id = 4;
-    RequestType request_type = 1;
+    ProtoPayloadType request_type = 1;
     google.protobuf.Timestamp timestamp = 3;
 
     // actual payload
@@ -20,7 +20,7 @@ message Message {
 }
 
 // used for singed header
-message SignedMessage{
+message ProtoSignedMessage{
     bytes signature = 1;
     google.protobuf.Any message = 2;
 }

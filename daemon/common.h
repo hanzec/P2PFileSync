@@ -44,14 +44,16 @@ class Config {
 
   [[nodiscard]] uint16_t get_workder_thread_num() const { return _workder_thread_num; }
 
+  [[nodiscard]] uint32_t get_packet_cache_size() const { return _packet_cached_size; }
+
   [[nodiscard]] std::string get_listen_ip_address() const { return _listen_ip_address; }
 
   [[nodiscard]] std::string get_management_server_url() const { return _management_server_url; }
 
-
  private:
   const uint8_t _workder_thread_num = 5;
   const uint16_t _trans_port_number = 9998;
+  const uint32_t _packet_cached_size = 100;
   const std::string _listen_ip_address = "";
   const std::string _trans_interface_name = "";
   const std::string _management_server_url = "http://DESKTOP-5TV2AI2.local"; // TODO need to modify here

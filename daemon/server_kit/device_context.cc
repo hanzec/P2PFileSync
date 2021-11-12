@@ -22,16 +22,16 @@ DeviceContext::DeviceContext() {
     if (DeviceContext::register_status()) {
       DeviceConfiguration conf(*configuration_path_ /
                                CLIENT_CONFIGURE_FILE_NAME);
+      _client_id = conf.get_device_id();
       _login_token = conf.get_jwt_key();
     } else {
-      _login_token = DeviceContext::regist_client();
+      // c++ 17 unpack pair to variables
+      const auto& [_login_token,_client_id] = DeviceContext::regist_client();
     }
   }
 };
 
 bool DeviceContext::is_enabled() {
-  auto ret = get_client_info();
-
   return get_client_info()->success();
 }
 
@@ -76,7 +76,7 @@ bool DeviceContext::register_status() {
   return true;
 }
 
-std::string DeviceContext::regist_client() {
+std::pair<std::string,std::string> DeviceContext::regist_client() {
   RegisterClientRequest reques_model;
 
   // TODO: replace moke data to actual data
@@ -90,7 +90,7 @@ std::string DeviceContext::regist_client() {
 
   if (raw_json == nullptr) {
     LOG(ERROR) << "empty response";
-    return "";
+    return {"",""};
   }
 
   // parse response
@@ -100,7 +100,7 @@ std::string DeviceContext::regist_client() {
   DeviceConfiguration conf(resp);
   conf.save_to_disk(*configuration_path_ / CLIENT_CONFIGURE_FILE_NAME);
 
-  return resp.get_login_token();
+  return {resp.get_login_token(), resp.get_client_id()};
 }
 
 const PKCS7 *DeviceContext::get_server_sign_certificate() {

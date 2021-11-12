@@ -38,7 +38,7 @@ class DeviceContext {
    *     registered, if not register will goto step 3, otherwise read the client
    *     config and get saved JWT Token
    *  3. call protected static method regist_client to register current device
-   *     and get JWT Login Token, then write all of client information and token 
+   *     and get JWT Login Token, then write all of client information and token
    *     to client.cfg
    *
    * Existing Problem:
@@ -52,7 +52,7 @@ class DeviceContext {
    * function will call get_client_info() to test the response will return
    * errors or not, if downloaded reponse is contains a valid json format with
    * success and its value is true than we can say the client is enabled
-   * //TODO should modified as const 
+   * //TODO should modified as const
    * @return true this client is enabled at management server
    * @return false this client is not enabled at management server
    */
@@ -69,11 +69,11 @@ class DeviceContext {
   [[nodiscard]] EXPORT_FUNC const PKCS12* get_certificate();
 
   /**
-   * @brief Returned the neighbor peer list from management server
-   *
-   * @return std::unordered_map<std::string,std::string> list of peer cancidate's ip id and its ip address
+   * @brief Get the id of current peer
+   * 
+   * @return const std::string& the client id as string of the object 
    */
-  [[nodiscard]] EXPORT_FUNC std::unordered_map<std::string,std::string> get_peer_list();
+  [[nodiscard]] EXPORT_FUNC const std::string& get_client_id();
 
   /**
    * @brief Returned current client register information from remote management
@@ -82,6 +82,14 @@ class DeviceContext {
    * @return ClientInfoResponse the response struct contains information
    */
   [[nodiscard]] EXPORT_FUNC std::unique_ptr<ClientInfoResponse> get_client_info();
+
+  /**
+   * @brief Returned the neighbor peer list from management server
+   *
+   * @return std::unordered_map<std::string,std::string> list of peer
+   * cancidate's ip id and its ip address
+   */
+  [[nodiscard]] EXPORT_FUNC std::unordered_map<std::string, std::string> get_peer_list();
 
   /**
    * @brief Check if client is registered or not by following rules:
@@ -104,16 +112,18 @@ class DeviceContext {
    * @note the user DO-NOT free this returned pointer
    * @return PKCS7* loaded pointer of OPENSSL pkcs7 format certificate
    */
-  [[nodiscard]] EXPORT_FUNC static const PKCS7* get_server_sign_certificate();
+  [[nodiscard]] EXPORT_FUNC static const PKCS7 *get_server_sign_certificate();
+  
 
  protected:
   /**
    * @brief Regist current device to remote management server
    * // TODO need to write code handle jwt renew
-   * @return std::string will return the JWT Token authorized by management
-   * server after register
+   * @return std::pair<std::string,std::string> will return the JWT Token
+   * authorized by management server after register and the register id by
+   * formate of <JWT Token, Peer ID>
    */
-  EXPORT_FUNC static std::string regist_client();
+  EXPORT_FUNC static std::pair<std::string, std::string> regist_client();
 
  private:
   /**
@@ -122,6 +132,7 @@ class DeviceContext {
   inline static PKCS12 *_client_cert = nullptr;
   inline static PKCS7 *_client_sign_cert = nullptr;
 
+  inline static std::string _client_id = "";
   inline static std::string _login_token = "";
 };
 

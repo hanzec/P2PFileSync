@@ -1,17 +1,24 @@
 #include <event2/buffer.h>
 #include <event2/bufferevent.h>
 #include <glog/logging.h>
+#include <glog/vlog_is_on.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
 #include <cstddef>
+#include <cstdint>
+#include <cstdlib>
 #include <filesystem>
 #include <regex>
+#include <string>
 
-#include "message.pb.h"
+#include "common.pb.h"
+#include "hello_message.pb.h"
 #include "ip_addr.h"
 #include "log.h"
+#include "message.pb.h"
 #include "protocol.h"
+#include "protocol/utils/fifo_cache.h"
 #include "utils/thread_pool.h"
 
 namespace P2PFileSync::Protocol {
@@ -67,14 +74,17 @@ bool ProtocolServer::init(const Config &config,
   _instance = std::make_shared<ProtocolServer>(
       config.get_workder_thread_num(), socket_fd,
       device_context.get_certificate(),
-      device_context.get_server_sign_certificate());
+      device_context.get_server_sign_certificate(),
+      config.get_packet_cache_size());
 
   return true;
 };
 
 ProtocolServer::ProtocolServer(const uint8_t number_worker, const int fd,
-                               const PKCS12 *cert, const PKCS7 *cert_sign)
-    : ThreadPool(number_worker),
+                               const PKCS12 *cert, const PKCS7 *cert_sign,
+                               const uint32_t packet_size)
+    : FIFOCache(packet_size),    // initial packet cache
+      ThreadPool(number_worker), // initial thread pool
       _sign(cert_sign),
       _certificate(cert),
       _thread_ref(std::thread(listening_thread, fd, this)) {
@@ -90,19 +100,55 @@ ProtocolServer::ProtocolServer(const uint8_t number_worker, const int fd,
   }
 };
 
-void read_callback(struct bufferevent *bev, void *ctx) {
-  struct evbuffer *input = bufferevent_get_input(bev);
+
+
+void ProtocolServer::read_callback(struct bufferevent *bev, void *ctx) {
+  struct evbuffer *buf = bufferevent_get_input(bev);
   auto proto_server = static_cast<ProtocolServer *>(ctx);
-  
-  size_t len = evbuffer_get_length(input);
-  if (len) {
-    inf->total_drained += len;
-    evbuffer_drain(input, len);
-    printf("Drained %lu bytes from %s\n", (unsigned long)len, inf->name);
+
+  // first 4 bytes of packet is defined as packet length
+  size_t recv_size = evbuffer_get_length(buf);
+  if (recv_size < sizeof(uint32_t)) return;
+
+  // check if we received full data of the packet
+  ssize_t packen_len;
+  if (evbuffer_copyout(buf, &packen_len, sizeof(uint32_t)) != packen_len)
+    LOG(FATAL) << "read data from evbuffer failed!";
+  if (recv_size - sizeof(uint32_t) < packen_len) return;
+
+  // parse data packet
+  ProtoMessage message;
+  void *data = evbuffer_pullup(buf, packen_len + sizeof(uint32_t));
+  if (!message.ParseFromArray((char *)data + sizeof(uint32_t), packen_len)) {
+    LOG(ERROR) << "message failed to parsed";
   }
+
+  // avoid the handle one packet twice
+  if (proto_server->is_cached(message.packet_id())) {
+    VLOG(3) << "skip previous handled message with id [" << message.packet_id();
+    return;
+  }
+
+  // check if the package's final deliever is current peer or not
+  if (message.receiver_id() == proto_server->get_peer_id()) {
+    // checking of the packet can deliever to desnation peer or not
+    if (proto_server->in_routing_table(message.receiver_id())) {
+      VLOG(3) << "cannot found desnation for receiver ["
+              << message.receiver_id() << "]";
+      return;
+    }
+
+    // redirect packet to destination
+    proto_server->send_raw_package(
+        data, packen_len + sizeof(uint32_t),
+        proto_server->get_ip_addr_from_table(message.receiver_id()));
+  }
+
+  // handles the request
+  proto_server->handle_package_async(message);
 }
 
-void event_callback(struct bufferevent *bev, short events, void *ctx) {
+void ProtocolServer::event_callback(struct bufferevent *bev, short events, void *ctx) {
   struct info *inf = ctx;
   struct evbuffer *input = bufferevent_get_input(bev);
   int finished = 0;
@@ -126,7 +172,7 @@ void event_callback(struct bufferevent *bev, short events, void *ctx) {
   }
 }
 
-void incoming_package_handler(evutil_socket_t fd, short event, void *arg) {
+void ProtocolServer::libev_callback(evutil_socket_t fd, short event, void *arg) {
   struct sockaddr_in sin;
   socklen_t slen = sizeof(sin);
   auto proto_server = static_cast<ProtocolServer *>(arg);
@@ -140,8 +186,7 @@ void incoming_package_handler(evutil_socket_t fd, short event, void *arg) {
     VLOG(3) << "Handle incoming connection for fd:[" << fd << "]";
   }
 
-  auto *bev = bufferevent_socket_new(proto_server->get_event_base(), new_fd,
-                                     BEV_OPT_CLOSE_ON_FREE);
+  auto *bev = bufferevent_socket_new(proto_server->get_event_base(), new_fd, BEV_OPT_CLOSE_ON_FREE);
   bufferevent_setcb(bev, read_callback, nullptr, event_callback, arg);
   bufferevent_enable(bev, EV_READ | EV_WRITE | EV_PERSIST);
 }
@@ -149,7 +194,7 @@ void incoming_package_handler(evutil_socket_t fd, short event, void *arg) {
 void ProtocolServer::listening_thread(int fd, ProtocolServer &protool_server) {
   auto *listen_ev =
       event_new(protool_server.get_event_base(), fd, EV_READ | EV_PERSIST,
-                incoming_package_handler, (void *)&protool_server);
+                libev_callback, (void *)&protool_server);
 
   event_add(listen_ev, nullptr);
   event_base_dispatch(protool_server.get_event_base());
