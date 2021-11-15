@@ -1,7 +1,0 @@
-syntax = "proto3";
-import "common.proto";
-
-package P2PFileSync.Protocol;
-message ProtoHelloMessage {
-  
-}

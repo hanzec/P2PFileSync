@@ -1,7 +1,7 @@
 ###############################################################################
 ## Server Protocol Utils ######################################################
 ###############################################################################
-add_library(server_connection)
+add_library(server_connection utils/file_handle.h)
 
 # response model should be expose as public header
 file(GLOB RESPONSE_MODEL_HDRS ${CMAKE_CURRENT_LIST_DIR}/model/request/*.h)
@@ -65,6 +65,7 @@ target_sources(server_connection
   "export.h"
   ${UTILS_SRCS} ${UTILS_HDRS}
   ${REQUEST_MODEL_SRCS}
+        "server_kit.h" "server_kit.cc"
   "managent_context.cc" "device_context.cc")
 
 target_include_directories(server_connection PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})

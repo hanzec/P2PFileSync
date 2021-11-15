@@ -38,7 +38,7 @@ class ConnectionSession {
   /**
    *  Following variables are genearted per session
    */
-  Serverkit::ManagementContext* _management;
+  Serverkit::UserContext* _management;
 
   std::unordered_map<std::string, std::any> _session_storage;
 };

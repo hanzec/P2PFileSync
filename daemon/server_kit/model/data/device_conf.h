@@ -4,7 +4,7 @@
 #include <filesystem>
 #include <string>
 
-#include "../IJsonModel.hpp"
+#include "../IJsonModel.h"
 #include "model/response/register_client_response.h"
 
 namespace P2PFileSync::Serverkit {

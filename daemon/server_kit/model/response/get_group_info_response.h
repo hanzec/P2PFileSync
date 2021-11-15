@@ -2,7 +2,8 @@
 #define P2P_FILE_SYNC_Serverkit_MODEL_REQUEST_GET_GROUP_INFO_RESPONSE_H
 
 #include <string>
-#include "../IJsonModel.hpp"
+
+#include "../IJsonModel.h"
 
 namespace P2PFileSync::Serverkit {
 

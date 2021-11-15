@@ -3,9 +3,9 @@
 
 namespace P2PFileSync {
 
-ConnectionSession::ConnectionSession() : _management(new Serverkit::ManagementContext(false)){
+ConnectionSession::ConnectionSession() : _management(new Serverkit::UserContext(false)){
   if(!get_register_status()){
-    set_register_status(Serverkit::register_status());
+    //set_register_status(Serverkit::get_register_status());
   }
 };
 

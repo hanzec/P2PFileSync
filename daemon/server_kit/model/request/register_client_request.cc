@@ -3,7 +3,7 @@
 namespace P2PFileSync::Serverkit {
 
 RegisterClientRequest::RegisterClientRequest():IJsonModel(){
-  this->add_value("group", std::string("DEFAULT_GROUP"));
+  this->add_value("group", "DEFAULT_GROUP");
 }
 
 void RegisterClientRequest::setMachineID(const std::string& machine_id) {

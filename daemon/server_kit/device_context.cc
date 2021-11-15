@@ -1,45 +1,65 @@
+#include "server_kit.h"
+
 #include <openssl/pem.h>
 
-#include <cstddef>
 #include <filesystem>
 #include <memory>
 #include <string>
+#include <utility>
 #include <variant>
 
-#include "model/data/data.h"
 #include "model/model.h"
-#include "model/response/get_peer_list_response.h"
 #include "server_endpoint.h"
-#include "server_kit.h"
 #include "utils/base64_utils.h"
 #include "utils/curl_utils.h"
 #include "utils/machine_id.h"
 
 namespace P2PFileSync::Serverkit {
 
-DeviceContext::DeviceContext() {
-  if (_login_token.empty()) {
-    if (DeviceContext::register_status()) {
-      DeviceConfiguration conf(*configuration_path_ /
-                               CLIENT_CONFIGURE_FILE_NAME);
-      _client_id = conf.get_device_id();
-      _login_token = conf.get_jwt_key();
+DeviceContext::DeviceContext(std::string client_id, std::string client_token)
+    : _client_id(std::move(client_id)), _login_token(std::move(client_token)){};
+
+std::shared_ptr<DeviceContext> DeviceContext::get_one() {
+  if (_instance == nullptr) {
+    if (DeviceContext::is_registered()) {
+      DeviceConfiguration conf(_server_configuration_path / CLIENT_CONFIGURE_FILE_NAME);
+      return (_instance = std::shared_ptr<DeviceContext>(
+                  new DeviceContext(conf.get_device_id(), conf.get_jwt_key())));
     } else {
       // c++ 17 unpack pair to variables
-      const auto& [_login_token,_client_id] = DeviceContext::regist_client();
+      auto param = DeviceContext::register_client();
+      return (_instance = std::shared_ptr<DeviceContext>(
+                  new DeviceContext(param.first, param.second)));
     }
   }
-};
-
-bool DeviceContext::is_enabled() {
-  return get_client_info()->success();
+  return _instance;
 }
 
-std::unique_ptr<ClientInfoResponse> DeviceContext::get_client_info() {
+bool DeviceContext::is_enabled() const { return client_info()->success(); }
+
+bool DeviceContext::is_registered() {
+  // check client cfg
+  std::filesystem::path client_cfg(_server_configuration_path / CLIENT_CONFIGURE_FILE_NAME);
+  if (!std::filesystem::exists(client_cfg)) {
+    return false;
+  }
+
+  // check client certificate
+  std::filesystem::path client_cert(_server_configuration_path / CLIENT_CERTIFICATE_FILE_NAME);
+  if (!std::filesystem::exists(client_cert)) {
+    return false;
+  }
+
+  return true;
+}
+
+const std::string &DeviceContext::client_id() const { return _client_id; }
+
+std::unique_ptr<ClientInfoResponse> DeviceContext::client_info() const {
   // client info does not required extra request models
 
   void *raw_json = GET_and_save_to_ptr(
-      nullptr, *server_address_ + SERVER_REGISTER_ENDPOINT_V1,
+      nullptr, std::string(_server_address).append(SERVER_REGISTER_ENDPOINT_V1),
       {"Authorization:" + _login_token}, false);
 
   if (raw_json == nullptr) {
@@ -55,28 +75,7 @@ std::unique_ptr<ClientInfoResponse> DeviceContext::get_client_info() {
   }
 }
 
-bool DeviceContext::register_status() {
-  // check client cfg
-  if (_login_token.empty()) {
-    std::filesystem::path client_cfg(*configuration_path_ /
-                                     CLIENT_CONFIGURE_FILE_NAME);
-    if (!std::filesystem::exists(client_cfg)) {
-      return false;
-    }
-  }
-
-  // check client certificate
-  if (_client_cert == nullptr) {
-    std::filesystem::path client_cert(*configuration_path_ /
-                                      CLIENT_CERTIFICATE_FILE_NAME);
-    if (!std::filesystem::exists(client_cert)) {
-      return false;
-    }
-  }
-  return true;
-}
-
-std::pair<std::string,std::string> DeviceContext::regist_client() {
+std::pair<std::string, std::string> DeviceContext::register_client() {
   RegisterClientRequest reques_model;
 
   // TODO: replace moke data to actual data
@@ -85,12 +84,12 @@ std::pair<std::string,std::string> DeviceContext::regist_client() {
   reques_model.setMachineID(P2PFileSync::Serverkit::get_device_id());
 
   void *raw_json = POST_and_save_to_ptr(
-      nullptr, *server_address_ + SERVER_REGISTER_ENDPOINT_V1,
+      nullptr, std::string(_server_address).append(SERVER_REGISTER_ENDPOINT_V1),
       static_cast<const void *>(reques_model.get_json().c_str()), false);
 
   if (raw_json == nullptr) {
     LOG(ERROR) << "empty response";
-    return {"",""};
+    return {"", ""};
   }
 
   // parse response
@@ -98,76 +97,43 @@ std::pair<std::string,std::string> DeviceContext::regist_client() {
 
   // save to configuration file
   DeviceConfiguration conf(resp);
-  conf.save_to_disk(*configuration_path_ / CLIENT_CONFIGURE_FILE_NAME);
+  conf.save_to_disk(_server_configuration_path / CLIENT_CONFIGURE_FILE_NAME);
 
   return {resp.get_login_token(), resp.get_client_id()};
 }
 
-const PKCS7 *DeviceContext::get_server_sign_certificate() {
-  if (_client_sign_cert == nullptr) {
-    auto path = *configuration_path_ / SERVER_CERT_ENDPOINT_V1;
-    if (!std::filesystem::exists(path)) {
-      LOG(WARNING) << "cannot find the server cert will downloading instead!";
-      if (!GET_and_save_to_path(nullptr,
-                                *server_address_ + SERVER_CERT_ENDPOINT_V1,
-                                path, false)) {
-        LOG(FATAL) << "failed to download the server certificate from ["
-                   << *server_address_ << SERVER_CERT_ENDPOINT_V1 << "]";
-      }
-    } else {
-      FILE *certificate_file = fopen(path.c_str(), "r");
-      if ((_client_sign_cert = PEM_read_PKCS7(certificate_file, nullptr,
-                                              nullptr, nullptr)) == nullptr) {
-        LOG(FATAL) << "unable to load [" << _client_sign_cert << "]";
-      } else {
-        LOG(INFO) << "success loading client sign certificate to memory!";
-      }
-    }
-  }
-
-  return _client_sign_cert;
-}
-
-const PKCS12 *DeviceContext::get_certificate() {
-  // if there is no in-memory copy of certificate need loaded to memory for
-  // cache
-  if (_client_cert == nullptr) {
+std::filesystem::path DeviceContext::client_certificate() const {
+  // if the certificate is downloaded
+  auto cert_file = _server_configuration_path / CLIENT_CERTIFICATE_FILE_NAME;
+  if (!std::filesystem::exists(cert_file)) {
     // if downloaded but not loading
-    auto cert_file = *configuration_path_ / CLIENT_CERTIFICATE_FILE_NAME;
-    if (!std::filesystem::exists(
-            cert_file)) {  // download from management server
+    if (!std::filesystem::exists(cert_file)) {  // download from management server
       void *raw_json = GET_and_save_to_ptr(
-          nullptr, *server_address_ + GET_CLIENT_CERTIFICATE_ENDPOINT_V1,
+
+          nullptr, std::string(_server_address).append(GET_CLIENT_CERTIFICATE_ENDPOINT_V1),
           {"Authorization:" + _login_token}, false);
       ClientCertResponse resp(static_cast<char *>(raw_json));
-      auto decoded_certificate =
-          Base64::decode(resp.get_client_PSCK12_certificate());
+      auto cert = Base64::decode(resp.get_client_PSCK12_certificate());
 
       // first write to file
       std::ofstream file_stream(cert_file, std::ios::out | std::ios::binary);
-      file_stream.write(decoded_certificate.c_str(),
-                        decoded_certificate.size());
+      file_stream.write(cert.c_str(), cert.size());
       file_stream.close();
     }
-
-    // loaded to memory
-    FILE *file = fopen(cert_file.c_str(), "rb");
-    if ((_client_cert = d2i_PKCS12_fp(file, nullptr)) != nullptr) {
-      LOG(FATAL) << "unable to loading certificate [" << cert_file << "]!";
-    } else {
-      LOG(INFO) << "success loading client certificate to memory!";
-    }
+  } else {
+    // TODO verified before return
   }
 
   // last return certificate
-  return _client_cert;
+  return cert_file;
 };
 
-std::unordered_map<std::string,std::string> DeviceContext::get_peer_list() {
+std::map<std::string, std::string> DeviceContext::peer_list() const {
   void *raw_json = GET_and_save_to_ptr(
-      nullptr, *server_address_ + GET_CLIENT_PEER_INFO_ENDPOINT_V1,
+      nullptr, std::string(_server_address).append(GET_CLIENT_PEER_INFO_ENDPOINT_V1),
       {"Authorization:" + _login_token}, false);
   GetPeerListResponse resp(static_cast<char *>(raw_json));
   return resp.get_peer_list();
 }
+
 }  // namespace P2PFileSync::Serverkit

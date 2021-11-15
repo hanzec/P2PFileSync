@@ -33,5 +33,6 @@
 
 # visual studio code
 build/
+.cmake/
 .vscode/
 .VSCodeCounter

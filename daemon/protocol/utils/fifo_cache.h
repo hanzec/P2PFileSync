@@ -10,7 +10,7 @@ template <typename T>
 class FIFOCache {
  public:
   //TODO add document
-  FIFOCache(size_t cache_size)
+  explicit FIFOCache(size_t cache_size)
       : _cache(cache_size),
         _cache_map(cache_size),
         _max_cache_size(cache_size){};
@@ -24,7 +24,7 @@ class FIFOCache {
    * @return true the packet id is already in queue
    * @return false
    */
-  bool is_cached(T packet_id) {
+  bool is_cached(const T& packet_id) {
     auto ret = _cache_map.find(packet_id);
 
     if (ret == _cache_map.end()) {  // if cache not exist
@@ -33,9 +33,10 @@ class FIFOCache {
         _cache_map.erase(*_cache.begin());
         _cache.pop_front();
       }
+
       // add to end of the list
       _cache.emplace_back(packet_id);
-      _cache_map.emplace(packet_id, _cache.back());
+      _cache_map.insert(packet_id, _cache.back());
       return false;
     } else {
       return true;

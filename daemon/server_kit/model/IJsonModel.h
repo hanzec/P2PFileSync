@@ -17,7 +17,7 @@
 #include <string>
 #include <string_view>
 #include <type_traits>
-#include <unordered_map>
+#include <map>
 #include <vector>
 
 #include "../export.h"
@@ -35,19 +35,18 @@ class IJsonModel {
    * @brief Construct a new IJsonModel object
    *
    */
-  IJsonModel() { document.SetObject(); };
+  IJsonModel() { root.SetObject(); };
 
   /**
    * @brief Construct a new IJsonModel object
    *
    * @param json
    */
-  IJsonModel(char* json) : json_buf(json) {
-    document.Parse(json);
+  explicit IJsonModel(char* json) : json_buf(json) {
+    root.Parse(json);
 
     // check if is response model or not
-    _response_flag =
-        document.HasMember("success") && document.HasMember("responseBody");
+    _response_flag = root.HasMember("success") && root.HasMember("responseBody");
 
     // debug message
     if (VLOG_IS_ON(3)) {
@@ -66,10 +65,10 @@ class IJsonModel {
 #elifdef UNDER_WINDOWS
     FILE* fp = fopen(json_file.c_str(), "r");  // non-Windows use "r"
 #endif
-    std::array<char, 1024> readBuffer;
+    std::array<char, 1024> readBuffer{};
     rapidjson::FileReadStream is(fp, readBuffer.begin(), readBuffer.size());
 
-    document.ParseStream(is);
+    root.ParseStream(is);
   }
 
   ~IJsonModel() {
@@ -84,7 +83,7 @@ class IJsonModel {
   std::string get_json() {
     rapidjson::StringBuffer strBuf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
-    document.Accept(writer);
+    root.Accept(writer);
 
     return strBuf.GetString();
   };
@@ -101,11 +100,11 @@ class IJsonModel {
     FILE* fp = fopen(file.c_str(), "w");       // non-Windows use "w"
 #endif
 
-    std::array<char, 1024> writeBuffer;
+    std::array<char, 1024> writeBuffer{};
     rapidjson::FileWriteStream os(fp, writeBuffer.begin(), writeBuffer.size());
 
     rapidjson::Writer<rapidjson::FileWriteStream> writer(os);
-    document.Accept(writer);
+    root.Accept(writer);
     fclose(fp);
   }
 
@@ -118,7 +117,7 @@ class IJsonModel {
    */
   bool success() {
     if (_response_flag) {
-      return document["success"].GetBool();
+      return root["success"].GetBool();
     } else {
       return false;
     }
@@ -136,17 +135,19 @@ class IJsonModel {
    */
   template <typename T>
   T get_value(const char* key) {
-    auto& root_node = document["responseBody"];
-
-    if (!_response_flag) {
-      auto& root_node = document;
-    }
-
-    if (root_node.HasMember(key)) {
-      if (!std::is_same_v<T, std::string>) {
-        return root_node[root_node].Get<T>();
+    if (_response_flag ? root.HasMember(key) : root["responseBody"].HasMember(key)) {
+      if constexpr (std::is_arithmetic<T>::value) {
+        if (!_response_flag) {
+          return root[key].Get<T>();
+        } else {
+          return root["responseBody"][key].Get<T>();
+        }
       } else {
-        return root_node[root_node].GetString();
+        if (!_response_flag) {
+          return root[key].GetString();
+        } else {
+          return std::string(root["responseBody"][key].GetString());
+        }
       }
     } else {
       return 0;
@@ -163,27 +164,24 @@ class IJsonModel {
    * @return std::unordered_map<std::string,T> map of list value with key-value pair
    */
   template <typename T>
-  std::unordered_map<std::string,T> get_map(const char* key) {
-    std::unordered_map<std::string,T> ret;
-    auto& root_node = document["responseBody"];
-
-    if (!_response_flag) {
-      auto& root_node = document;
-    }
-
-    if (root_node.HasMember(key)) {
-      for (auto const& in : root_node[key].GetArray()) {
+  std::map<std::string, T> get_map(const char* key) {
+    auto new_key = std::string(key);
+    std::map<std::string, T> ret;
+    if (_response_flag ? root.HasMember(key) : root["responseBody"].HasMember(key)) {
+      for (auto const& in :
+           _response_flag ? root[key].GetArray() : root["responseBody"].GetArray()) {
         // skip if current node is a list
         if (in.IsArray()) break;
 
-        // add key and values to return
-        auto key = in.MemberBegin()->name.GetString();
-        if (!std::is_same_v<T, std::string>) {
-          ret.emplace_back(key, in.Get<T>());
+        // add string and values to return
+        auto string = in.MemberBegin()->name.GetString();
+        if constexpr (std::is_arithmetic<T>::value) {
+          ret.insert(std::make_pair(string, in.Get<T>()));
         } else {
-          ret.emplace_back(key, in.GetString());
+          ret.insert(std::make_pair(string, in.GetString()));
         }
       }
+      return {};
     } else {
       return {};
     }
@@ -201,10 +199,10 @@ class IJsonModel {
   template <typename T>
   std::vector<T> get_array(const char* key) {
     std::vector<T> ret;
-    auto& root_node = document["responseBody"];
+    auto& root_node = root["responseBody"];
 
     if (!_response_flag) {
-      auto& root_node = document;
+      auto& rootNode = root;
     }
 
     if (root_node.HasMember(key)) {
@@ -225,19 +223,22 @@ class IJsonModel {
   }
 
   template <typename T>
-  void add_value(const char* name, const T& number) {
+  void add_value(const char* key, const T& val) {
     rapidjson::Value value;
     rapidjson::Value value_name(rapidjson::kStringType);
 
-    if (!std::is_same_v<T, std::string>) {
-      document.AddMember(value_name.SetString(name, strlen(name)),
-                         value.Set(number), document.GetAllocator());
+    if constexpr(std::is_arithmetic<T>::value) {
+      // handle numerical type
+      root.AddMember(value_name.SetString(key, strlen(key)), value.Set(val),
+                     root.GetAllocator());
     } else {
+      // handle c++ std::string
+      auto new_value = std::string(val);
       rapidjson::Value string_value(rapidjson::kStringType);
-      document.AddMember(value_name.SetString(name, strlen(name)),
-                         string_value.SetString(number.c_str(), number.size(),
-                                                document.GetAllocator()),
-                         document.GetAllocator());
+      root.AddMember(
+          value_name.SetString(key, strlen(key)),
+          string_value.SetString(new_value.c_str(), new_value.size(), root.GetAllocator()),
+          root.GetAllocator());
     }
   }
 
@@ -248,13 +249,13 @@ class IJsonModel {
 
     // adding variables to json
     for (auto item : array) {
-      json_array.PushBack(item, document.GetAllocator());
+      json_array.PushBack(item, root.GetAllocator());
     }
 
     // add array to document
     rapidjson::Value value_name(rapidjson::kStringType);
-    document.AddMember(value_name.SetString(name.c_str(), name.size()),
-                       json_array, document.GetAllocator());
+    root.AddMember(value_name.SetString(name.c_str(), name.size()), json_array,
+                   root.GetAllocator());
   }
 
  private:
@@ -271,7 +272,7 @@ class IJsonModel {
   /**
    * The document object where contains the json object
    */
-  rapidjson::Document document;
+  rapidjson::Document root;
 };
 }  // namespace P2PFileSync::Serverkit
 #endif  // P2P_FILE_SYNC_Serverkit_MODEL_JSON_MODEL_H

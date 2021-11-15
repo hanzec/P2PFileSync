@@ -3,7 +3,7 @@
 
 #include <string>
 
-#include "../IJsonModel.hpp"
+#include "../IJsonModel.h"
 
 namespace P2PFileSync::Serverkit {
 /**

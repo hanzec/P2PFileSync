@@ -8,7 +8,7 @@ namespace P2PFileSync::Serverkit {
 
 GetPeerListResponse::GetPeerListResponse(char* json) : IJsonModel(json){};
 
-std::unordered_map<std::string,std::string> GetPeerListResponse::get_peer_list() {
+std::map<std::string,std::string> GetPeerListResponse::get_peer_list() {
   return get_map<std::string>("\\peer");
 }
 
