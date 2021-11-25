@@ -62,7 +62,7 @@ class UserContext {
 /**
  * @brief User to manage the peer device related requests
  */
-class DeviceContext {
+class DeviceContext : std::enable_shared_from_this<DeviceContext>{
  public:
   /**
    * @brief make sure this object only construct and get by get_one()
@@ -112,7 +112,7 @@ class DeviceContext {
    *
    * @return const std::string& the client id as string of the object
    */
-  [[nodiscard]] EXPORT_FUNC const std::string& client_id() const;
+  [[nodiscard]] EXPORT_FUNC const std::array<std::byte,16>& client_id() const;
 
   /**
    * @brief Request PKCS12 certificate of current client, this function will
@@ -120,7 +120,7 @@ class DeviceContext {
    *
    * @return std::string return the path of PKCS12 Certificate
    */
-  [[nodiscard]] EXPORT_FUNC std::filesystem::path client_certificate() const;
+  [[nodiscard]] EXPORT_FUNC const std::filesystem::path client_certificate() const;
 
   /**
    * @brief Returned current client register information from remote management
@@ -132,7 +132,7 @@ class DeviceContext {
 
   /**
    * @brief Returned the neighbor peer list from management server
-   *
+   * @note this function will always send request to server each time.
    * @return std::unordered_map<std::string,std::string> list of peer
    * cancidate's ip id and its ip address
    */
@@ -146,16 +146,16 @@ class DeviceContext {
    *  1. JWT renew in not implentmented, currently server are setting expire
    *     date as 1 year after to avoid problem
    */
-  EXPORT_FUNC DeviceContext(std::string client_id, std::string client_token);
+  EXPORT_FUNC DeviceContext(std::array<std::byte,16> client_id, std::string client_token);
 
   /**
    * @brief Regist current device to remote management server
-   * // TODO need to write code handle jwt renew
+   * // TODO need to write code handle_difficult jwt renew
    * @return std::pair<std::string,std::string> will return the JWT Token
    * authorized by management server after register and the register id by
    * formate of <JWT Token, Peer ID>
    */
-  EXPORT_FUNC static std::pair<std::string, std::string> register_client();
+  EXPORT_FUNC static std::pair<std::string, std::array<std::byte,16>> register_client();
 
  private:
   // instance ptr
@@ -164,9 +164,12 @@ class DeviceContext {
   /**
    * Client information
    */
-  const std::string _client_id;
   const std::string _login_token;
+  const std::array<std::byte,16> _client_id;
+
 };
+
+using DeviceContextPtr = std::shared_ptr<Serverkit::DeviceContext>;
 
 /**
  * @brief internal global init function, see detail at description in c

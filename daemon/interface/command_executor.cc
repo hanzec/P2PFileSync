@@ -19,7 +19,7 @@ void CommandExecuter::get_help_msg(std::ostringstream& output) noexcept {
 // command factory producer
 void CommandExecuter::exec(std::ostringstream& output,
                            const std::string& command, COMMAND_ARG& arguments) {
-  // the only special case will handle by command factory
+  // the only special case will handle_difficult by command factory
   if (command == "help") {
     CommandExecuter::get_help_msg(output);
   } else {

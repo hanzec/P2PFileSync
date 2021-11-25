@@ -228,11 +228,11 @@ class IJsonModel {
     rapidjson::Value value_name(rapidjson::kStringType);
 
     if constexpr(std::is_arithmetic<T>::value) {
-      // handle numerical type
+      // handle_difficult numerical type
       root.AddMember(value_name.SetString(key, strlen(key)), value.Set(val),
                      root.GetAllocator());
     } else {
-      // handle c++ std::string
+      // handle_difficult c++ std::string
       auto new_value = std::string(val);
       rapidjson::Value string_value(rapidjson::kStringType);
       root.AddMember(

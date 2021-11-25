@@ -1,15 +1,15 @@
 #ifndef P2P_FILE_SYNC_PROTOCOL_UTILS_THREAD_POOL_H
 #define P2P_FILE_SYNC_PROTOCOL_UTILS_THREAD_POOL_H
 
-
+#include <algorithm>
+#include <functional>
 #include <future>
 #include <mutex>
 #include <queue>
 #include <thread>
-#include <vector>
 #include <utility>
-#include <algorithm>
-#include <functional>
+#include <vector>
+
 #include "cas_queue.h"
 
 namespace P2PFileSync::Protocol {
@@ -20,8 +20,7 @@ class ThreadPool {
    * @note the max count of therad worker is the max size of uint8_t;
    * @param thread_size the thread worker size
    */
-  ThreadPool(const uint8_t thread_size)
-      : _worker_pool(std::vector<std::thread>(thread_size)) {
+  ThreadPool(const uint8_t thread_size) : _worker_pool(std::vector<std::thread>(thread_size)) {
     // initialize working thread
     for (size_t i = 0; i < _worker_pool.size(); ++i) {
       _worker_pool[i] = std::thread(ThreadWorker(this, i));
@@ -54,18 +53,17 @@ class ThreadPool {
    * @return std::future<decltype(f(args...))> future object as returned value
    */
   template <typename F, typename... Args>
-  auto submit(F &&f, Args &&...args) -> std::future<decltype(f(args...))> {
-    std::function<decltype(f(args...))()> func =
-        std::bind(std::forward<F>(f), std::forward<Args>(args)...);
+  auto submit(F &&f, Args &&...args) -> std::future<typename std::decay<decltype(f(args...))>::type> {
+    using return_type = typename std::decay<decltype(f(args...))>::type;
 
-    auto task_ptr =
-        std::make_shared<std::packaged_task<decltype(f(args...))()>>(func);
+    auto task = std::make_shared<std::packaged_task<return_type()>>(
+        std::bind(std::forward<F>(f), std::forward<Args>(args)...));
 
-    _task_queue.push([task_ptr]() { (*task_ptr)(); });
+    _task_queue.push([task](){ (*task)();});
 
     m_conditional_lock.notify_one();
 
-    return task_ptr->get_future();
+    return task->get_future();
   }
 
   // prevent refernce and copy

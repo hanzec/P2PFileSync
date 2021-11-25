@@ -30,13 +30,13 @@ class FIFOCache {
     if (ret == _cache_map.end()) {  // if cache not exist
       if (_cache.size() == _max_cache_size) {
         // delete first element in the list
-        _cache_map.erase(*_cache.begin());
+        _cache_map.erase(_cache.front());
         _cache.pop_front();
       }
 
       // add to end of the list
+      _cache_map.insert(packet_id);
       _cache.emplace_back(packet_id);
-      _cache_map.insert(packet_id, _cache.back());
       return false;
     } else {
       return true;
@@ -44,9 +44,9 @@ class FIFOCache {
   }
 
  private:
-  std::list<T> _cache;
   const size_t _max_cache_size;
-  std::unordered_map<T, decltype(_cache.end())> _cache_map;
+  std::list<T> _cache;
+  std::unordered_set<T> _cache_map;
 };
 }  // namespace P2PFileSync::Protocol
 

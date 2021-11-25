@@ -36,8 +36,7 @@ class IPAddr {
       _valid = true;
       auto location = ip_string.find(':');
       _ip_str = ip_string.substr(0, location);
-      _port_number =
-          std::stoi(ip_string.substr(location + 1, ip_string.size()));
+      _port_number = std::stoi(ip_string.substr(location + 1, ip_string.size()));
 #ifdef UNDER_UNIX
       {
         in_addr_t ip_addr = inet_addr(_ip_str.c_str());
@@ -55,8 +54,18 @@ class IPAddr {
    */
   IPAddr(const std::array<std::byte, 6> &packed_data) {
     memcpy(_ip_addr.data(), packed_data.data(), sizeof(_ip_addr));
-    memcpy(&_port_number, packed_data.data() + sizeof(_ip_addr),
-           sizeof(_port_number));
+    memcpy(&_port_number, packed_data.data() + sizeof(_ip_addr), sizeof(_port_number));
+  }
+
+  /**
+   * @brief Construct from a socket_in struct
+   *
+   * @param packed_data raw data which exactly 6 bytes, the data format are
+   * listed in project document.
+   */
+  IPAddr(const struct sockaddr_in *socket_in, uint16_t port){
+    _port_number = port;
+    memcpy(_ip_addr.data(), &socket_in->sin_addr, sizeof(in_addr_t));
   }
 
   // data accessors
@@ -73,8 +82,7 @@ class IPAddr {
   [[nodiscard]] std::array<std::byte, 6> to_bytes() const {
     std::array<std::byte, 6> result;
     memcpy(result.data(), _ip_addr.data(), sizeof(_ip_addr));
-    memcpy(result.data() + sizeof(_ip_addr), &_port_number,
-           sizeof(_port_number));
+    memcpy(result.data() + sizeof(_ip_addr), &_port_number, sizeof(_port_number));
     return result;
   };
 
@@ -89,8 +97,7 @@ class IPAddr {
 
   // comparator for unordered map
   bool operator==(const IPAddr &other_ip) const {
-    return _port_number == other_ip._port_number &&
-           _ip_addr == other_ip._ip_addr;
+    return _port_number == other_ip._port_number && _ip_addr == other_ip._ip_addr;
   }
 
  private:

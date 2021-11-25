@@ -18,22 +18,22 @@ class CASQueue {
    * @brief Construct a new CASQueue object which will initialized head and tail
    *
    */
-  CASQueue() : _head(Node(nullptr)), _tail(_head){};
+  CASQueue() : _head(nullptr), _tail(_head.load()->next()){};
 
   /**
    * @brief Push data to the queue by CAS
    *
    * @param data the data
    */
-  void push(T data) {
-    std::atomic<Node*> node = new Node(data);
+  void push(T&& data) {
+    Node* node = new Node(std::forward<T&>(data));
 
     while (true) {
-      auto tail = _tail;
-      auto next = _tail->get_next();
-      if (tail == _tail) {
-        if (next->get_data() == nullptr) {
-          if (_tail->get_next().compare_exchange_strong(next, node)) {
+      auto tail = _tail.load();
+      auto next = _tail.load()->next().load();
+      if (tail == _tail.load()) {
+        if (next == nullptr) {
+          if (_tail.load()->next().compare_exchange_strong(next, node)) {
             break;
           }
         } else {
@@ -52,19 +52,21 @@ class CASQueue {
    */
   T pop() {
     while (true) {
-      auto head = _head;
-      auto tail = _tail;
-      auto next = head->get_next();
+      auto &head = _head;
+      auto tail = _tail.load();
+      auto next = head.load()->next().load();
 
       if (head == _head) {
         if (head == tail) {
-          if (head->get_data() == nullptr) {
+          if (head == nullptr) {
             return nullptr;
           }
           _tail.compare_exchange_strong(tail, next);
         } else {
-          auto data = next->get_data();
-          if (head.compare_exchange_strong(head, next)) {
+          auto data = next->data();
+          auto head_node = head.load();
+          if (head.compare_exchange_strong(head_node, next)) {
+            delete next;
             return data;
           }
         }
@@ -74,7 +76,7 @@ class CASQueue {
 
   /**
    * @brief Indicated the queue is empty or not
-   * 
+   *
    * @return true the queue is empty
    * @return false the queue is not empty
    */
@@ -85,25 +87,29 @@ class CASQueue {
   class Node {
    public:
     /**
-     * @brief Construct a new Inner Node
-     *
-     * @param data the data wants to fill in the node
+     * @brief delete default empty constructor
      */
-    Node(T&& data) : _data(std::make_shared<T>(std::forward<T>(data))){};
+    Node() = delete;
+
+    /**
+     * @brief construct node by transferring ownership from other unique_ptr
+     * @param args
+     */
+    explicit Node(T& object_ptr) noexcept : _data(std::move(object_ptr)){};
 
     /**
      * @brief Get the data of this node
      *
      * @return T
      */
-    T get_data() { return _data; }
+    T& data() { return _data; }
 
     /**
      * @brief Setting the next object
      *
      * @param next the next node wants to setup
      */
-    void set_next(std::atomic<Node*> next) { _next = next; };
+    void set_next(Node* next) { _next = next; };
 
     /**
      * @brief Get the next node
@@ -112,34 +118,33 @@ class CASQueue {
      * paper. Is used to solve ABA problem
      * @return std::atomic<Node*> the pointer of the next node
      */
-    auto get_next() {
-      auto ret = _next;
+    std::atomic<Node*>& next() {
+      auto &ret = _next;
 
       while (true) {
         if (ret == nullptr) {
           return ret;
         }
 
-        ref_count.fetch_add(1);
+        _ref.fetch_add(1);
 
         if (ret == _next) {
           return ret;
         } else {
-          ref_count.fetch_sub(1);
+          _ref.fetch_sub(1);
         }
       }
-      return _next;
     };
 
    private:
-    std::shared_ptr<T> _data;            // data container
-    std::atomic<int> ref_count{0};       // refernce count
-    std::atomic<Node*> _next = nullptr;  // next node refernce
+    T _data;         // data container
+    std::atomic<int> _ref {0};                 // refernce count
+    std::atomic<Node*> _next = nullptr;    // next node refernce
   };
 
  private:
   std::atomic<Node*> _head;  // head of queue
-  std::atomic<Node*> _tail;  // tail of queue
+  std::atomic<Node*> &_tail;  // ref of tail of queue
 };
 }  // namespace P2PFileSync::Protocol
 #endif // P2P_FILE_SYNC_PROTOCOL_UTILS_CAS_QUEUE_H

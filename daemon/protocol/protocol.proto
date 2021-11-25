@@ -11,11 +11,11 @@ enum ProtoPayloadType{
 
 message ProtoMessage {
   // sender/receiver information
-  string sender_id = 5;
-  string receiver_id = 6;
+  bytes sender_id = 5;
+  bytes receiver_id = 6;
 
   // packet information
-  string packet_id = 4;
+  bytes packet_id = 4;
   ProtoPayloadType request_type = 1;
   google.protobuf.Timestamp timestamp = 3;
 
@@ -23,14 +23,20 @@ message ProtoMessage {
   google.protobuf.Any payload = 2;
 }
 
-// used for singed header
-message ProtoSignedMessage{
-  bytes signature = 1;
-  google.protobuf.Any message = 2;
+message SignedProtoMessage{
+  // packet information
+  uint32 ttl = 8;
+  bytes signature = 7;
+
+  google.protobuf.Any signed_payload = 2;
 }
 
 message ProtoHelloMessage {
-  bytes public_key = 1;
+  bytes signature = 1;
+
+  uint32 port = 3;
+  bytes sender_id = 5;
+  bytes public_key = 2;
 }
 
 message ProtoRedirectMessage {

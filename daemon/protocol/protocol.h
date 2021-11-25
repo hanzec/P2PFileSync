@@ -2,9 +2,9 @@
 #define P2P_FILE_SYNC_PROTOCOL_PROTOCOL_H
 #include <event2/event.h>
 #include <event2/util.h>
-#include <ip_addr.h>
 #include <openssl/pkcs12.h>
 #include <openssl/x509_vfy.h>
+#include <protocol.pb.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -21,12 +21,14 @@
 #include "server_kit/server_kit.h"
 #include "utils/fifo_cache.h"
 #include "utils/instance_pool.h"
+#include "utils/routing_map.h"
 #include "utils/thread_pool.h"
 
 namespace P2PFileSync::Protocol {
-class ProtocolServer : private ThreadPool, FIFOCache<std::string> {
-  using INSTANCE_PTR = std::shared_ptr<ProtocolServer>;
-
+class ProtocolServer : private ThreadPool,
+                       private RoutingMap<std::string>,
+                       private FIFOCache<std::basic_string<char>>,
+                       std::enable_shared_from_this<ProtocolServer> {
  public:
   /**
    * @brief Delete default constructor avoid construct without calling init()
@@ -41,7 +43,7 @@ class ProtocolServer : private ThreadPool, FIFOCache<std::string> {
    * @return std::shared_ptr<ProtocolServer> reference of ProtocolServer,
    * nullptr if init() not called
    */
-  [[nodiscard]] EXPORT_FUNC static INSTANCE_PTR get_instance();
+  [[nodiscard]] EXPORT_FUNC static std::shared_ptr<ProtocolServer> get_instance();
 
   /**
    * @brief Initial function which will need to call only once, call mutiple
@@ -62,31 +64,70 @@ class ProtocolServer : private ThreadPool, FIFOCache<std::string> {
    * @note this function's return value is marked by nodiscard since suggest
    * caller to check the init process is success or not
    * @param config the client configuration class
-   * @param device_context the device context get from server_kit handle the
+   * @param device_context the device context get from server_kit handle_difficult the
    * realted server API
    * @return true the ProtocolServer init success
    * @return false the ProtocolServer init failed
    */
-  EXPORT_FUNC static bool init(
-      const Config& config, const std::shared_ptr<Serverkit::DeviceContext>& device_context);
+  EXPORT_FUNC static bool init(const Config& config,
+                               const Serverkit::DeviceContextPtr& device_context);
 
  protected:
+  /**
+   * Peer session for storage all known peer with their public Key
+   */
   class PeerSession {
    public:
+    /**
+     * @brief Delete default constructor prevent construct object without calling new_session
+     */
     PeerSession() = delete;
 
+    /**
+     * @brief The deconstruct will do following thins:
+     *  1. free EVP_PKEY
+     *  2. if EVP_MD_CTX not pointer then free
+     */
     ~PeerSession();
 
-    static std::shared_ptr<PeerSession> new_session(const PKCS7* cert);
+    /**
+     * @brief Construct new PeerSession object
+     *  In this method , will check the incoming cert is valid by ca certificate bundle which
+     * come from the client certificate
+     * @param raw_cert the raw x509 certificate of the peer as bytes in string container
+     * @param ca the stack of ca certificate used to verity the peer certificate
+     * @return if cert valid then return std::shared_ptr<PeerSession> else return nullptr
+     */
+    static std::shared_ptr<PeerSession> new_session(const std::string& raw_cert,
+                                                    STACK_OF(X509) * ca) noexcept;
 
-    bool verify(const std::string& data, const std::string& sig, const std::string& method);
+    /**
+     * @brief verify the signature with specific data
+     *  In this method, it will only create one times of EVP_MD_CTX used to verify the
+     *  certificate, EVP_MD_CTX will initialized within the fist call of verify, and cached for
+     * further method calling
+     * @note if EVP_MD_CTX is failed to create , this function will always return
+     * false.
+     * @note if using unsupported method with return false then print log to ERROR level
+     * @param data
+     * @param sig
+     * @param method the digest method in string
+     * @return true for accepted digest, false for wong digest
+     */
+    bool verify(const std::string& data, const std::string& sig,
+                const std::string& method) noexcept;
 
    protected:
-    PeerSession(const EVP_PKEY* public_key);
+    /**
+     * @brief protected constructor for peer session
+     *
+     * @param _public_key
+     */
+    explicit PeerSession(EVP_PKEY* _public_key) noexcept;
 
    private:
-    bool _verified = false;
-    EVP_PKEY* _certificate;
+    EVP_PKEY* _public_key;
+    EVP_MD_CTX* _evp_md_ctx = nullptr;
   };
 
   /**
@@ -100,85 +141,73 @@ class ProtocolServer : private ThreadPool, FIFOCache<std::string> {
    * @param cert_sign
    * @param packet_cache_size
    */
-  ProtocolServer(uint8_t number_worker, int fd, int32_t packet_cache_size, X509* cert,
+  ProtocolServer(uint8_t number_worker, int fd, uint32_t packet_cache_size, X509* cert,
                  EVP_PKEY* private_key, STACK_OF(X509) * ca);
 
   /**
-   * @brief Handle the incoming packages
-   *
-   * @param message the protobuf message of incoming package
-   */
-  void handle(const ProtoMessage& message, struct sockaddr_in* incoming_connection);
-
-  /**
-   * @brief Get the peer id object
-   *
-   * @return  std::string peer if
-   */
-  const std::string& get_peer_id() const;
-
-  /**
-   * @brief Check if the destination peer is existed in current routing table
-   *
-   * @param dest_peer_id the id of destination peer
-   * @return true found the destination peer’s address in routing table
-   * @return false destination peer not found in routing table
-   */
-  bool in_routing_table(std::string dest_peer_id) const;
-
-  /**
-   * @brief Get the ip address of specific destination peer
-   *
-   * @param dest_peer_id the id of destination peer
-   * @return IPAddr the ip address of the destination peer
-   */
-  IPAddr& get_ip_addr_from_table(std::string dest_peer_id) const;
-
-  /**
-   * @brief send message to all avaliable peer with specific raw data and size
-   * @note this function will not check the validity of the raw data.
+   * @brief send message to all avaliable peer with specific raw data and size by submitting
+   * task to task pool
    * @note this function will only dispatch the job but not wating until job's
    * finished execution
    * @param data the raw pointer of the data
    * @param size the size of raw pointer of the data
    * @return std::future<bool> indicates the package is successfully send or not
    */
-  void broadcast_raw_package(const void*& data, const uint32_t& size);
+  void broadcast_pkg(const void*& data, const uint32_t& size);
 
   /**
-   * @brief send message to specific peer with specific raw data and size
-   * @note this function will not check the validity of the raw data, which
-   * means the returned bool only indicates the peer is success send the
-   * packet or not
+   * @brief send message to specific peer with specific raw data and size by submitting task to
+   * task pool
+   * @note after package is sent, the ttl will decrease 1, if ttl = 1 then will not send to
+   * other peer
    * @param data the raw pointer of the data
    * @param size the size of raw pointer of the data
    * @param client the destination of the the message will be sent to
    * @return std::future<bool> indicates the package is successfully send or not
    */
-  std::future<bool> send_raw_package(const void* data, const uint32_t& size,
-                                     const IPAddr& peer);
+  std::future<bool> send_pkg(const SignedProtoMessage& data, const uint32_t& size,
+                             const IPAddr& peer);
 
  private:
+  // TODO need finished document
+  // !! For overload functional object, compiler could not infer the return type of the method !!
+  template <typename T>
+  class IMessageHandler {
+   public:
+    static bool handle_simple(std::shared_ptr<ProtocolServer> server, const T message) {
+      LOG(ERROR) << "simple package handler for message [" << typeid(T).name()
+                 << "] not implemented!";
+      return false;
+    }
+
+    static bool handle_complicated(std::shared_ptr<ProtocolServer> server, const T message,
+                       struct sockaddr_in* incoming_connection, uint32_t ttl) {
+      LOG(ERROR) << "complicated package handler for message [" << typeid(T).name()
+                 << "] not implemented!";
+      return false;
+    }
+  };
+
   /**
    * Private instance
    */
-  static INSTANCE_PTR _instance;
+  static std::shared_ptr<ProtocolServer> _instance;
   static std::shared_ptr<Serverkit::DeviceContext> _device_context;
 
   /**
-   * Client Certificate
+   * Client Certificate //TODO delete those when deconstruct avoid leaking
    */
+  X509_STORE* _x509_store;
+  X509_STORE_CTX* _x509_store_ctx;
   const X509* _client_cert = nullptr;
   const EVP_PKEY* _client_priv_key = nullptr;
-  const STACK_OF(X509) * _sign_chain = nullptr;
 
   /**
    * Instance private variables
    */
-  const PKCS12* _certificate;
+  const PKCS12* _certificate{};
   const std::thread _thread_ref;
   struct event_base* _event_base;
-  std::unordered_map<std::string, IPAddr> _routing_map;
   InstancePool<std::string, PeerSession> _peer_pool;
 
   /**
@@ -202,13 +231,13 @@ class ProtocolServer : private ThreadPool, FIFOCache<std::string> {
    *     incomplete, then will directly abandon and print a message in ERROR
    *     level
    *  2. check if the packet is handled or not, by design a packet has its
-   *     unique id and will not handle twice for one peer node. If packet is
+   *     unique id and will not handle_difficult twice for one peer node. If packet is
    *     already handled then will return immediately without any log
    *     printed(only print log when VLOG=3)
    *  3. Checking if the packed is redirect-only(receiver is other peer) for
    *     leaving handler as early as possible. This function will check if the
    *     destination peer is reachable or unreachable by checking if there is an
-   *     coresponding entry existed in routing table or not. If not reachable
+   *     corresponding entry existed in routing table or not. If not reachable
    *     then will ignore the packet without any log print(will only print log
    *     in VLOG=3)、
    * @note that when handing the unsupported request type, the client will
@@ -223,7 +252,7 @@ class ProtocolServer : private ThreadPool, FIFOCache<std::string> {
    * connection is ready to accept. In this function will create a libevent
    * bufferenvet for managing the read/disconnect event
    *
-   * @param fd the file descripter generated by libevent
+   * @param fd the file descriptor generated by libevent
    * @param event the event type
    * @param arg the raw pointer of ProtocolServer
    */
@@ -231,19 +260,6 @@ class ProtocolServer : private ThreadPool, FIFOCache<std::string> {
 
   // TODO add document
   static void event_callback(struct bufferevent* bev, short events, void* ctx);
-
-  /**
-   * @brief Internal function for handling the specific type of the handler,
-   * which will need to implemented for all type of packet
-   *
-   * @tparam T the proto packet type
-   * @param server the protocol server pointer
-   * @param peer_session the peer session used to verify the package source
-   * @param message the proto object fot the packet
-   */
-  template <typename T>
-  static void handle_packet(INSTANCE_PTR server, const PeerSession& peer_session,
-                            const T& message);
 };
 
 }  // namespace P2PFileSync::Protocol

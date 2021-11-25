@@ -10,6 +10,7 @@
         "libevent",
         "yaml-cpp",
         "protobuf",
-        "rapidjson"
+        "rapidjson",
+        "libuuid"
     ]
   }

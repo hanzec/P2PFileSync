@@ -5,6 +5,7 @@ target_sources(daemon
     PRIVATE
     "log.h"
     "parsing.h" "parsing.cc"
+        "uuid_utils.cc" "uuid_utils.h"
     "config_reader.h" "config_reader.cc"
 )
 

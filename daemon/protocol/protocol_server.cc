@@ -1,8 +1,10 @@
 #include <event2/buffer.h>
 #include <event2/bufferevent.h>
 #include <glog/logging.h>
+#include <protocol.pb.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <utils/uuid_utils.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -14,8 +16,8 @@
 #include "ip_addr.h"
 #include "log.h"
 #include "protocol.h"
-#include "protolcol.pb.h"
 #include "utils/fifo_cache.h"
+#include "utils/routing_map.h"
 #include "utils/thread_pool.h"
 
 namespace P2PFileSync::Protocol {
@@ -93,41 +95,33 @@ bool ProtocolServer::init(const Config &config,
   _instance = std::shared_ptr<ProtocolServer>(new ProtocolServer(
       config.get_workder_thread_num(), socket_fd, config.get_packet_cache_size(), client_cert,
       client_priv_key, sign_chain));
+
+  return true;
 };
 
-ProtocolServer::ProtocolServer(uint8_t number_worker, int fd, int32_t packet_cache_size,
+ProtocolServer::ProtocolServer(uint8_t number_worker, int fd, uint32_t packet_cache_size,
                                X509 *cert, EVP_PKEY *private_key, STACK_OF(X509) * ca)
-    : FIFOCache(packet_cache_size),     // initial packet cache
-      ThreadPool(number_worker),  // initial thread pool
+    : FIFOCache(packet_cache_size),  // initial packet cache
+      ThreadPool(number_worker),     // initial thread pool
       _client_cert(cert),
       _client_priv_key(private_key),
-      _sign_chain(ca),
+      _x509_store(X509_STORE_new()),
+      _x509_store_ctx(X509_STORE_CTX_new()),
       _thread_ref(std::thread(listening_thread, fd)) {
   VLOG(INFO) << "Initialized instance of protocol server";
 
-  // initalized base_event
+  // initialized base_event
   if ((_event_base = event_base_new()) == nullptr)
     LOG(FATAL) << "libevent base event create failed!";
+
+  // openssl related structure
+  X509_STORE_CTX_init(_x509_store_ctx, _x509_store, cert, ca);
 
   // send hello message to all clients, client will add node when response get
   for (const auto &ip : _device_context->peer_list()) {
     this->send_hello(IPAddr(ip.second));
   }
 };
-
-void ProtocolServer::handle(const ProtoMessage &message,
-                            struct sockaddr_in *incoming_connection) {
-  switch (message.request_type()) {
-    case ProtoPayloadType::HELLO_MESSAGE:
-      ProtoHelloMessage msg;
-      submit(handle_packet, _peer_pool.get_instance(message.sender_id()),message.payload());
-      break;
-    case REDIRECT_MESSAGE:
-      break;
-    default:
-      break;
-  }
-}
 
 void ProtocolServer::listening_thread(int fd) {
   auto proto = get_instance();
@@ -165,40 +159,57 @@ void ProtocolServer::read_callback(struct bufferevent *bev, void *sin) {
   if (recv_size < sizeof(uint32_t)) return;
 
   // check if we received full data of the packet
-  ssize_t packen_len;
-  if (evbuffer_copyout(buf, &packen_len, sizeof(uint32_t)) != packen_len)
+  ssize_t packet_len;
+  if (evbuffer_copyout(buf, &packet_len, sizeof(uint32_t)) != packet_len)
     LOG(FATAL) << "read data from evbuffer failed!";
-  if (recv_size - sizeof(uint32_t) < packen_len) return;
+  if (recv_size - sizeof(uint32_t) < packet_len) return;
 
   // parse data packet
-  ProtoMessage message;
-  void *data = evbuffer_pullup(buf, packen_len + sizeof(uint32_t));
-  if (!message.ParseFromArray((char *)data + sizeof(uint32_t), packen_len)) {
-    LOG(ERROR) << "message failed to parsed";
+  ProtoMessage proto_msg;
+  SignedProtoMessage signed_msg;
+  void *data = evbuffer_pullup(buf, packet_len + sizeof(uint32_t));
+  if (!signed_msg.ParseFromArray((char *)data + sizeof(uint32_t), packet_len)) {
+    LOG(ERROR) << "signed_msg failed to parsed";
   }
 
-  // avoid the handle one packet twice
-  if (proto_server->is_cached(message.packet_id())) {
-    VLOG(3) << "skip previous handled message with id [" << message.packet_id();
+  // abandon all packet with ttl == 0
+  if (signed_msg.ttl() == 0) return;
+
+  // avoid the handle_difficult one packet twice
+  signed_msg.signed_payload().UnpackTo(&proto_msg);
+  if (proto_server->is_cached(proto_msg.packet_id())) {
+    VLOG(3) << "skip previous handled signed_msg with id [" << proto_msg.packet_id();
     return;
   }
 
-  // check if the package's final deliever is current peer or not
-  if (message.receiver_id() == proto_server->get_peer_id()) {
-    // checking of the packet can deliever to desnation peer or not
-    if (proto_server->in_routing_table(message.receiver_id())) {
-      VLOG(3) << "cannot found desnation for receiver [" << message.receiver_id() << "]";
+  // check if the package's final deliver is current peer or not
+  if (UUID::compare(proto_server->_device_context->client_id(), proto_msg.receiver_id())) {
+    // checking of the packet can deliver to destination peer or not
+    if (proto_server->can_delivered(proto_msg.receiver_id())) {
+      VLOG(3) << "cannot found desnation for receiver [" << proto_msg.receiver_id() << "]";
       return;
     }
 
-    // redirect packet to destination
-    proto_server->send_raw_package(
-        data, packen_len + sizeof(uint32_t),
-        proto_server->get_ip_addr_from_table(message.receiver_id()));
+    // redirect packet to destination if ttl is > 1
+    if (signed_msg.ttl() > 1)
+      proto_server->send_pkg(signed_msg, packet_len + sizeof(uint32_t),
+                             proto_server->get_next_peer(proto_msg.receiver_id()));
   }
 
   // handles the request
-  proto_server->handle(message, incoming_connection);
+  switch (proto_msg.request_type()) {
+    case ProtoPayloadType::HELLO_MESSAGE:
+      // only hello message won't include signature in outside since handshake
+      ProtoHelloMessage msg;
+      proto_msg.payload().UnpackTo(&msg);
+      proto_server->submit(IMessageHandler<ProtoHelloMessage>::handle_complicated,
+                           get_instance(), msg, incoming_connection, signed_msg.ttl());
+      break;
+    case REDIRECT_MESSAGE:
+      break;
+    default:
+      break;
+  }
 }
 
 void ProtocolServer::event_callback(struct bufferevent *bev, short events, void *ctx) {
@@ -222,5 +233,4 @@ void ProtocolServer::event_callback(struct bufferevent *bev, short events, void 
     bufferevent_free(bev);
   }
 }
-
 }  // namespace P2PFileSync::Protocol

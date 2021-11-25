@@ -16,8 +16,8 @@
 
 namespace P2PFileSync::Serverkit {
 
-DeviceContext::DeviceContext(std::string client_id, std::string client_token)
-    : _client_id(std::move(client_id)), _login_token(std::move(client_token)){};
+DeviceContext::DeviceContext(std::array<std::byte,16> client_id, std::string client_token)
+    : _client_id(client_id), _login_token(std::move(client_token)){};
 
 std::shared_ptr<DeviceContext> DeviceContext::get_one() {
   if (_instance == nullptr) {
@@ -29,10 +29,10 @@ std::shared_ptr<DeviceContext> DeviceContext::get_one() {
       // c++ 17 unpack pair to variables
       auto param = DeviceContext::register_client();
       return (_instance = std::shared_ptr<DeviceContext>(
-                  new DeviceContext(param.first, param.second)));
+                  new DeviceContext(param.second, param.first)));
     }
   }
-  return _instance;
+  return _instance->get_one();
 }
 
 bool DeviceContext::is_enabled() const { return client_info()->success(); }
@@ -53,7 +53,7 @@ bool DeviceContext::is_registered() {
   return true;
 }
 
-const std::string &DeviceContext::client_id() const { return _client_id; }
+const std::array<std::byte,16>& DeviceContext::client_id() const { return _client_id; }
 
 std::unique_ptr<ClientInfoResponse> DeviceContext::client_info() const {
   // client info does not required extra request models
@@ -75,7 +75,7 @@ std::unique_ptr<ClientInfoResponse> DeviceContext::client_info() const {
   }
 }
 
-std::pair<std::string, std::string> DeviceContext::register_client() {
+std::pair<std::string,std::array<std::byte,16>> DeviceContext::register_client() {
   RegisterClientRequest reques_model;
 
   // TODO: replace moke data to actual data
@@ -89,7 +89,7 @@ std::pair<std::string, std::string> DeviceContext::register_client() {
 
   if (raw_json == nullptr) {
     LOG(ERROR) << "empty response";
-    return {"", ""};
+    return {"", {}};
   }
 
   // parse response
@@ -102,7 +102,7 @@ std::pair<std::string, std::string> DeviceContext::register_client() {
   return {resp.get_login_token(), resp.get_client_id()};
 }
 
-std::filesystem::path DeviceContext::client_certificate() const {
+const std::filesystem::path DeviceContext::client_certificate() const {
   // if the certificate is downloaded
   auto cert_file = _server_configuration_path / CLIENT_CERTIFICATE_FILE_NAME;
   if (!std::filesystem::exists(cert_file)) {

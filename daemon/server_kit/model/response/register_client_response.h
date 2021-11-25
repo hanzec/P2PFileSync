@@ -42,9 +42,9 @@ class RegisterClientResponse : public IJsonModel {
   /**
    * @brief Get the client id ection in RegisterClientResponse request
    *
-   * @return std::string the client id registered in server
+   * @return std::array<std::byte,16> the client id registered in server
    */
-  EXPORT_FUNC std::string get_client_id();
+  EXPORT_FUNC std::array<std::byte,16> get_client_id();
 
   /**
    * @brief Get the enable url ection in RegisterClientResponse request

@@ -44,6 +44,12 @@ find_package(glog CONFIG REQUIRED)
 target_link_libraries(server_connection glog::glog)
 target_include_directories(server_connection PRIVATE ${glog_INCLUDE_DIRS})
 
+# uuid utils
+find_path(LIBUUID_INCLUDE_DIR uuid.h PATH_SUFFIXES uuid)
+find_library(LIBUUID_LIBRARY libuuid.a)
+target_link_libraries(server_connection ${LIBUUID_LIBRARY})
+target_include_directories(server_connection PRIVATE ${LIBUUID_INCLUDE_DIR})
+
 ###############################################################################
 ## UTILS ######################################################################
 ###############################################################################

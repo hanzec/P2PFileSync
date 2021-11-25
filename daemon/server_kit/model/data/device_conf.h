@@ -41,7 +41,7 @@ class DeviceConfiguration : public IJsonModel {
    *
    * @param machine_id the machine id as string
    */
-  std::string get_device_id();
+  std::array<std::byte,16> get_device_id();
 
 
   /**

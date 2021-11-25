@@ -21,11 +21,22 @@ class InstancePool {
    * @return
    */
   template <typename... Args>
-  bool new_instance(const KEY&& key, Args&&... args) {
+  bool new_instance(const KEY& key, Args&&... args) {
     // unique allows only one instance could insert instance at same time to pool
     std::unique_lock<std::shared_mutex> sharedLock(_lock_mutex);
-    if (_instance_pool.find(std::forward<KEY&>)(key) == _instance_pool.end()) {
-      _instance_pool.insert(std::make_shared<INSTANCE>(args...));
+    if (_instance_pool.find(key) == _instance_pool.end()) {
+      _instance_pool.insert(key, std::make_shared<INSTANCE>(args...));
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  bool add_instance(const KEY& key, std::shared_ptr<INSTANCE> instance) {
+    // unique allows only one instance could insert instance at same time to pool
+    std::unique_lock<std::shared_mutex> sharedLock(_lock_mutex);
+    if (_instance_pool.find(key) == _instance_pool.end()) {
+      _instance_pool.insert(std::make_pair(key, instance));
       return true;
     } else {
       return false;
