@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "../utils/parsing.h"
+#include "utils/parsing.h"
 
 GTEST_TEST(COMMAND_PARSER_TEST, test_normal_case_no_argument){
   

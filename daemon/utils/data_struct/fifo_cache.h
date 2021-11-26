@@ -5,7 +5,7 @@
 #include <string>
 #include <unordered_map>
 
-namespace P2PFileSync::Protocol {
+namespace P2PFileSync{
 template <typename T>
 class FIFOCache {
  public:

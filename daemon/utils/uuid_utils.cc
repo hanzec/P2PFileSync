@@ -3,8 +3,8 @@
 //
 #include "uuid_utils.h"
 
-#include <log.h>
 #include <uuid/uuid.h>
+#include <glog/logging.h>
 
 namespace P2PFileSync::UUID {
 // TODO documents

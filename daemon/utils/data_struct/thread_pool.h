@@ -12,7 +12,7 @@
 
 #include "cas_queue.h"
 
-namespace P2PFileSync::Protocol {
+namespace P2PFileSync {
 class ThreadPool {
  public:
   /**

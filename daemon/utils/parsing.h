@@ -11,7 +11,8 @@
 #include <utility>
 #include <vector>
 
-#include <status.h>
+#include "utils/status.h"
+
 namespace P2PFileSync {
 using COMMAND = std::pair<std::string, std::vector<std::string>>;
 
@@ -22,7 +23,7 @@ using COMMAND = std::pair<std::string, std::vector<std::string>>;
  * @param parsed_command generated parsed string
  * @return Status the return code while finished parsing
  */
-[[nodiscard]] Status parsing_command(const std::string& input, COMMAND& parsed_command);
+[[nodiscard]] Status parsing_command(std::string& input, COMMAND& parsed_command);
 
 /**
  * @brief

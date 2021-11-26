@@ -1,22 +1,59 @@
-#include "server_kit.h"
+//
+// Created by hanzech on 11/25/21.
+//
+#include <utils/machine_id.h>
 
 #include <filesystem>
-#include <openssl/pem.h>
+
+#include "model/data/data.h"
+#include "model/request/request.h"
+#include "model/response/response.h"
 #include "server_endpoint.h"
 #include "utils/curl_utils.h"
-#include "utils/file_handle.h"
 
 namespace P2PFileSync::Serverkit {
-// TODO client configuration file and client certificate permission check and
-// warring
-void global_init(const std::shared_ptr<Config>& client_config) {
-  // initial curl
-  if (curl_global_init(CURL_GLOBAL_DEFAULT) != CURLE_OK) {
-    LOG(FATAL) << "failed to init libcurl!";
+bool is_registered(const std::filesystem::path &configuration_path) {
+  // check client cfg
+  std::filesystem::path client_cfg(configuration_path / CLIENT_CONFIGURE_FILE_NAME);
+  if (!std::filesystem::exists(client_cfg)) {
+    return false;
   }
 
-  // static global variables
-  _server_address = client_config->get_management_server_url();
-  _server_configuration_path = std::filesystem::path(client_config->get_sync_data_dir());
+  // check client certificate
+  std::filesystem::path client_cert(configuration_path / CLIENT_CERTIFICATE_FILE_NAME);
+  if (!std::filesystem::exists(client_cert)) {
+    return false;
+  }
+
+  return true;
 }
-} //namespace P2PFileSync::Serverkit
+
+std::pair<std::string, std::array<std::byte, 16>> register_client(
+    const std::string &server_address, const std::filesystem::path &configuration_path) {
+  RegisterClientRequest reques_model;
+
+  // TODO: replace moke data to actual data
+  srand(time(nullptr));
+  reques_model.setIPAddress("127.0.0." + std::to_string(rand() % 255));
+  reques_model.setMachineID(P2PFileSync::Serverkit::get_device_id());
+
+  void *raw_json = POST_and_save_to_ptr(
+      nullptr, std::string(server_address).append(SERVER_REGISTER_ENDPOINT_V1),
+      static_cast<const void *>(reques_model.get_json().c_str()), false);
+
+  if (raw_json == nullptr) {
+    LOG(ERROR) << "empty response";
+    return {"", {}};
+  }
+
+  // parse response
+  RegisterClientResponse resp(static_cast<char *>(raw_json));
+
+  // save to configuration file
+  DeviceConfiguration conf(resp);
+  conf.save_to_disk(configuration_path / CLIENT_CONFIGURE_FILE_NAME);
+
+  return {resp.get_login_token(), resp.get_client_id()};
+}
+
+}  // namespace P2PFileSync::Serverkit

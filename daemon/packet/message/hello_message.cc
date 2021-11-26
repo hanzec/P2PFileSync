@@ -1,8 +1,8 @@
 #include <openssl/x509_vfy.h>
 #include <protocol.pb.h>
 
-#include "protocol/protocol.h"
-namespace P2PFileSync::Protocol {
+#include "p2p_interface.h"
+namespace P2PFileSync {
 template <>
 class ProtocolServer::IMessageHandler<ProtoHelloMessage> {
  public:
@@ -13,7 +13,7 @@ class ProtocolServer::IMessageHandler<ProtoHelloMessage> {
     // update client session
     if (session_ret == nullptr) {
       auto new_session = ProtocolServer::PeerSession::new_session(
-          message.public_key(), X509_STORE_CTX_get_chain(server._x509_store_ctx));
+          message.public_key(), X509_STORE_CTX_get_chain(server->_x509_store_ctx));
 
       // TODO need to modify [SHA256] later avoid magic variables
       if (new_session->verify(message.sender_id(), message.signature(), "SHA256")) {
@@ -28,13 +28,14 @@ class ProtocolServer::IMessageHandler<ProtoHelloMessage> {
     }
 
     // update routing table if possible
+    IPAddr dest = IPAddr(incoming_connection,0);
     if(server->can_delivered(message.sender_id())){
-      if(server->try_update_table(message.sender_id(), IPAddr(incoming_connection,9999), ttl)){
+      if(server->try_update_table(message.sender_id(), dest, ttl)){
         LOG(INFO) << "route to peer [" << message.sender_id() << "] is update! ";
       }
     } else {
-      server->add_new_route(message.sender_id(), IPAddr(incoming_connection, 9999), ttl);
-      LOG(INFO) << "adding new route of peer [" << message.sender_id() << "] to routing table! "
+      server->add_new_route(message.sender_id(), dest, ttl);
+      LOG(INFO) << "adding new route of peer [" << message.sender_id() << "] to routing table! ";
     }
     return true;
   }

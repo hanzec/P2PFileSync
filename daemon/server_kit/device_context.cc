@@ -1,5 +1,3 @@
-#include "server_kit.h"
-
 #include <openssl/pem.h>
 
 #include <filesystem>
@@ -10,50 +8,52 @@
 
 #include "model/model.h"
 #include "server_endpoint.h"
+#include "server_kit.h"
 #include "utils/base64_utils.h"
 #include "utils/curl_utils.h"
 #include "utils/machine_id.h"
 
 namespace P2PFileSync::Serverkit {
 
-DeviceContext::DeviceContext(std::array<std::byte,16> client_id, std::string client_token)
-    : _client_id(client_id), _login_token(std::move(client_token)){};
+DeviceContext::DeviceContext(std::array<std::byte, 16> client_id, std::string client_token,
+                             const std::string &server_address,
+                             const std::filesystem::path &conf)
+    : _client_id(client_id),
+      _login_token(std::move(client_token)),
+      _server_address(server_address),
+      _server_configuration_path(conf){};
 
-std::shared_ptr<DeviceContext> DeviceContext::get_one() {
+std::shared_ptr<DeviceContext> DeviceContext::get_dev_ctx() noexcept {
   if (_instance == nullptr) {
-    if (DeviceContext::is_registered()) {
-      DeviceConfiguration conf(_server_configuration_path / CLIENT_CONFIGURE_FILE_NAME);
-      return (_instance = std::shared_ptr<DeviceContext>(
-                  new DeviceContext(conf.get_device_id(), conf.get_jwt_key())));
+    return nullptr;
+  }
+  return _instance->shared_from_this();
+}
+
+bool DeviceContext::init_dev_ctx(const std::string &server_address,
+                                 const std::filesystem::path &conf) noexcept {
+  if (_instance == nullptr) {
+    if (is_registered(conf)) {
+      DeviceConfiguration conf_file(conf / CLIENT_CONFIGURE_FILE_NAME);
+      _instance = std::shared_ptr<DeviceContext>(
+          new DeviceContext(conf_file.get_device_id(), conf_file.get_jwt_key(),
+          server_address, conf));
+      return true;
     } else {
       // c++ 17 unpack pair to variables
-      auto param = DeviceContext::register_client();
-      return (_instance = std::shared_ptr<DeviceContext>(
-                  new DeviceContext(param.second, param.first)));
+      auto param = register_client(server_address, conf);
+      _instance = std::shared_ptr<DeviceContext>(
+          new DeviceContext(param.second, param.first, server_address, conf));
+      return true;
     }
+  } else {
+    return true;
   }
-  return _instance->get_one();
 }
 
 bool DeviceContext::is_enabled() const { return client_info()->success(); }
 
-bool DeviceContext::is_registered() {
-  // check client cfg
-  std::filesystem::path client_cfg(_server_configuration_path / CLIENT_CONFIGURE_FILE_NAME);
-  if (!std::filesystem::exists(client_cfg)) {
-    return false;
-  }
-
-  // check client certificate
-  std::filesystem::path client_cert(_server_configuration_path / CLIENT_CERTIFICATE_FILE_NAME);
-  if (!std::filesystem::exists(client_cert)) {
-    return false;
-  }
-
-  return true;
-}
-
-const std::array<std::byte,16>& DeviceContext::client_id() const { return _client_id; }
+const std::array<std::byte, 16> &DeviceContext::client_id() const { return _client_id; }
 
 std::unique_ptr<ClientInfoResponse> DeviceContext::client_info() const {
   // client info does not required extra request models
@@ -75,34 +75,7 @@ std::unique_ptr<ClientInfoResponse> DeviceContext::client_info() const {
   }
 }
 
-std::pair<std::string,std::array<std::byte,16>> DeviceContext::register_client() {
-  RegisterClientRequest reques_model;
-
-  // TODO: replace moke data to actual data
-  srand(time(nullptr));
-  reques_model.setIPAddress("127.0.0." + std::to_string(rand() % 255));
-  reques_model.setMachineID(P2PFileSync::Serverkit::get_device_id());
-
-  void *raw_json = POST_and_save_to_ptr(
-      nullptr, std::string(_server_address).append(SERVER_REGISTER_ENDPOINT_V1),
-      static_cast<const void *>(reques_model.get_json().c_str()), false);
-
-  if (raw_json == nullptr) {
-    LOG(ERROR) << "empty response";
-    return {"", {}};
-  }
-
-  // parse response
-  RegisterClientResponse resp(static_cast<char *>(raw_json));
-
-  // save to configuration file
-  DeviceConfiguration conf(resp);
-  conf.save_to_disk(_server_configuration_path / CLIENT_CONFIGURE_FILE_NAME);
-
-  return {resp.get_login_token(), resp.get_client_id()};
-}
-
-const std::filesystem::path DeviceContext::client_certificate() const {
+std::filesystem::path DeviceContext::client_certificate() const {
   // if the certificate is downloaded
   auto cert_file = _server_configuration_path / CLIENT_CERTIFICATE_FILE_NAME;
   if (!std::filesystem::exists(cert_file)) {

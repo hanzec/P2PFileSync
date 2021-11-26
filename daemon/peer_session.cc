@@ -3,9 +3,9 @@
 
 #include <utility>
 
-#include "protocol.h"
+#include "p2p_interface.h"
 
-namespace P2PFileSync::Protocol {
+namespace P2PFileSync {
 
 const constexpr char* get_validation_errstr(long e) {
   switch ((int)e) {

@@ -3,7 +3,7 @@
 #include <atomic>
 #include <memory>
 #include <utility>
-namespace P2PFileSync::Protocol {
+namespace P2PFileSync {
 /**
  * @brief A Lock-free Queue implement by CAS and Linked-List
  *  The Algorithm and implementing Idea are genearted by following paper:

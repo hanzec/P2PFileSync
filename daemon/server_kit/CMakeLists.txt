@@ -1,15 +1,15 @@
 ###############################################################################
 ## Server Protocol Utils ######################################################
 ###############################################################################
-add_library(server_connection utils/file_handle.h)
+add_library(server_connection)
 
 # response model should be expose as public header
 file(GLOB RESPONSE_MODEL_HDRS ${CMAKE_CURRENT_LIST_DIR}/model/request/*.h)
 
 set_target_properties(server_connection PROPERTIES
-    VERSION ${PROJECT_VERSION}
-    PUBLIC_HEADER "server_kit.h" ${RESPONSE_MODEL_HDRS})
-    
+        VERSION ${PROJECT_VERSION}
+        PUBLIC_HEADER "server_kit.h" ${RESPONSE_MODEL_HDRS})
+
 ###############################################################################
 ## Compile Options ############################################################
 ###############################################################################
@@ -51,28 +51,31 @@ target_link_libraries(server_connection ${LIBUUID_LIBRARY})
 target_include_directories(server_connection PRIVATE ${LIBUUID_INCLUDE_DIR})
 
 ###############################################################################
-## UTILS ######################################################################
-###############################################################################
-file(GLOB UTILS_SRCS ${CMAKE_CURRENT_LIST_DIR}/utils/*.cc)
-file(GLOB UTILS_HDRS ${CMAKE_CURRENT_LIST_DIR}/utils/*.hpp)
-    
-###############################################################################
 ## Data Models ################################################################
 ###############################################################################
 add_subdirectory(model)
 
 ###############################################################################
+## UTILS ######################################################################
+###############################################################################
+file(GLOB UTILS_SRCS ${CMAKE_CURRENT_LIST_DIR}/utils/*.cc)
+file(GLOB UTILS_HDRS ${CMAKE_CURRENT_LIST_DIR}/utils/*.hpp)
+
+###############################################################################
 ## Library Sources ############################################################
 ###############################################################################
+file(GLOB SERVER_KIT_SRCS ${CMAKE_CURRENT_LIST_DIR}/*.cc)
+file(GLOB SERVER_KIT_HDRS ${CMAKE_CURRENT_LIST_DIR}/*.hpp)
+
 target_sources(server_connection
-  PUBLIC
-  "server_kit.h"
-  PRIVATE
-  "export.h"
-  ${UTILS_SRCS} ${UTILS_HDRS}
-  ${REQUEST_MODEL_SRCS}
+        PUBLIC
+        "server_kit.h"
+        PRIVATE
+        ${UTILS_SRCS} ${UTILS_HDRS}
+        ${SERVER_KIT_SRCS} ${SERVER_KIT_HDRS}
+        ${REQUEST_MODEL_SRCS}
         "server_kit.h" "server_kit.cc"
-  "managent_context.cc" "device_context.cc")
+        "managent_context.cc" "device_context.cc")
 
 target_include_directories(server_connection PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 

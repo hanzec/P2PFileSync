@@ -13,25 +13,26 @@
 #include <regex>
 #include <string>
 
-#include "ip_addr.h"
-#include "log.h"
-#include "protocol.h"
-#include "utils/fifo_cache.h"
-#include "utils/routing_map.h"
-#include "utils/thread_pool.h"
+#include "p2p_interface.h"
+#include "utils/log.h"
+#include "utils/ip_addr.h"
+#include "utils/data_struct/fifo_cache.h"
+#include "utils/data_struct/routing_map.h"
+#include "utils/data_struct/thread_pool.h"
 
-namespace P2PFileSync::Protocol {
+namespace P2PFileSync {
 // get instance of ProtocolServer object
 std::shared_ptr<ProtocolServer> ProtocolServer::get_instance() { return _instance; };
 
 // initlized protol instance
-bool ProtocolServer::init(const Config &config,
+bool ProtocolServer::init(const std::shared_ptr<Config> config,
                           const std::shared_ptr<Serverkit::DeviceContext> &device_context) {
   // prevent init twice
   if (_instance != nullptr) return false;
 
   // will constantly block until client is activated
   while (!device_context->is_enabled()) {
+    LOG(ERROR) <<
     sleep(60);  // wait for 1 minutes and check activation status again
   }
 
@@ -47,15 +48,15 @@ bool ProtocolServer::init(const Config &config,
     // bind the socket to address
     struct sockaddr_in adr_s {};
     adr_s.sin_family = AF_INET;
-    adr_s.sin_port = htons(config.get_trans_port_number());
+    adr_s.sin_port = htons(config->get_trans_port_number());
 
     // if defined ip address will only listen on that specific address otherwise
     // will listen to 0.0.0.0
-    if (config.get_listen_ip_address().empty()) {
+    if (config->get_listen_ip_address().empty()) {
       adr_s.sin_addr.s_addr = inet_addr("0.0.0.0");
       LOG(WARNING) << "not found listing address in config file, will listen 0.0.0.0";
     } else {
-      adr_s.sin_addr.s_addr = inet_addr(config.get_listen_ip_address().c_str());
+      adr_s.sin_addr.s_addr = inet_addr(config->get_listen_ip_address().c_str());
     }
 
     // bind the socket to listen address
@@ -93,7 +94,7 @@ bool ProtocolServer::init(const Config &config,
   // creating instance
   _device_context = device_context;
   _instance = std::shared_ptr<ProtocolServer>(new ProtocolServer(
-      config.get_workder_thread_num(), socket_fd, config.get_packet_cache_size(), client_cert,
+      config->get_workder_thread_num(), socket_fd, config->get_packet_cache_size(), client_cert,
       client_priv_key, sign_chain));
 
   return true;
@@ -108,7 +109,7 @@ ProtocolServer::ProtocolServer(uint8_t number_worker, int fd, uint32_t packet_ca
       _x509_store(X509_STORE_new()),
       _x509_store_ctx(X509_STORE_CTX_new()),
       _thread_ref(std::thread(listening_thread, fd)) {
-  VLOG(INFO) << "Initialized instance of protocol server";
+  VLOG(INFO) << "Initialized instance of packet server";
 
   // initialized base_event
   if ((_event_base = event_base_new()) == nullptr)
@@ -119,7 +120,7 @@ ProtocolServer::ProtocolServer(uint8_t number_worker, int fd, uint32_t packet_ca
 
   // send hello message to all clients, client will add node when response get
   for (const auto &ip : _device_context->peer_list()) {
-    this->send_hello(IPAddr(ip.second));
+    ProtoHelloMessage
   }
 };
 
@@ -191,9 +192,10 @@ void ProtocolServer::read_callback(struct bufferevent *bev, void *sin) {
     }
 
     // redirect packet to destination if ttl is > 1
-    if (signed_msg.ttl() > 1)
-      proto_server->send_pkg(signed_msg, packet_len + sizeof(uint32_t),
-                             proto_server->get_next_peer(proto_msg.receiver_id()));
+    if (signed_msg.ttl() > 1){
+      signed_msg.set_ttl(signed_msg.ttl() - 1); // decrease 1 to ttl
+      proto_server->submit();
+    }
   }
 
   // handles the request
@@ -232,5 +234,13 @@ void ProtocolServer::event_callback(struct bufferevent *bev, short events, void 
     free(ctx);
     bufferevent_free(bev);
   }
+}
+
+std::future<bool> ProtocolServer::redirect_pkg(const SignedProtoMessage &data,
+                                               const uint32_t &size, const IPAddr &peer) {
+  SignedProtoMessage new_pkg(data);
+  new_pkg.set_ttl(new_pkg.ttl() - 1);
+
+  return std::future<bool>();
 }
 }  // namespace P2PFileSync::Protocol

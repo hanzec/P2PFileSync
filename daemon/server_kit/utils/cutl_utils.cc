@@ -171,7 +171,7 @@ inline bool get_file_from_server(const std::string& http_method, const void* inp
         CURLE_OK)
       goto error;
 
-    // /* Switch on full protocol/debug output */
+    // /* Switch on full packet/debug output */
     // curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
 
     // SSL configuration

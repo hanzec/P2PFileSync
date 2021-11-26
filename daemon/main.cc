@@ -8,14 +8,15 @@
 #include <thread>
 #include <utility>
 #include <vector>
-#include <ip_addr.h>
-#include <status.h>
 
-#include "manage.h"
 #include "common.h"
-#include "utils/log.h"
-#include "utils/config_reader.h"
+#include "manage_interface.h"
 #include "server_kit/server_kit.h"
+#include "utils/config_reader.h"
+#include "utils/ip_addr.h"
+#include "utils/log.h"
+#include "utils/status.h"
+#include "p2p_interface.h"
 
 DEFINE_string(host, "", "the known host with comma-separated list");
 DEFINE_string(config_dir, "", "the location of config file");
@@ -66,8 +67,7 @@ int main(int argc, char *argv[], const char *envp[]) {
   auto config_file = data_folder / CONFIG_FILE_NAME;
   if (!fs::exists(config_file)) {
     if (!generate_default_config(config_file))
-      LOG(FATAL) << "failed to create default config at ["
-                 << config_file.string() << "]";
+      LOG(FATAL) << "failed to create default config at [" << config_file.string() << "]";
   }
 
   // loading the config file
@@ -77,20 +77,24 @@ int main(int argc, char *argv[], const char *envp[]) {
   fs::path data_dir_path(config->get_sync_data_dir());
   if (!fs::exists(data_dir_path)) {
     if (!fs::create_directories(data_dir_path)) {
-      LOG(FATAL) << "Failed creating directory in ["
-                 << config->get_sync_data_dir() << "]";
+      LOG(FATAL) << "Failed creating directory in [" << config->get_sync_data_dir() << "]";
     }
   } else {
     VLOG(VERBOSE) << "find exist folder in [" << config->get_sync_data_dir() << "]";
   }
 
-  // global init server management kit
-  Serverkit::global_init(config);
-
   // staring server handler
   std::string server_sock = config->get_manage_sock_file_();
   std::thread handler(&manage_interface_thread, std::ref(server_sock), AF_UNIX);
-  
+
+  // initliing server kit
+  if(Serverkit::DeviceContext::init_dev_ctx(config->get_management_server_url(),
+                                         config->get_client_config_path())){
+    LOG(FATAL) << "failed to init device context!";
+  }
+
+  // starting server handler
+  if(ProtocolServer::init(config,Serverkit::DeviceContext::get_dev_ctx()))
   // waiting server handler to stop
   handler.join();
   return 0;

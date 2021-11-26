@@ -40,6 +40,12 @@ find_package(Libevent CONFIG REQUIRED)
 target_link_libraries(daemon libevent::core libevent::extra )
 target_include_directories(daemon PRIVATE ${Libevent_CORE_INCLUDE_DIRS})
 
+# uuid utils
+find_path(LIBUUID_INCLUDE_DIR uuid.h PATH_SUFFIXES uuid)
+find_library(LIBUUID_LIBRARY libuuid.a)
+target_link_libraries(daemon_test ${LIBUUID_LIBRARY})
+target_include_directories(daemon_test PRIVATE ${LIBUUID_INCLUDE_DIR})
+
 # google test deps(require pthread)
 find_package(GTest REQUIRED)
 find_package(Threads REQUIRED)
@@ -55,20 +61,6 @@ target_compile_features(daemon PRIVATE cxx_std_17)
 target_compile_features(daemon_test PRIVATE cxx_std_17)
 
 ###############################################################################
-## Project Source #############################################################
-###############################################################################
-target_sources(daemon 
-    PRIVATE
-    "main.cc"
-    "manage.cc"
-    ${SUPPORT_COMMAND_SRC}
-    PUBLIC
-    ${PROTO_SRCS} ${PROTO_HDRS}
-)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(daemon PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-
-###############################################################################
 ## Commands ###################################################################
 ###############################################################################
 add_subdirectory(interface)
@@ -81,7 +73,7 @@ add_subdirectory(utils)
 ###############################################################################
 ## Message Packet ##############################################################
 ###############################################################################
-add_subdirectory(protocol)
+add_subdirectory(packet)
 
 ###############################################################################
 ## Server Protocol Kit ########################################################
@@ -90,6 +82,16 @@ add_subdirectory(server_kit)
 target_link_libraries(daemon server_connection)
 target_include_directories(daemon PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/server_kit/server_kit.h")
 target_include_directories(daemon PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/server_kit/model/response")
+
+###############################################################################
+## Project Source #############################################################
+###############################################################################
+target_sources(daemon
+        PRIVATE
+        "main.cc" "export.h" "common.h"
+        "manage_interface.cc" "manage_interface.h"
+        "peer_session.cc" "protocol_server.cc" "p2p_interface.h")
+target_include_directories(daemon PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 ###############################################################################
 ## Testing ####################################################################

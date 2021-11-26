@@ -9,7 +9,7 @@
 
 #include <memory>
 #include <filesystem>
-#include <common.h>
+#include "../common.h"
 
 namespace P2PFileSync {
   /**
@@ -23,7 +23,7 @@ namespace P2PFileSync {
 
   /**
    * @brief parser from yaml like config file to Config class
-   * 
+   *  // TODO re-write using JSON instead
    * @param config_file location of yaml like config file
    * @return std::shared_ptr<Config> the parsed configured object
    */

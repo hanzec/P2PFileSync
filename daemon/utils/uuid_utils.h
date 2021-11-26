@@ -17,7 +17,6 @@ static bool is_valid(const std::array<std::byte, 16>& uuid);
 
 static std::array<std::byte, 16> to_array(const std::string& uuid_string);
 
-
 static bool compare(const std::array<std::byte, 16>& uuid, const std::string& uuid_string);
 
 };

@@ -33,11 +33,5 @@ namespace P2PFileSync::Serverkit {
   const constexpr static std::string_view GET_CLIENT_PEER_INFO_ENDPOINT_V1 = "/api/v1/client/peer";
   const constexpr static std::string_view GET_CLIENT_GROUP_INFO_ENDPOINT_V1 = "/api/v1/client/group";
   const constexpr static std::string_view GET_CLIENT_CERTIFICATE_ENDPOINT_V1 = "/api/v1/client/certificate";
-
-  /**
-   * Server static variables, following variables will be initialized after global_init() called
-   */
-   extern std::string_view _server_address;
-   extern std::filesystem::path _server_configuration_path;
 } // namespace P2PFileSync::P2PFileSync::Serverkit
 #endif //P2P_FILE_SYNC_SERVER_KIT_SERVER_CONST_H

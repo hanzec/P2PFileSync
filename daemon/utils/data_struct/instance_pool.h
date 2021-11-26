@@ -4,12 +4,13 @@
 
 #ifndef P2P_FILE_SYNC_INSTANCE_POOL_H
 #define P2P_FILE_SYNC_INSTANCE_POOL_H
-#include <memory>
 #include <mutex>
+#include <memory>
+#include <shared_mutex>
 #include <unordered_map>
 
 //TODO need to complete document
-namespace P2PFileSync::Protocol {
+namespace P2PFileSync {
 template <typename KEY, typename INSTANCE>
 class InstancePool {
  public:

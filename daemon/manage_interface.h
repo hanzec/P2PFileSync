@@ -1,5 +1,5 @@
-#ifndef P2P_FILE_SYNC_MANAGE_H
-#define P2P_FILE_SYNC_MANAGE_H
+#ifndef P2P_FILE_SYNC_MANAGE_INTERFACE_H
+#define P2P_FILE_SYNC_MANAGE_INTERFACE_H
 #include <sys/socket.h>
 
 #include <array>

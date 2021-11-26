@@ -19,12 +19,12 @@
 #include "common.h"
 #include "export.h"
 #include "server_kit/server_kit.h"
-#include "utils/fifo_cache.h"
-#include "utils/instance_pool.h"
-#include "utils/routing_map.h"
-#include "utils/thread_pool.h"
+#include "utils/data_struct/fifo_cache.h"
+#include "utils/data_struct/instance_pool.h"
+#include "utils/data_struct/routing_map.h"
+#include "utils/data_struct/thread_pool.h"
 
-namespace P2PFileSync::Protocol {
+namespace P2PFileSync {
 class ProtocolServer : private ThreadPool,
                        private RoutingMap<std::string>,
                        private FIFOCache<std::basic_string<char>>,
@@ -69,14 +69,37 @@ class ProtocolServer : private ThreadPool,
    * @return true the ProtocolServer init success
    * @return false the ProtocolServer init failed
    */
-  EXPORT_FUNC static bool init(const Config& config,
+  EXPORT_FUNC static bool init(const std::shared_ptr<Config> config,
                                const Serverkit::DeviceContextPtr& device_context);
+
+  /**
+   * @brief send message to all avaliable peer with specific raw data and size by submitting
+   * task to task pool
+   * @note this function will only dispatch the job but not wating until job's
+   * finished execution
+   * @param data the raw pointer of the data
+   * @param size the size of raw pointer of the data
+   * @return std::future<bool> indicates the package is successfully send or not
+   */
+  EXPORT_FUNC void broadcast_pkg(const void*& data, const uint32_t& size);
+
+  /**
+   * @brief send message to specific peer with specific raw data and size by submitting task to
+   * task pool
+   * @note after package is sent, the ttl will decrease 1, if ttl = 1 then will not send to
+   * other peer
+   * @param data the raw pointer of the data
+   * @param size the size of raw pointer of the data
+   * @param client the destination of the the message will be sent to
+   * @return std::future<bool> indicates the package is successfully send or not
+   */
+  EXPORT_FUNC std::future<bool> send_pkg(const ProtoMessage& data, const uint32_t& size, const IPAddr& peer);
 
  protected:
   /**
    * Peer session for storage all known peer with their public Key
    */
-  class PeerSession {
+  class EXPORT_FUNC PeerSession {
    public:
     /**
      * @brief Delete default constructor prevent construct object without calling new_session
@@ -144,30 +167,6 @@ class ProtocolServer : private ThreadPool,
   ProtocolServer(uint8_t number_worker, int fd, uint32_t packet_cache_size, X509* cert,
                  EVP_PKEY* private_key, STACK_OF(X509) * ca);
 
-  /**
-   * @brief send message to all avaliable peer with specific raw data and size by submitting
-   * task to task pool
-   * @note this function will only dispatch the job but not wating until job's
-   * finished execution
-   * @param data the raw pointer of the data
-   * @param size the size of raw pointer of the data
-   * @return std::future<bool> indicates the package is successfully send or not
-   */
-  void broadcast_pkg(const void*& data, const uint32_t& size);
-
-  /**
-   * @brief send message to specific peer with specific raw data and size by submitting task to
-   * task pool
-   * @note after package is sent, the ttl will decrease 1, if ttl = 1 then will not send to
-   * other peer
-   * @param data the raw pointer of the data
-   * @param size the size of raw pointer of the data
-   * @param client the destination of the the message will be sent to
-   * @return std::future<bool> indicates the package is successfully send or not
-   */
-  std::future<bool> send_pkg(const SignedProtoMessage& data, const uint32_t& size,
-                             const IPAddr& peer);
-
  private:
   // TODO need finished document
   // !! For overload functional object, compiler could not infer the return type of the method !!
@@ -221,7 +220,7 @@ class ProtocolServer : private ThreadPool,
    * @brief function contains the content of listening thread
    *
    * @param fd the established listen handler for incoming connection
-   * @param protool_server pointer of protocol server instance
+   * @param protool_server pointer of packet server instance
    */
   static void listening_thread(int fd);
 
