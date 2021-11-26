@@ -43,8 +43,8 @@ target_include_directories(daemon PRIVATE ${Libevent_CORE_INCLUDE_DIRS})
 # uuid utils
 find_path(LIBUUID_INCLUDE_DIR uuid.h PATH_SUFFIXES uuid)
 find_library(LIBUUID_LIBRARY libuuid.a)
-target_link_libraries(daemon_test ${LIBUUID_LIBRARY})
-target_include_directories(daemon_test PRIVATE ${LIBUUID_INCLUDE_DIR})
+target_link_libraries(daemon ${LIBUUID_LIBRARY})
+target_include_directories(daemon PRIVATE ${LIBUUID_INCLUDE_DIR})
 
 # google test deps(require pthread)
 find_package(GTest REQUIRED)

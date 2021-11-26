@@ -6,9 +6,9 @@ add_library(server_connection)
 # response model should be expose as public header
 file(GLOB RESPONSE_MODEL_HDRS ${CMAKE_CURRENT_LIST_DIR}/model/request/*.h)
 
-set_target_properties(server_connection PROPERTIES
-        VERSION ${PROJECT_VERSION}
-        PUBLIC_HEADER "server_kit.h" ${RESPONSE_MODEL_HDRS})
+# response model should be expose as public header
+set_target_properties(server_connection PROPERTIES VERSION ${PROJECT_VERSION})
+set_target_properties(server_connection PROPERTIES PUBLIC_HEADER "${RESPONSE_MODEL_HDRS}")
 
 ###############################################################################
 ## Compile Options ############################################################
