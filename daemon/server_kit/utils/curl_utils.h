@@ -32,21 +32,6 @@ bool GET_and_save_to_path(CURLSH* curl_handler, const std::string& request_url,
                           bool force_ssl = true);
 
 /**
- * @brief Perfrom HTTP POST for giving address and post data and return raw ptr
- * @note the user need to take responsible for manage return prt including
- * free()
- *
- * @param curl_handler the shard curl structure if available, COULD BE NULLPTR
- * if not used
- * @param request_url the request server url which want to sent POST request
- * @param post_data the raw post data wants including in post request, COULD BE
- * NULLPTR
- * @param force_ssl the flag where enable SSL verify or not
- * @return void* the returned data in response body
- */
-void * POST_and_save_to_ptr(CURLSH * curl_handler, const std::string& request_url, const void * post_data, bool force_ssl);
-
-/**
  * @brief Perfrom HTTP GET for giving address and post data and return raw ptr
  * @note the user need to take responsible for manage return prt including
  * free()
@@ -60,6 +45,22 @@ void * POST_and_save_to_ptr(CURLSH * curl_handler, const std::string& request_ur
  * @return void* the returned data in response body
  */
 void * GET_and_save_to_ptr(CURLSH * curl_handler, const std::string& request_url, std::vector<std::string> header, bool force_ssl);
+
+
+/**
+ * @brief Perfrom HTTP POST for giving address and post data and return raw ptr
+ * @note the user need to take responsible for manage return prt including
+ * free()
+ *
+ * @param curl_handler the shard curl structure if available, COULD BE NULLPTR
+ * if not used
+ * @param request_url the request server url which want to sent POST request
+ * @param post_data the raw post data wants including in post request, COULD BE
+ * NULLPTR
+ * @param force_ssl the flag where enable SSL verify or not
+ * @return void* the returned data in response body
+ */
+void * POST_and_save_to_ptr(CURLSH * curl_handler, const std::string& request_url, const void * post_data, bool force_ssl);
 
 // TODO write document later
 inline bool get_file_from_server(const std::string& http_method, const void* input_data, const void * post_data,

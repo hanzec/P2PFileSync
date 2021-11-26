@@ -94,7 +94,11 @@ int main(int argc, char *argv[], const char *envp[]) {
   }
 
   // starting server handler
-  if(ProtocolServer::init(config,Serverkit::DeviceContext::get_dev_ctx()))
+  if(ProtocolServer::init(config,Serverkit::DeviceContext::get_dev_ctx())){
+    LOG(INFO) << "p2p server listener is started!";
+  } else {
+    LOG(FATAL) << "p2p server handler is filed to start";
+  }
   // waiting server handler to stop
   handler.join();
   return 0;

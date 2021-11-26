@@ -2,8 +2,8 @@
 // Created by hanzech on 11/24/21.
 //
 
-#ifndef P2P_FILE_SYNC_ROUTING_MAP_H
-#define P2P_FILE_SYNC_ROUTING_MAP_H
+#ifndef P2P_FILE_SYNC_ROUTING_TABLE_H
+#define P2P_FILE_SYNC_ROUTING_TABLE_H
 #include <memory>
 #include <mutex>
 #include <shared_mutex>
@@ -12,7 +12,7 @@
 
 namespace P2PFileSync {
 template<typename T>
-class RoutingMap {
+class RoutingTable {
  public:
   /**
    * @brief Get the ip address of specific destination peer
@@ -20,10 +20,10 @@ class RoutingMap {
    * @param dest the id of destination peer
    * @return IPAddr& the ip address of the destination peer
    */
-  IPAddr& get_next_peer(const T& dest) {
+  std::shared_ptr<IPAddr> get_next_peer(const T& dest) {
     // shared lock allows multiple thread perform search and get
     std::shared_lock<std::shared_mutex> sharedLock(_lock_mutex);
-    return _routing_map.find(dest)->second->first;
+    return _routing_map.find(dest)->second.first;
   }
 
   /**
@@ -76,4 +76,4 @@ class RoutingMap {
 };
 
 }  // namespace P2PFileSync::Protocol
-#endif  // P2P_FILE_SYNC_ROUTING_MAP_H
+#endif  // P2P_FILE_SYNC_ROUTING_TABLE_H

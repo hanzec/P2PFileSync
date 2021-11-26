@@ -13,10 +13,16 @@ class ProtocolServer::IMessageHandler<ProtoHelloMessage> {
     // update client session
     if (session_ret == nullptr) {
       auto new_session = ProtocolServer::PeerSession::new_session(
-          message.public_key(), X509_STORE_CTX_get_chain(server->_x509_store_ctx));
+          message.x509_certificate(), X509_STORE_CTX_get_chain(server->_x509_store_ctx));
+
+      // during creation of the peer session will verify the client cert from server certificate
+      if(new_session == nullptr){
+        LOG(ERROR) << "failed to verify certificate by server public certificate chain for client[" << message.sender_id() << "]";
+        return false;
+      }
 
       // TODO need to modify [SHA256] later avoid magic variables
-      if (new_session->verify(message.sender_id(), message.signature(), "SHA256")) {
+      if (new_session->verify(message.sender_id(), message.sender_id(), "SHA256")) {
         // add client to server endpoint
         server->_peer_pool.add_instance(message.sender_id(), new_session);
         LOG(INFO) << "successful add client [" << std::hex << message.sender_id() << "]";
@@ -28,7 +34,7 @@ class ProtocolServer::IMessageHandler<ProtoHelloMessage> {
     }
 
     // update routing table if possible
-    IPAddr dest = IPAddr(incoming_connection,0);
+    IPAddr dest = IPAddr(incoming_connection,message.port());
     if(server->can_delivered(message.sender_id())){
       if(server->try_update_table(message.sender_id(), dest, ttl)){
         LOG(INFO) << "route to peer [" << message.sender_id() << "] is update! ";

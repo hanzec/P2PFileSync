@@ -5,8 +5,17 @@ import "google/protobuf/timestamp.proto";
 package P2PFileSync;
 
 enum ProtoPayloadType{
-  HELLO_MESSAGE = 0;
-  REDIRECT_MESSAGE = 1;
+  HELLO = 0;
+  ACK = 5;
+  NACK = 6;
+  PING = 1;
+  PONG = 2;
+  HEARTBEAT = 4;
+  FILE_REQUEST = 3;
+}
+
+enum SignAlgorithm{
+  SHA_256 = 0;
 }
 
 message ProtoMessage {
@@ -16,7 +25,7 @@ message ProtoMessage {
 
   // packet information
   bytes packet_id = 4;
-  ProtoPayloadType request_type = 1;
+  ProtoPayloadType packet_type = 1;
   google.protobuf.Timestamp timestamp = 3;
 
   // actual payload
@@ -27,21 +36,13 @@ message SignedProtoMessage{
   // packet information
   uint32 ttl = 8;
   bytes signature = 7;
+  string sign_algorithm = 3;
 
-  google.protobuf.Any signed_payload = 2;
+  bytes signed_payload = 2;
 }
 
 message ProtoHelloMessage {
-  bytes signature = 1;
-
   uint32 port = 3;
   bytes sender_id = 5;
-  bytes public_key = 2;
-}
-
-message ProtoRedirectMessage {
-  string orig_packet_id = 4;
-  ProtoPayloadType orig_request_type = 1;
-  google.protobuf.Any orig_payload = 2;
-  google.protobuf.Timestamp orig_timestamp = 3;
+  bytes x509_certificate = 2;
 }

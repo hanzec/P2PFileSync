@@ -5,12 +5,13 @@
 #include <atomic>
 #include <cstddef>
 #include <filesystem>
+#include <map>
 #include <string>
 #include <vector>
 
 #include "common.h"
 #include "export.h"
-#include "model/response/response.h"
+#include "model/response/client_information_response.h"
 
 #ifndef P2P_FILE_SYNC_SERVER_KIT_SERVER_KIT_H
 #define P2P_FILE_SYNC_SERVER_KIT_SERVER_KIT_H
@@ -70,7 +71,7 @@ class UserContext {
  * @return true the client is registed with server
  * @return false ther client is not registed with server
  */
-EXPORT_FUNC static bool is_registered(const std::filesystem::path& conf);
+EXPORT_FUNC bool is_registered(const std::filesystem::path& conf);
 
 /**
  * @brief Regist current device to remote management server
@@ -79,13 +80,13 @@ EXPORT_FUNC static bool is_registered(const std::filesystem::path& conf);
  * authorized by management server after register and the register id by
  * formate of <JWT Token, Peer ID>
  */
-EXPORT_FUNC static std::pair<std::string, std::array<std::byte, 16>> register_client(
+EXPORT_FUNC std::pair<std::string, std::string> register_client(
     const std::string& server_address, const std::filesystem::path& configuration_path);
 
 /**
  * @brief User to manage the peer device related requests
  */
-class DeviceContext : std::enable_shared_from_this<DeviceContext> {
+class EXPORT_FUNC DeviceContext : std::enable_shared_from_this<DeviceContext> {
  public:
   /**
    * @brief make sure this object only construct and get by init_dev_ctx()
@@ -128,10 +129,10 @@ class DeviceContext : std::enable_shared_from_this<DeviceContext> {
 
   /**
    * @brief Get the id of current peer
-   *
+   * // TODO need to update document here
    * @return const std::string& the client id as string of the object
    */
-  [[nodiscard]] EXPORT_FUNC const std::array<std::byte, 16>& client_id() const;
+  [[nodiscard]] EXPORT_FUNC const std::string& device_id() const;
 
   /**
    * @brief Returned the neighbor peer list from management server
@@ -165,9 +166,8 @@ class DeviceContext : std::enable_shared_from_this<DeviceContext> {
    *  1. JWT renew in not implentmented, currently server are setting expire
    *     date as 1 year after to avoid problem
    */
-  EXPORT_FUNC DeviceContext(
-      std::array<std::byte, 16> client_id, std::string client_token,
-      const std::string &server_address, const std::filesystem::path &conf);
+  EXPORT_FUNC DeviceContext(std::string device_id, std::string client_token,
+                            std::string server_address, std::filesystem::path conf);
 
  private:
   // instance ptr
@@ -176,8 +176,8 @@ class DeviceContext : std::enable_shared_from_this<DeviceContext> {
   /**
    * Client information
    */
+  const std::string _device_id;
   const std::string _login_token;
-  const std::array<std::byte, 16> _client_id;
 
   /**
    * Configuration
@@ -185,8 +185,6 @@ class DeviceContext : std::enable_shared_from_this<DeviceContext> {
   const std::string _server_address;
   const std::filesystem::path _server_configuration_path;
 };
-
-using DeviceContextPtr = std::shared_ptr<Serverkit::DeviceContext>;
 }  // namespace P2PFileSync::Serverkit
 
 #endif  // P2P_FILE_SYNC_SERVER_KIT_SERVER_KIT_H

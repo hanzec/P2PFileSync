@@ -1,13 +1,13 @@
 //
 // Created by hanzech on 11/25/21.
 //
+#include <model/data/device_conf.h>
+#include <model/request/register_client_request.h>
+#include <model/response/register_client_response.h>
 #include <utils/machine_id.h>
 
 #include <filesystem>
 
-#include "model/data/data.h"
-#include "model/request/request.h"
-#include "model/response/response.h"
 #include "server_endpoint.h"
 #include "utils/curl_utils.h"
 
@@ -28,7 +28,7 @@ bool is_registered(const std::filesystem::path &configuration_path) {
   return true;
 }
 
-std::pair<std::string, std::array<std::byte, 16>> register_client(
+std::pair<std::string, std::string> register_client(
     const std::string &server_address, const std::filesystem::path &configuration_path) {
   RegisterClientRequest reques_model;
 
@@ -53,7 +53,7 @@ std::pair<std::string, std::array<std::byte, 16>> register_client(
   DeviceConfiguration conf(resp);
   conf.save_to_disk(configuration_path / CLIENT_CONFIGURE_FILE_NAME);
 
-  return {resp.get_login_token(), resp.get_client_id()};
+  return {resp.jwt_key(), resp.device_id()};
 }
 
 }  // namespace P2PFileSync::Serverkit

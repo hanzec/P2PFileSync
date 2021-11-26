@@ -100,7 +100,7 @@ void * POST_and_save_to_ptr(CURLSH * curl_handler, const std::string& request_ur
   }
 }
 
-void * GET_and_save_to_ptr(CURLSH * curl_handler, const std::string& request_url, const std::vector<std::string>& header, bool force_ssl){
+void * GET_and_save_to_ptr(CURLSH * curl_handler, const std::string& request_url, std::vector<std::string> header, bool force_ssl){
   auto * data = static_cast<ptr_data *>(malloc(sizeof(ptr_data)));
   
   //assign spaces

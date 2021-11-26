@@ -1,6 +1,8 @@
 #include <event2/buffer.h>
 #include <event2/bufferevent.h>
 #include <glog/logging.h>
+#include <google/protobuf/util/time_util.h>
+#include <openssl/err.h>
 #include <protocol.pb.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -14,26 +16,33 @@
 #include <string>
 
 #include "p2p_interface.h"
-#include "utils/log.h"
-#include "utils/ip_addr.h"
+#include "packet/tasks.h"
 #include "utils/data_struct/fifo_cache.h"
-#include "utils/data_struct/routing_map.h"
+#include "utils/data_struct/routing_table.h"
 #include "utils/data_struct/thread_pool.h"
+#include "utils/ip_addr.h"
+#include "utils/log.h"
 
 namespace P2PFileSync {
+
 // get instance of ProtocolServer object
-std::shared_ptr<ProtocolServer> ProtocolServer::get_instance() { return _instance; };
+std::shared_ptr<ProtocolServer> ProtocolServer::get_instance() {
+  if (_instance == nullptr) {
+    return nullptr;
+  } else {
+    return _instance->shared_from_this();
+  }
+};
 
 // initlized protol instance
-bool ProtocolServer::init(const std::shared_ptr<Config> config,
+bool ProtocolServer::init(const std::shared_ptr<Config> &config,
                           const std::shared_ptr<Serverkit::DeviceContext> &device_context) {
   // prevent init twice
   if (_instance != nullptr) return false;
 
   // will constantly block until client is activated
   while (!device_context->is_enabled()) {
-    LOG(ERROR) <<
-    sleep(60);  // wait for 1 minutes and check activation status again
+    LOG(ERROR) << sleep(60);  // wait for 1 minutes and check activation status again
   }
 
   // creating socket
@@ -94,8 +103,8 @@ bool ProtocolServer::init(const std::shared_ptr<Config> config,
   // creating instance
   _device_context = device_context;
   _instance = std::shared_ptr<ProtocolServer>(new ProtocolServer(
-      config->get_workder_thread_num(), socket_fd, config->get_packet_cache_size(), client_cert,
-      client_priv_key, sign_chain));
+      config->get_workder_thread_num(), socket_fd, config->get_packet_cache_size(),
+      client_cert, client_priv_key, sign_chain));
 
   return true;
 };
@@ -104,7 +113,6 @@ ProtocolServer::ProtocolServer(uint8_t number_worker, int fd, uint32_t packet_ca
                                X509 *cert, EVP_PKEY *private_key, STACK_OF(X509) * ca)
     : FIFOCache(packet_cache_size),  // initial packet cache
       ThreadPool(number_worker),     // initial thread pool
-      _client_cert(cert),
       _client_priv_key(private_key),
       _x509_store(X509_STORE_new()),
       _x509_store_ctx(X509_STORE_CTX_new()),
@@ -118,9 +126,11 @@ ProtocolServer::ProtocolServer(uint8_t number_worker, int fd, uint32_t packet_ca
   // openssl related structure
   X509_STORE_CTX_init(_x509_store_ctx, _x509_store, cert, ca);
 
-  // send hello message to all clients, client will add node when response get
+  ProtoHelloMessage hello_message = new_hello_payload(cert);
+
   for (const auto &ip : _device_context->peer_list()) {
-    ProtoHelloMessage
+    auto ip_addr = std::make_shared<IPAddr>(ip.second);
+    send_pkg(package_pkg<ProtoHelloMessage>(hello_message, ip.first), ip_addr);
   }
 };
 
@@ -177,39 +187,46 @@ void ProtocolServer::read_callback(struct bufferevent *bev, void *sin) {
   if (signed_msg.ttl() == 0) return;
 
   // avoid the handle_difficult one packet twice
-  signed_msg.signed_payload().UnpackTo(&proto_msg);
+  proto_msg.ParseFromString(signed_msg.signed_payload());
   if (proto_server->is_cached(proto_msg.packet_id())) {
     VLOG(3) << "skip previous handled signed_msg with id [" << proto_msg.packet_id();
     return;
   }
 
   // check if the package's final deliver is current peer or not
-  if (UUID::compare(proto_server->_device_context->client_id(), proto_msg.receiver_id())) {
-    // checking of the packet can deliver to destination peer or not
-    if (proto_server->can_delivered(proto_msg.receiver_id())) {
+  auto receiver = proto_msg.receiver_id();
+  if (proto_server->_device_context->device_id() == receiver) {
+    // redirect packet if ttl > 1 and have avaliable path
+    if (signed_msg.ttl() > 1 && proto_server->can_delivered(receiver)) {
+      proto_server->submit(Task::send_packet_tcp, signed_msg,
+                           proto_server->get_next_peer(receiver));
+    } else {
       VLOG(3) << "cannot found desnation for receiver [" << proto_msg.receiver_id() << "]";
       return;
     }
-
-    // redirect packet to destination if ttl is > 1
-    if (signed_msg.ttl() > 1){
-      signed_msg.set_ttl(signed_msg.ttl() - 1); // decrease 1 to ttl
-      proto_server->submit();
-    }
   }
 
-  // handles the request
-  switch (proto_msg.request_type()) {
-    case ProtoPayloadType::HELLO_MESSAGE:
+  // handle packet by packet type
+  switch (proto_msg.packet_type()) {
+    case ProtoPayloadType::HELLO: {
       // only hello message won't include signature in outside since handshake
       ProtoHelloMessage msg;
       proto_msg.payload().UnpackTo(&msg);
       proto_server->submit(IMessageHandler<ProtoHelloMessage>::handle_complicated,
                            get_instance(), msg, incoming_connection, signed_msg.ttl());
+    } break;
+    case ProtoPayloadType::PING:
       break;
-    case REDIRECT_MESSAGE:
+    case ProtoPayloadType::PONG:
+      break;
+    case ProtoPayloadType::ACK:
+      break;
+    case ProtoPayloadType::NACK:
+      break;
+    case ProtoPayloadType::HEARTBEAT:
       break;
     default:
+      LOG(ERROR) << "unknown packet type [" << proto_msg.packet_type() << "]";
       break;
   }
 }
@@ -236,11 +253,82 @@ void ProtocolServer::event_callback(struct bufferevent *bev, short events, void 
   }
 }
 
-std::future<bool> ProtocolServer::redirect_pkg(const SignedProtoMessage &data,
-                                               const uint32_t &size, const IPAddr &peer) {
-  SignedProtoMessage new_pkg(data);
-  new_pkg.set_ttl(new_pkg.ttl() - 1);
+std::future<bool> ProtocolServer::send_pkg(const ProtoMessage &data,
+                                           const std::shared_ptr<IPAddr> &peer) {
+  size_t digest_len;
+  auto raw_packet_size = data.ByteSizeLong();
+  auto raw_packer = std::malloc(raw_packet_size);
+  data.SerializeToArray(raw_packer, raw_packet_size);
 
-  return std::future<bool>();
+  if (1 != EVP_DigestSignInit(_evp_md_ctx, nullptr, EVP_sha256(), nullptr, _client_priv_key)) {
+    LOG(FATAL) << "EVP_DigestVerifyInit failed, error" << std::hex << ERR_get_error();
+  }
+
+  // use the openssl to sign the packet
+  auto digest = (unsigned char *)std::malloc(EVP_MAX_MD_SIZE);
+  auto sign_len = EVP_DigestSign(_evp_md_ctx, digest, &digest_len, (unsigned char *)raw_packer,
+                                 raw_packet_size);
+  if (sign_len <= 0) {
+    LOG(ERROR) << "sign failed";
+    return std::async(std::launch::deferred, []() { return false; });
+  }
+
+  // prepare final message
+  SignedProtoMessage signed_msg;
+  // TODO will use user-defined value later, right now for keeping things simple will be set to
+  // 10
+  signed_msg.set_ttl(10);
+  signed_msg.set_signature(digest, digest_len);
+  signed_msg.set_sign_algorithm("SHA256");
+  signed_msg.set_signed_payload(raw_packer, raw_packet_size);
+
+  return submit(Task::send_packet_tcp, signed_msg, peer);
 }
-}  // namespace P2PFileSync::Protocol
+
+template <typename T>
+ProtoMessage ProtocolServer::package_pkg(const T &data, const std::string &receiver) {
+  ProtoMessage ret;
+  auto *timestamp =
+      new google::protobuf::Timestamp(google::protobuf::util::TimeUtil::GetCurrentTime());
+
+  // static assert proto message type
+  static_assert(std::is_base_of<google::protobuf::Message, T>::value,
+                "ProtoMessage must be derived from google::protobuf::Message");
+
+  // set packet type
+  if constexpr (std::is_same<T, ProtoHelloMessage>::value) {
+    ret.set_packet_type(ProtoPayloadType::HELLO);
+  }
+
+  ret.mutable_payload()->PackFrom(data);
+  ret.set_allocated_timestamp(timestamp);  // set allocated wil take pointer's ownership
+  // todo need to modify here, client_id always 16 bytes should not use magic number
+  ret.set_receiver_id(receiver);
+  ret.set_sender_id(_device_context->device_id());
+
+  return ret;
+}
+
+ProtoHelloMessage ProtocolServer::new_hello_payload(X509 *cert) {
+  size_t raw_cert_size = 0;
+  uint8_t *raw_cert = nullptr;
+
+  if (cert == nullptr) {
+    if ((raw_cert_size = i2d_X509(cert, &raw_cert) < 0)) {
+      LOG(ERROR) << "unable to get raw certificate from x509 store!";
+    }
+  } else {
+    if ((raw_cert_size =
+             i2d_X509(X509_STORE_CTX_get_current_cert(_x509_store_ctx), &raw_cert) < 0)) {
+      LOG(ERROR) << "unable to get raw certificate from x509 store!";
+    }
+  }
+
+  // fill in proto hello message
+  ProtoHelloMessage hello_message;
+  hello_message.set_sender_id(_device_context->device_id());
+  hello_message.set_x509_certificate(raw_cert, raw_cert_size);
+
+  return hello_message;
+}
+}  // namespace P2PFileSync

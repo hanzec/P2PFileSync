@@ -100,8 +100,7 @@ std::shared_ptr<ProtocolServer::PeerSession> ProtocolServer::PeerSession::new_se
   X509_STORE_CTX* x509_store_ctx = X509_STORE_CTX_new();
   X509_STORE_CTX_init(x509_store_ctx, x509_store, cert, ca);
 
-  int rc = X509_verify_cert(x509_store_ctx);
-  if (rc == 1) {
+  if (X509_verify_cert(x509_store_ctx) == 1) {
     ret = std::shared_ptr<ProtocolServer::PeerSession>(
         new ProtocolServer::PeerSession(X509_get_pubkey(cert)));
   } else {
@@ -124,6 +123,7 @@ ProtocolServer::PeerSession::PeerSession(EVP_PKEY* _public_key) noexcept : _publ
   LOG(INFO) << "create peer instance";
 }
 
+// TODO modify here using protobuf enum of digest Algorithm
 bool ProtocolServer::PeerSession::verify(const std::string& data, const std::string& sig,
                                          const std::string& method) noexcept{
   if(_evp_md_ctx == nullptr){

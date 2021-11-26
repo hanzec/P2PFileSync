@@ -71,11 +71,9 @@ target_sources(server_connection
         PUBLIC
         "server_kit.h"
         PRIVATE
-        ${UTILS_SRCS} ${UTILS_HDRS}
-        ${SERVER_KIT_SRCS} ${SERVER_KIT_HDRS}
         ${REQUEST_MODEL_SRCS}
-        "server_kit.h" "server_kit.cc"
-        "managent_context.cc" "device_context.cc")
+        ${UTILS_SRCS} ${UTILS_HDRS}
+        ${SERVER_KIT_SRCS} ${SERVER_KIT_HDRS})
 
 target_include_directories(server_connection PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 

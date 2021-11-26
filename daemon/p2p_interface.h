@@ -17,16 +17,19 @@
 #include <unordered_set>
 
 #include "common.h"
-#include "export.h"
 #include "server_kit/server_kit.h"
 #include "utils/data_struct/fifo_cache.h"
 #include "utils/data_struct/instance_pool.h"
-#include "utils/data_struct/routing_map.h"
+#include "utils/data_struct/routing_table.h"
 #include "utils/data_struct/thread_pool.h"
 
+
 namespace P2PFileSync {
+
+using DeviceContextPtr = std::shared_ptr<Serverkit::DeviceContext>;
+
 class ProtocolServer : private ThreadPool,
-                       private RoutingMap<std::string>,
+                       private RoutingTable<std::string>,
                        private FIFOCache<std::basic_string<char>>,
                        std::enable_shared_from_this<ProtocolServer> {
  public:
@@ -43,7 +46,7 @@ class ProtocolServer : private ThreadPool,
    * @return std::shared_ptr<ProtocolServer> reference of ProtocolServer,
    * nullptr if init() not called
    */
-  [[nodiscard]] EXPORT_FUNC static std::shared_ptr<ProtocolServer> get_instance();
+  [[nodiscard]] static std::shared_ptr<ProtocolServer> get_instance();
 
   /**
    * @brief Initial function which will need to call only once, call mutiple
@@ -69,37 +72,25 @@ class ProtocolServer : private ThreadPool,
    * @return true the ProtocolServer init success
    * @return false the ProtocolServer init failed
    */
-  EXPORT_FUNC static bool init(const std::shared_ptr<Config> config,
-                               const Serverkit::DeviceContextPtr& device_context);
+  static bool init(const std::shared_ptr<Config>& config,
+                               const DeviceContextPtr& device_context);
 
-  /**
-   * @brief send message to all avaliable peer with specific raw data and size by submitting
-   * task to task pool
-   * @note this function will only dispatch the job but not wating until job's
-   * finished execution
-   * @param data the raw pointer of the data
-   * @param size the size of raw pointer of the data
-   * @return std::future<bool> indicates the package is successfully send or not
-   */
-  EXPORT_FUNC void broadcast_pkg(const void*& data, const uint32_t& size);
+  // TODO need document
+  std::future<bool> send_pkg(const ProtoMessage& data,
+                                         const std::shared_ptr<IPAddr>& peer);
 
-  /**
-   * @brief send message to specific peer with specific raw data and size by submitting task to
-   * task pool
-   * @note after package is sent, the ttl will decrease 1, if ttl = 1 then will not send to
-   * other peer
-   * @param data the raw pointer of the data
-   * @param size the size of raw pointer of the data
-   * @param client the destination of the the message will be sent to
-   * @return std::future<bool> indicates the package is successfully send or not
-   */
-  EXPORT_FUNC std::future<bool> send_pkg(const ProtoMessage& data, const uint32_t& size, const IPAddr& peer);
+  // TODO need document
+  template <typename T>
+  ProtoMessage package_pkg(const T& data, const std::string& receiver);
+
+  // TODO need document
+  ProtoHelloMessage new_hello_payload(X509 * cert);
 
  protected:
   /**
    * Peer session for storage all known peer with their public Key
    */
-  class EXPORT_FUNC PeerSession {
+  class PeerSession {
    public:
     /**
      * @brief Delete default constructor prevent construct object without calling new_session
@@ -169,7 +160,7 @@ class ProtocolServer : private ThreadPool,
 
  private:
   // TODO need finished document
-  // !! For overload functional object, compiler could not infer the return type of the method !!
+  // !! For overload functional object, compiler could not infer the return type of the method
   template <typename T>
   class IMessageHandler {
    public:
@@ -180,7 +171,7 @@ class ProtocolServer : private ThreadPool,
     }
 
     static bool handle_complicated(std::shared_ptr<ProtocolServer> server, const T message,
-                       struct sockaddr_in* incoming_connection, uint32_t ttl) {
+                                   struct sockaddr_in* incoming_connection, uint32_t ttl) {
       LOG(ERROR) << "complicated package handler for message [" << typeid(T).name()
                  << "] not implemented!";
       return false;
@@ -190,16 +181,16 @@ class ProtocolServer : private ThreadPool,
   /**
    * Private instance
    */
-  static std::shared_ptr<ProtocolServer> _instance;
-  static std::shared_ptr<Serverkit::DeviceContext> _device_context;
+  inline static std::shared_ptr<ProtocolServer> _instance = nullptr;
+  inline static std::shared_ptr<Serverkit::DeviceContext> _device_context = nullptr;
 
   /**
    * Client Certificate //TODO delete those when deconstruct avoid leaking
    */
   X509_STORE* _x509_store;
   X509_STORE_CTX* _x509_store_ctx;
-  const X509* _client_cert = nullptr;
-  const EVP_PKEY* _client_priv_key = nullptr;
+  EVP_MD_CTX* _evp_md_ctx = EVP_MD_CTX_new();
+  EVP_PKEY* _client_priv_key = nullptr;
 
   /**
    * Instance private variables
@@ -261,5 +252,5 @@ class ProtocolServer : private ThreadPool,
   static void event_callback(struct bufferevent* bev, short events, void* ctx);
 };
 
-}  // namespace P2PFileSync::Protocol
+}  // namespace P2PFileSync
 #endif

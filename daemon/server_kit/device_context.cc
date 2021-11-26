@@ -1,4 +1,7 @@
-#include <openssl/pem.h>
+#include <model/data/device_conf.h>
+#include <model/response/client_certificate_response.h>
+#include <model/response/client_information_response.h>
+#include <model/response/get_peer_list_response.h>
 
 #include <filesystem>
 #include <memory>
@@ -6,22 +9,20 @@
 #include <utility>
 #include <variant>
 
-#include "model/model.h"
 #include "server_endpoint.h"
 #include "server_kit.h"
 #include "utils/base64_utils.h"
 #include "utils/curl_utils.h"
-#include "utils/machine_id.h"
 
 namespace P2PFileSync::Serverkit {
 
-DeviceContext::DeviceContext(std::array<std::byte, 16> client_id, std::string client_token,
-                             const std::string &server_address,
-                             const std::filesystem::path &conf)
-    : _client_id(client_id),
+DeviceContext::DeviceContext(std::string device_id, std::string client_token,
+                             std::string server_address,
+                             std::filesystem::path conf)
+    : _device_id(std::move(device_id)),
       _login_token(std::move(client_token)),
-      _server_address(server_address),
-      _server_configuration_path(conf){};
+      _server_address(std::move(server_address)),
+      _server_configuration_path(std::move(conf)){};
 
 std::shared_ptr<DeviceContext> DeviceContext::get_dev_ctx() noexcept {
   if (_instance == nullptr) {
@@ -53,7 +54,9 @@ bool DeviceContext::init_dev_ctx(const std::string &server_address,
 
 bool DeviceContext::is_enabled() const { return client_info()->success(); }
 
-const std::array<std::byte, 16> &DeviceContext::client_id() const { return _client_id; }
+const std::string & DeviceContext::device_id() const {
+  return _device_id;
+}
 
 std::unique_ptr<ClientInfoResponse> DeviceContext::client_info() const {
   // client info does not required extra request models

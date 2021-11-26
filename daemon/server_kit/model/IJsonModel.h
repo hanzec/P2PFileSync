@@ -125,6 +125,13 @@ class IJsonModel {
 
  protected:
   /**
+   * @brief Get the root object
+   *
+   * @return rapidjson::Value& the root object
+   */
+  rapidjson::Document& get_root() { return root; };
+
+  /**
    * @brief Get the value object
    * @note by defult if key is not exist then this fuction will return nullptr
    * for object and 0/0.0 or nurmical values. And fot string variables, this
@@ -134,7 +141,7 @@ class IJsonModel {
    * @return T the value of key in the json document
    */
   template <typename T>
-  T get_value(const char* key) {
+  T get_value(const char* key) const{
     if (_response_flag ? root.HasMember(key) : root["responseBody"].HasMember(key)) {
       if constexpr (std::is_arithmetic<T>::value) {
         if (!_response_flag) {

@@ -44,14 +44,14 @@ class RegisterClientResponse : public IJsonModel {
    *
    * @return std::array<std::byte,16> the client id registered in server
    */
-  EXPORT_FUNC std::array<std::byte,16> get_client_id();
+  EXPORT_FUNC std::string device_id() const;
 
   /**
    * @brief Get the enable url ection in RegisterClientResponse request
    *
    * @return std::string the url for enabling this client
    */
-  EXPORT_FUNC std::string get_enable_url();
+  EXPORT_FUNC std::string get_enable_url() const;
 
   /**
    * @brief Get the jwt login token section in RegisterClientResponse
@@ -60,7 +60,7 @@ class RegisterClientResponse : public IJsonModel {
    * @return std::string the raw jwt login token certificate encoded by
    * BASE64
    */
-  EXPORT_FUNC std::string get_login_token();
+  EXPORT_FUNC std::string jwt_key() const;
 };
 }  // namespace P2PFileSync::Serverkit
 

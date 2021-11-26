@@ -17,12 +17,12 @@ class DeviceConfiguration : public IJsonModel {
    /**
    * @brief Construct a new Device configuration file
    */
-  DeviceConfiguration(const std::filesystem::path& device_cfg_file);
+  explicit DeviceConfiguration(const std::filesystem::path& device_cfg_file);
 
   /**
    * @brief Construct a new Device configuration file
    */
-  DeviceConfiguration(std::string& device_id, std::string& jwt_key);
+  DeviceConfiguration(std::string&& device_id, std::string&& jwt_key);
 
   /**
    * @brief Construct a new Device configuration file
@@ -34,14 +34,14 @@ class DeviceConfiguration : public IJsonModel {
    *
    * @param ipaddress the ip address without port as string
    */
-  std::string get_jwt_key();
+  [[nodiscard]] std::string get_jwt_key() const;
 
   /**
    * @brief Set the Machine ID section of RegisterClientRequest
    *
    * @param machine_id the machine id as string
    */
-  std::array<std::byte,16> get_device_id();
+  [[nodiscard]] std::string get_device_id() const;
 
 
   /**

@@ -7,8 +7,9 @@
 #include "protocol.pb.h"
 #include "utils/ip_addr.h"
 
-namespace P2PFileSync {
-static bool send_packet(const SignedProtoMessage& msg, const IPAddr& ip_addr);
+namespace P2PFileSync::Task {
+//TODO need document
+bool send_packet_tcp(SignedProtoMessage& msg, const std::shared_ptr<IPAddr>& ip_addr);
 }
 
 #endif  // P2P_FILE_SYNC_TASKS_H
