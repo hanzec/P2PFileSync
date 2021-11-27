@@ -8,6 +8,7 @@
 
 #include <yaml-cpp/node/parse.h>
 #include <yaml-cpp/yaml.h>
+#include <glog/logging.h>
 
 #include <cstdint>
 #include <fstream>
@@ -18,7 +19,7 @@
 namespace P2PFileSync {
 [[nodiscard]] bool generate_default_config(const std::filesystem::path& config_file) {
   static const std::string default_config =
-     "app_config:\n\tdata_dir: \"/tmp/p2p_sync/data\"\n\tmount_point: \"/p2p_sync\"\network_config:\n\ttrans_port_number: 8080\n\tmanage_sock_file: \"/tmp/p2p_sync/manage.sock\"\n";
+     "app_config:\n\tdata_dir:\"/tmp/p2p_sync/data\"\n\tmount_point:\"/p2p_sync\"\network_config:\n\ttrans_port_number:8080\n\tmanage_sock_file:\"/tmp/p2p_sync/manage.sock\"\n";
   std::ofstream file(config_file, std::fstream::out);
 
   if (file.fail()) {
@@ -31,8 +32,15 @@ namespace P2PFileSync {
 }
 
 [[nodiscard]] std::shared_ptr<Config> parse_comfig_file(const std::filesystem::path& config_file) {
-  YAML::Node config = YAML::LoadFile(config_file.string());
-  
+
+  YAML::Node config;
+  try{
+    config = YAML::LoadFile(config_file.string());
+  } catch (YAML::Exception & e) {
+    LOG(ERROR) << "Failed to parse config file: " << e.what();
+    return nullptr;
+  }
+
   //TODO: add config file error checking
   return std::make_shared<Config>(
       config["app_config"]["mount_point"].as<std::string>(),

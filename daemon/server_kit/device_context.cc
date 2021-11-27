@@ -16,8 +16,8 @@
 
 namespace P2PFileSync::Serverkit {
 
-DeviceContext::DeviceContext(std::string device_id, std::string client_token,
-                             std::string server_address,
+DeviceContext::DeviceContext(const this_is_private &, std::string device_id,
+                             std::string client_token, std::string server_address,
                              std::filesystem::path conf)
     : _device_id(std::move(device_id)),
       _login_token(std::move(client_token)),
@@ -28,44 +28,46 @@ std::shared_ptr<DeviceContext> DeviceContext::get_dev_ctx() noexcept {
   if (_instance == nullptr) {
     return nullptr;
   }
-  return _instance->shared_from_this();
+  return _instance;
 }
 
 bool DeviceContext::init_dev_ctx(const std::string &server_address,
                                  const std::filesystem::path &conf) noexcept {
   if (_instance == nullptr) {
     if (is_registered(conf)) {
+      LOG(INFO) << "Device is registered, loading configuration...";
       DeviceConfiguration conf_file(conf / CLIENT_CONFIGURE_FILE_NAME);
-      _instance = std::shared_ptr<DeviceContext>(
-          new DeviceContext(conf_file.get_device_id(), conf_file.get_jwt_key(),
-          server_address, conf));
-      return true;
+      _instance =
+          create(conf_file.device_id(), conf_file.jwt_key(), server_address, conf);
+      return _instance != nullptr;
     } else {
-      // c++ 17 unpack pair to variables
+      LOG(INFO) << "Device is not registered, generating configuration...";
       auto param = register_client(server_address, conf);
-      _instance = std::shared_ptr<DeviceContext>(
-          new DeviceContext(param.second, param.first, server_address, conf));
-      return true;
+      if (param.first.empty() && param.second.empty()) {
+        LOG(ERROR) << "Failed to register device";
+        return false;
+      } else {
+        _instance = create(param.second, param.first, server_address, conf);
+        return _instance != nullptr;
+      }
     }
   } else {
     return true;
   }
 }
 
-bool DeviceContext::is_enabled() const { return client_info()->success(); }
+bool DeviceContext::is_enabled() const { return client_info() != nullptr; }
 
-const std::string & DeviceContext::device_id() const {
-  return _device_id;
-}
+const std::string &DeviceContext::device_id() const { return _device_id; }
 
 std::unique_ptr<ClientInfoResponse> DeviceContext::client_info() const {
   // client info does not required extra request models
 
   void *raw_json = GET_and_save_to_ptr(
-      nullptr, std::string(_server_address).append(SERVER_REGISTER_ENDPOINT_V1),
+      nullptr, std::string(_server_address).append(GET_CLIENT_INFO_ENDPOINT_V1),
       {"Authorization:" + _login_token}, false);
 
-  if (raw_json == nullptr) {
+  if (strlen(static_cast<char *>(raw_json)) == 0) {
     LOG(ERROR) << "empty response";
     return nullptr;
   }

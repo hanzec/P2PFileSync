@@ -86,12 +86,28 @@ EXPORT_FUNC std::pair<std::string, std::string> register_client(
 /**
  * @brief User to manage the peer device related requests
  */
-class EXPORT_FUNC DeviceContext : std::enable_shared_from_this<DeviceContext> {
+class EXPORT_FUNC DeviceContext{
+ protected:
+  /**
+   * Blocker avoid call public constructor
+   */
+  struct this_is_private;
+
  public:
   /**
    * @brief make sure this object only construct and get by init_dev_ctx()
    */
   DeviceContext() = delete;
+
+  /**
+   * @brief Construct a new Device Context by following steps:
+   *
+   * Existing Problem:
+   *  1. JWT renew in not implentmented, currently server are setting expire
+   *     date as 1 year after to avoid problem
+   */
+  DeviceContext(const this_is_private &,std::string device_id, std::string client_token,
+                std::string server_address, std::filesystem::path conf);
 
   /**
    * @brief get instance of the DeviceContext
@@ -160,14 +176,24 @@ class EXPORT_FUNC DeviceContext : std::enable_shared_from_this<DeviceContext> {
 
  protected:
   /**
-   * @brief Construct a new Device Context by following steps:
    *
-   * Existing Problem:
-   *  1. JWT renew in not implentmented, currently server are setting expire
-   *     date as 1 year after to avoid problem
+   * @tparam Args
+   * @param args
+   * @return
    */
-  EXPORT_FUNC DeviceContext(std::string device_id, std::string client_token,
-                            std::string server_address, std::filesystem::path conf);
+  template <typename... Args>
+  static ::std::shared_ptr<DeviceContext> create(Args &&...args) {
+    return ::std::make_shared<DeviceContext>(this_is_private{0}, ::std::forward<Args>(args)...);
+  }
+
+
+
+  /**
+   * Blocker avoid call public constructor
+   */
+  struct this_is_private {
+    explicit this_is_private(int) {}
+  };
 
  private:
   // instance ptr

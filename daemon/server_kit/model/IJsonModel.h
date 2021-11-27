@@ -13,11 +13,12 @@
 #include <algorithm>
 #include <cstddef>
 #include <filesystem>
+#include <fstream>
 #include <limits>
+#include <map>
 #include <string>
 #include <string_view>
 #include <type_traits>
-#include <map>
 #include <vector>
 
 #include "../export.h"
@@ -47,11 +48,6 @@ class IJsonModel {
 
     // check if is response model or not
     _response_flag = root.HasMember("success") && root.HasMember("responseBody");
-
-    // debug message
-    if (VLOG_IS_ON(3)) {
-      VLOG(3) << "parsed new JSON :" << std::endl << get_json();
-    }
   }
 
   /**
@@ -94,18 +90,8 @@ class IJsonModel {
    * @param file the path of the file
    */
   void save_to_disk(const std::filesystem::path& file) {
-#ifdef UNDER_UNIX
-    FILE* fp = fopen(file.c_str(), "wb");  // non-Windows use "w"
-#elifdef UNDER_WINDOWS
-    FILE* fp = fopen(file.c_str(), "w");       // non-Windows use "w"
-#endif
-
-    std::array<char, 1024> writeBuffer{};
-    rapidjson::FileWriteStream os(fp, writeBuffer.begin(), writeBuffer.size());
-
-    rapidjson::Writer<rapidjson::FileWriteStream> writer(os);
-    root.Accept(writer);
-    fclose(fp);
+    std::ofstream ofs(file);
+    ofs << get_json();
   }
 
   /**
@@ -141,8 +127,8 @@ class IJsonModel {
    * @return T the value of key in the json document
    */
   template <typename T>
-  T get_value(const char* key) const{
-    if (_response_flag ? root.HasMember(key) : root["responseBody"].HasMember(key)) {
+  T get_value(const char* key) const {
+    if (_response_flag ? root["responseBody"].HasMember(key) : root.HasMember(key)) {
       if constexpr (std::is_arithmetic<T>::value) {
         if (!_response_flag) {
           return root[key].Get<T>();
@@ -157,7 +143,11 @@ class IJsonModel {
         }
       }
     } else {
-      return 0;
+      if constexpr (std::is_arithmetic<T>::value) {
+        return 0;
+      } else {
+        return std::string("");
+      }
     }
   }
 
@@ -234,7 +224,7 @@ class IJsonModel {
     rapidjson::Value value;
     rapidjson::Value value_name(rapidjson::kStringType);
 
-    if constexpr(std::is_arithmetic<T>::value) {
+    if constexpr (std::is_arithmetic<T>::value) {
       // handle_difficult numerical type
       root.AddMember(value_name.SetString(key, strlen(key)), value.Set(val),
                      root.GetAllocator());

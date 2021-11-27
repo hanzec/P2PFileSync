@@ -34,14 +34,14 @@ class DeviceConfiguration : public IJsonModel {
    *
    * @param ipaddress the ip address without port as string
    */
-  [[nodiscard]] std::string get_jwt_key() const;
+  [[nodiscard]] std::string jwt_key() const;
 
   /**
    * @brief Set the Machine ID section of RegisterClientRequest
    *
    * @param machine_id the machine id as string
    */
-  [[nodiscard]] std::string get_device_id() const;
+  [[nodiscard]] std::string device_id() const;
 
 
   /**

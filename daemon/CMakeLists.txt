@@ -88,7 +88,7 @@ target_include_directories(daemon PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/server_kit
 ###############################################################################
 target_sources(daemon
         PRIVATE
-        "main.cc" "server_kit/export.h" "common.h"
+        "common.h" "main.cc" "server_kit/export.h"
         "manage_interface.cc" "manage_interface.h"
         "peer_session.cc" "protocol_server.cc" "p2p_interface.h")
 target_include_directories(daemon PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})

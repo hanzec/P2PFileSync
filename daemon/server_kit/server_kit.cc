@@ -50,10 +50,19 @@ std::pair<std::string, std::string> register_client(
   RegisterClientResponse resp(static_cast<char *>(raw_json));
 
   // save to configuration file
-  DeviceConfiguration conf(resp);
-  conf.save_to_disk(configuration_path / CLIENT_CONFIGURE_FILE_NAME);
+  try{
+    DeviceConfiguration conf(resp);
+    LOG(INFO) << "save client configuration to " << configuration_path;
 
-  return {resp.jwt_key(), resp.device_id()};
+    conf.save_to_disk(configuration_path / CLIENT_CONFIGURE_FILE_NAME);
+
+
+    LOG(INFO) << resp.get_enable_url();
+    return {resp.jwt_key(), resp.device_id()};
+  } catch (std::exception &e) {
+    LOG(ERROR) << "parse response error: " << e.what();
+    return {"", {}};
+  }
 }
 
 }  // namespace P2PFileSync::Serverkit

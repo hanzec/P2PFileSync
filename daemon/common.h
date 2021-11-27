@@ -19,7 +19,7 @@ const static std::string CONFIG_FILE_NAME = "config.yaml";
 
 class Config {
  public:
-  Config();
+  Config(){};
 
   Config(std::string mount_point, std::string sync_data_dir,
          const uint16_t trans_port_number,std::string manage_sock_file_)
@@ -30,7 +30,7 @@ class Config {
 
   [[nodiscard]] std::filesystem::path get_mount_point() const { return _mount_point; }
 
-  [[nodiscard]] std::filesystem::path get_sync_data_dir() const { return _sync_data_dir; }
+  [[nodiscard]] std::filesystem::path config_folder() const { return _sync_data_dir; }
 
   [[nodiscard]] std::filesystem::path get_manage_sock_file_() const { return manage_sock_file_; }
 
@@ -52,17 +52,16 @@ class Config {
 
  private:
   const uint8_t _workder_thread_num = 5;
-  const uint16_t _trans_port_number = 9998;
+  const uint16_t _trans_port_number = 3324;
   const uint32_t _packet_cached_size = 100;
   const std::string _listen_ip_address = "";
   const std::string _trans_interface_name = "";
-  const std::string _management_server_url = "http://DESKTOP-5TV2AI2.local"; // TODO need to modify here
+  const std::string _management_server_url = "http://10.10.0.118"; // TODO need to modify here
 
-  const std::filesystem::path manage_sock_file_;
 
   const std::filesystem::path _mount_point;
-  const std::filesystem::path _sync_data_dir;
-
+  const std::filesystem::path _sync_data_dir = "/tmp/sync_data";
+  const std::filesystem::path manage_sock_file_ = _sync_data_dir/"manage.sock";
   const std::filesystem::path _client_config_path = _sync_data_dir/"client.cfg";
   const std::filesystem::path _client_certificate_path = _sync_data_dir/"client.p12";
   const std::filesystem::path _server_certificate_path = _sync_data_dir/"client_sign_root.crt";

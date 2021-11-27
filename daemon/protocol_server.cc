@@ -42,7 +42,9 @@ bool ProtocolServer::init(const std::shared_ptr<Config> &config,
 
   // will constantly block until client is activated
   while (!device_context->is_enabled()) {
-    LOG(ERROR) << sleep(60);  // wait for 1 minutes and check activation status again
+    LOG(ERROR) << "current device is not enabled, will check activate status in 1 minutes "
+                  "later";
+    sleep(60);   // wait for 1 minutes and check activation status again
   }
 
   // creating socket

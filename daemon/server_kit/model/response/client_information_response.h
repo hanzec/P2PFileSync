@@ -32,7 +32,7 @@ class ClientInfoResponse : public IJsonModel {
    * @param json the json string wants to parse as request client certificate
    * Object
    */
-  ClientInfoResponse(char* json);
+  explicit ClientInfoResponse(char* json);
 
   /**
    * @brief Get the client id in RequestClientInfo Response object

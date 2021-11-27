@@ -63,7 +63,7 @@ void * GET_and_save_to_ptr(CURLSH * curl_handler, const std::string& request_url
 void * POST_and_save_to_ptr(CURLSH * curl_handler, const std::string& request_url, const void * post_data, bool force_ssl);
 
 // TODO write document later
-inline bool get_file_from_server(const std::string& http_method, const void* input_data, const void * post_data,
+inline bool get_data_from_server(const std::string& http_method, const void* input_data, const void * post_data,
                           CURLSH* curl_share, const std::string& request_url,const std::vector<std::string>& header,
                           size_t (*write_function)(char*, size_t, size_t, void*), bool force_ssl);
 

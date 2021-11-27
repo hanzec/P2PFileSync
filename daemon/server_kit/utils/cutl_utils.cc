@@ -22,10 +22,13 @@ size_t write_to_ptr(char* ptr, size_t size, size_t nmemb, void* userdata) {
   ptr_data* file_ptr;
   size_t block_size = nmemb * size;
 
+  LOG(INFO) << "block_size: " << block_size;
+
   // has to be have a type of ptr_data
   if ((file_ptr = static_cast<ptr_data*>(userdata)) != nullptr) {
     // check if need to do relocate
     if(file_ptr->current_size < file_ptr->head + block_size){
+      LOG(INFO) << "relocate ptr: [" << std::hex << file_ptr->data << "]";
       void* new_ptr = realloc(file_ptr->data, file_ptr->current_size*2);
       
       // handled when realloc is failed
@@ -69,7 +72,7 @@ bool GET_and_save_to_path(CURLSH* curl_handler,
   std::ofstream file_stream(file, std::ios::out | std::ios::binary);
 
   // preform downloading
-  bool ret = get_file_from_server("GET",&file_stream,nullptr, curl_handler,  request_url, {},
+  bool ret = get_data_from_server("GET", &file_stream, nullptr, curl_handler, request_url, {},
                                   write_to_disk, force_ssl);
 
   file_stream.close();
@@ -89,7 +92,8 @@ void * POST_and_save_to_ptr(CURLSH * curl_handler, const std::string& request_ur
   data->head = 0;
   data->current_size = 1024*1024;
 
-  if(get_file_from_server("POST", data, post_data, curl_handler, request_url, {}, write_to_ptr,force_ssl)){
+  if(get_data_from_server("POST", data, post_data, curl_handler, request_url, {},
+                           write_to_ptr, force_ssl)){
     VLOG(3) << "total of [" << data->head << "] bytes downloaded!";
     auto ret = data->data;
     free(data);
@@ -108,7 +112,8 @@ void * GET_and_save_to_ptr(CURLSH * curl_handler, const std::string& request_url
   data->head = 0;
   data->current_size = 1024*1024;
 
-  if(get_file_from_server("GET", data, nullptr, curl_handler, request_url,header, write_to_ptr,force_ssl)){
+  if(get_data_from_server("GET", data, nullptr, curl_handler, request_url, header,
+                           write_to_ptr, force_ssl)){
     VLOG(3) << "total of [" << data->head << "] bytes downloaded!";
     auto ret = data->data;
     free(data);
@@ -119,11 +124,11 @@ void * GET_and_save_to_ptr(CURLSH * curl_handler, const std::string& request_url
   }
 }
 
-inline bool get_file_from_server(const std::string& http_method, const void* input_data, const void * post_data,
+inline bool get_data_from_server(const std::string& http_method, const void* input_data, const void * post_data,
                           CURLSH* curl_share, const std::string& request_url, const std::vector<std::string>& header,
                           size_t (*write_function)(char*, size_t, size_t, void*), bool force_ssl) {
   
-  VLOG(3) << "seeding request to [" << request_url << "] with " << http_method << " request";
+  LOG(INFO) << "seeding request to [" << request_url << "] with " << http_method << " request";
 
 
   CURLcode ret;
@@ -151,6 +156,7 @@ inline bool get_file_from_server(const std::string& http_method, const void* inp
     if(header.size() != 0){
       for(const auto& line :header){
         list = curl_slist_append(list, line.c_str());
+        LOG(INFO) << "adding header [" << line << "]";
       }
       curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list);
     }
