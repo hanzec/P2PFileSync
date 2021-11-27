@@ -15,9 +15,9 @@
 #include <iostream>
 
 namespace P2PFileSync {
-Status parsing_command(std::string& input,
+Status parsing_command(const std::string& input_command,
                        COMMAND& parsed_command) {
-
+  std::string input(input_command);
 
   // fix the string format
   input.erase(0,input.find_first_not_of(' '));

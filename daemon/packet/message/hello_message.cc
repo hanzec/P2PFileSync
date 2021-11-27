@@ -4,15 +4,15 @@
 #include "p2p_interface.h"
 namespace P2PFileSync {
 template <>
-class ProtocolServer::IMessageHandler<ProtoHelloMessage> {
+class P2PServerContext::IMessageHandler<ProtoHelloMessage> {
  public:
-  static bool handle_complicated(const std::shared_ptr<ProtocolServer>& server, const ProtoHelloMessage& message,
+  static bool handle_complicated(const std::shared_ptr<P2PServerContext>& server, const ProtoHelloMessage& message,
                      struct sockaddr_in *incoming_connection, int ttl){
     auto session_ret = server->_peer_pool.get_instance(message.sender_id());
 
     // update client session
     if (session_ret == nullptr) {
-      auto new_session = ProtocolServer::PeerSession::new_session(
+      auto new_session = P2PServerContext::PeerSession::new_session(
           message.x509_certificate(), X509_STORE_CTX_get_chain(server->_x509_store_ctx));
 
       // during creation of the peer session will verify the client cert from server certificate

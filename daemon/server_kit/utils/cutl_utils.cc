@@ -156,7 +156,6 @@ inline bool get_data_from_server(const std::string& http_method, const void* inp
     if(header.size() != 0){
       for(const auto& line :header){
         list = curl_slist_append(list, line.c_str());
-        LOG(INFO) << "adding header [" << line << "]";
       }
       curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list);
     }

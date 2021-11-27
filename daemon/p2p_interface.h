@@ -1,5 +1,6 @@
 #ifndef P2P_FILE_SYNC_PROTOCOL_PROTOCOL_H
 #define P2P_FILE_SYNC_PROTOCOL_PROTOCOL_H
+
 #include <event2/event.h>
 #include <event2/util.h>
 #include <openssl/pkcs12.h>
@@ -23,30 +24,48 @@
 #include "utils/data_struct/routing_table.h"
 #include "utils/data_struct/thread_pool.h"
 
-
 namespace P2PFileSync {
 
 using DeviceContextPtr = std::shared_ptr<Serverkit::DeviceContext>;
 
-class ProtocolServer : private ThreadPool,
+class P2PServerContext : private ThreadPool,
                        private RoutingTable<std::string>,
-                       private FIFOCache<std::basic_string<char>>,
-                       std::enable_shared_from_this<ProtocolServer> {
+                       private FIFOCache<std::basic_string<char>> {
+ protected:
+  /**
+   * Blocker avoid call public constructor
+   */
+  struct this_is_private;
+
  public:
   /**
    * @brief Delete default constructor avoid construct without calling init()
    */
-  ProtocolServer() = delete;
+  P2PServerContext() = delete;
 
   /**
-   * @brief Get the instance of ProtocolServer, nullptr if init() not called
+   * @brief Provate Constructer of P2PServerContext which avoid others call
+   * constructor cause multiple instance exist, see details in document of
+   * init() method
+   *
+   * @param number_worker
+   * @param fd
+   * @param cert
+   * @param cert_sign
+   * @param packet_cache_size
+   */
+  P2PServerContext(const this_is_private&, uint8_t number_worker, uint32_t packet_cache_size,
+                 X509* cert, EVP_PKEY* private_key, STACK_OF(X509) * ca);
+
+  /**
+   * @brief Get the instance of P2PServerContext, nullptr if init() not called
    *
    * @note this function's return value is marked by nodiscard since suggest
    * caller to check return instance reference is nullptr or not
-   * @return std::shared_ptr<ProtocolServer> reference of ProtocolServer,
+   * @return std::shared_ptr<P2PServerContext> reference of P2PServerContext,
    * nullptr if init() not called
    */
-  [[nodiscard]] static std::shared_ptr<ProtocolServer> get_instance();
+  [[nodiscard]] static std::shared_ptr<P2PServerContext> get_instance();
 
   /**
    * @brief Initial function which will need to call only once, call mutiple
@@ -69,24 +88,51 @@ class ProtocolServer : private ThreadPool,
    * @param config the client configuration class
    * @param device_context the device context get from server_kit handle_difficult the
    * realted server API
-   * @return true the ProtocolServer init success
-   * @return false the ProtocolServer init failed
+   * @return true the P2PServerContext init success
+   * @return false the P2PServerContext init failed
    */
   static bool init(const std::shared_ptr<Config>& config,
-                               const DeviceContextPtr& device_context);
+                   const DeviceContextPtr& device_context);
 
   // TODO need document
-  std::future<bool> send_pkg(const ProtoMessage& data,
-                                         const std::shared_ptr<IPAddr>& peer);
+  std::future<bool> send_pkg(const ProtoMessage& data, const std::shared_ptr<IPAddr>& peer);
 
   // TODO need document
   template <typename T>
   ProtoMessage package_pkg(const T& data, const std::string& receiver);
 
   // TODO need document
-  ProtoHelloMessage new_hello_payload(X509 * cert);
+  ProtoHelloMessage new_hello_payload(X509* cert);
+
+  // TODO need document
+  void block_util_server_stop();
+
+  // TODO need document
+  const std::unordered_map<std::string, std::pair<std::shared_ptr<IPAddr>, uint32_t>>&get_online_peers();
 
  protected:
+  /**
+   * Blocker avoid call public constructor
+   */
+  struct this_is_private {
+    explicit this_is_private(int) {}
+  };
+
+  // TODO need document
+  bool start(int fd);
+
+  /**
+   *
+   * @tparam Args
+   * @param args
+   * @return
+   */
+  template <typename... Args>
+  static ::std::shared_ptr<P2PServerContext> create(Args&&... args) {
+    return ::std::make_shared<P2PServerContext>(this_is_private{0},
+                                              ::std::forward<Args>(args)...);
+  }
+
   /**
    * Peer session for storage all known peer with their public Key
    */
@@ -144,33 +190,19 @@ class ProtocolServer : private ThreadPool,
     EVP_MD_CTX* _evp_md_ctx = nullptr;
   };
 
-  /**
-   * @brief Provate Constructer of ProtocolServer which avoid others call
-   * constructor cause multiple instance exist, see details in document of
-   * init() method
-   *
-   * @param number_worker
-   * @param fd
-   * @param cert
-   * @param cert_sign
-   * @param packet_cache_size
-   */
-  ProtocolServer(uint8_t number_worker, int fd, uint32_t packet_cache_size, X509* cert,
-                 EVP_PKEY* private_key, STACK_OF(X509) * ca);
-
  private:
   // TODO need finished document
   // !! For overload functional object, compiler could not infer the return type of the method
   template <typename T>
   class IMessageHandler {
    public:
-    static bool handle_simple(std::shared_ptr<ProtocolServer> server, const T message) {
+    static bool handle_simple(std::shared_ptr<P2PServerContext>& server, const T message) {
       LOG(ERROR) << "simple package handler for message [" << typeid(T).name()
                  << "] not implemented!";
       return false;
     }
 
-    static bool handle_complicated(std::shared_ptr<ProtocolServer> server, const T message,
+    static bool handle_complicated(const std::shared_ptr<P2PServerContext>& server, const T message,
                                    struct sockaddr_in* incoming_connection, uint32_t ttl) {
       LOG(ERROR) << "complicated package handler for message [" << typeid(T).name()
                  << "] not implemented!";
@@ -181,7 +213,7 @@ class ProtocolServer : private ThreadPool,
   /**
    * Private instance
    */
-  inline static std::shared_ptr<ProtocolServer> _instance = nullptr;
+  inline static std::shared_ptr<P2PServerContext> _instance = nullptr;
   inline static std::shared_ptr<Serverkit::DeviceContext> _device_context = nullptr;
 
   /**
@@ -196,8 +228,8 @@ class ProtocolServer : private ThreadPool,
    * Instance private variables
    */
   const PKCS12* _certificate{};
-  const std::thread _thread_ref;
   struct event_base* _event_base;
+  std::unique_ptr<std::thread> _thread_ref{nullptr};
   InstancePool<std::string, PeerSession> _peer_pool;
 
   /**
@@ -233,7 +265,7 @@ class ProtocolServer : private ThreadPool,
    * @note that when handing the unsupported request type, the client will
    * ignore the packet with out any log print(will only print log in VLOG=3)
    * @param bev libevent bufferent event structure
-   * @param ctx the pointer of the ProtocolServer instance
+   * @param ctx the pointer of the P2PServerContext instance
    */
   static void read_callback(struct bufferevent* bev, void* ctx);
 
@@ -244,7 +276,7 @@ class ProtocolServer : private ThreadPool,
    *
    * @param fd the file descriptor generated by libevent
    * @param event the event type
-   * @param arg the raw pointer of ProtocolServer
+   * @param arg the raw pointer of P2PServerContext
    */
   static void libev_callback(evutil_socket_t fd, short event, void* arg);
 

@@ -24,21 +24,21 @@ class Config {
   Config(std::string mount_point, std::string sync_data_dir,
          const uint16_t trans_port_number,std::string manage_sock_file_)
       : _mount_point(std::move(mount_point)),
-        _sync_data_dir(std::move(sync_data_dir)),
+        _config_folder(std::move(sync_data_dir)),
         _trans_port_number(trans_port_number),
-        manage_sock_file_(std::move(manage_sock_file_)){};
+        _manage_sock_file(std::move(manage_sock_file_)){};
 
   [[nodiscard]] std::filesystem::path get_mount_point() const { return _mount_point; }
 
-  [[nodiscard]] std::filesystem::path config_folder() const { return _sync_data_dir; }
+  [[nodiscard]] std::filesystem::path config_folder() const { return _config_folder; }
 
-  [[nodiscard]] std::filesystem::path get_manage_sock_file_() const { return manage_sock_file_; }
+  [[nodiscard]] std::filesystem::path get_manage_sock_file_() const { return _manage_sock_file; }
 
-  [[nodiscard]] std::filesystem::path get_client_certificate_path() const { return _client_certificate_path; }
+  [[nodiscard]] std::filesystem::path get_client_certificate_path() const { return _client_cert_path; }
 
-  [[nodiscard]] std::filesystem::path get_server_certificate_path() const { return _server_certificate_path; }
+  [[nodiscard]] std::filesystem::path get_server_certificate_path() const { return _server_cert_path; }
 
-  [[nodiscard]] std::filesystem::path get_client_config_path() const { return _client_config_path; }
+  [[nodiscard]] std::filesystem::path get_client_config_path() const { return _client_conf_path; }
 
   [[nodiscard]] uint16_t get_trans_port_number() const { return _trans_port_number; }
 
@@ -60,11 +60,11 @@ class Config {
 
 
   const std::filesystem::path _mount_point;
-  const std::filesystem::path _sync_data_dir = "/tmp/sync_data";
-  const std::filesystem::path manage_sock_file_ = _sync_data_dir/"manage.sock";
-  const std::filesystem::path _client_config_path = _sync_data_dir/"client.cfg";
-  const std::filesystem::path _client_certificate_path = _sync_data_dir/"client.p12";
-  const std::filesystem::path _server_certificate_path = _sync_data_dir/"client_sign_root.crt";
+  const std::filesystem::path _config_folder = "/tmp/sync_data";
+  const std::filesystem::path _manage_sock_file = _config_folder /"manage.sock";
+  const std::filesystem::path _client_conf_path = _config_folder /"client.cfg";
+  const std::filesystem::path _client_cert_path = _config_folder /"client.p12";
+  const std::filesystem::path _server_cert_path = _config_folder /"client_sign_root.crt";
 };
 }  // namespace P2PFileSync
 

@@ -70,6 +70,11 @@ class RoutingTable {
     }
   }
 
+  //TODO add document
+  const std::unordered_map<std::string, std::pair<std::shared_ptr<IPAddr>, uint32_t>>& get_routing_table() const{
+    return _routing_map;
+  }
+
  private:
   std::shared_mutex _lock_mutex;
   std::unordered_map<std::string, std::pair<std::shared_ptr<IPAddr>, uint32_t>> _routing_map;

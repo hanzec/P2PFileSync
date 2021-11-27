@@ -14,7 +14,7 @@
 #include <fstream>
 #include <memory>
 #include <string>
-#include "common.h"
+#include "../common.h"
 
 namespace P2PFileSync {
 [[nodiscard]] bool generate_default_config(const std::filesystem::path& config_file) {

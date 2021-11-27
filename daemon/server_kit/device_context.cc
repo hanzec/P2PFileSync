@@ -32,22 +32,22 @@ std::shared_ptr<DeviceContext> DeviceContext::get_dev_ctx() noexcept {
 }
 
 bool DeviceContext::init_dev_ctx(const std::string &server_address,
-                                 const std::filesystem::path &conf) noexcept {
+                                 const std::filesystem::path &client_conf) noexcept {
   if (_instance == nullptr) {
-    if (is_registered(conf)) {
+    if (std::filesystem::exists(client_conf/CLIENT_CONFIGURE_FILE_NAME)) {
       LOG(INFO) << "Device is registered, loading configuration...";
-      DeviceConfiguration conf_file(conf / CLIENT_CONFIGURE_FILE_NAME);
+      DeviceConfiguration conf_file(client_conf/CLIENT_CONFIGURE_FILE_NAME);
       _instance =
-          create(conf_file.device_id(), conf_file.jwt_key(), server_address, conf);
+          create(conf_file.device_id(), conf_file.jwt_key(), server_address, client_conf);
       return _instance != nullptr;
     } else {
       LOG(INFO) << "Device is not registered, generating configuration...";
-      auto param = register_client(server_address, conf);
+      auto param = register_client(server_address, client_conf);
       if (param.first.empty() && param.second.empty()) {
         LOG(ERROR) << "Failed to register device";
         return false;
       } else {
-        _instance = create(param.second, param.first, server_address, conf);
+        _instance = create(param.second, param.first, server_address, client_conf);
         return _instance != nullptr;
       }
     }
@@ -56,11 +56,11 @@ bool DeviceContext::init_dev_ctx(const std::string &server_address,
   }
 }
 
-bool DeviceContext::is_enabled() const { return client_info() != nullptr; }
+bool DeviceContext::is_enabled() const { return device_info() != nullptr; }
 
 const std::string &DeviceContext::device_id() const { return _device_id; }
 
-std::unique_ptr<ClientInfoResponse> DeviceContext::client_info() const {
+std::unique_ptr<DeviceInfoResponse> DeviceContext::device_info() const {
   // client info does not required extra request models
 
   void *raw_json = GET_and_save_to_ptr(
@@ -74,7 +74,7 @@ std::unique_ptr<ClientInfoResponse> DeviceContext::client_info() const {
 
   // parse response
   try {
-    return std::make_unique<ClientInfoResponse>(static_cast<char *>(raw_json));
+    return std::make_unique<DeviceInfoResponse>(static_cast<char *>(raw_json));
   } catch (...) {
     return nullptr;
   }
@@ -87,7 +87,6 @@ std::filesystem::path DeviceContext::client_certificate() const {
     // if downloaded but not loading
     if (!std::filesystem::exists(cert_file)) {  // download from management server
       void *raw_json = GET_and_save_to_ptr(
-
           nullptr, std::string(_server_address).append(GET_CLIENT_CERTIFICATE_ENDPOINT_V1),
           {"Authorization:" + _login_token}, false);
       ClientCertResponse resp(static_cast<char *>(raw_json));

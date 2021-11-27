@@ -11,12 +11,12 @@
 
 #include "common.h"
 #include "manage_interface.h"
+#include "p2p_interface.h"
 #include "server_kit/server_kit.h"
 #include "utils/config_reader.h"
 #include "utils/ip_addr.h"
 #include "utils/log.h"
 #include "utils/status.h"
-#include "p2p_interface.h"
 
 DEFINE_string(host, "", "the known host with comma-separated list");
 DEFINE_string(config_dir, "", "the location of config file");
@@ -30,13 +30,13 @@ int main(int argc, char *argv[], const char *envp[]) {
   google::InitGoogleLogging(argv[0]);
   gflags::ParseCommandLineFlags(&argc, &argv, true);
 
-//  if (gflags::GetCommandLineFlagInfoOrDie("config_dir").is_default) {
-//    LOG(FATAL) << "you must set config_dir";
-//  }
-//
-//  if (gflags::GetCommandLineFlagInfoOrDie("server").is_default) {
-//    LOG(FATAL) << "you must set management server";
-//  }
+  //  if (gflags::GetCommandLineFlagInfoOrDie("config_dir").is_default) {
+  //    LOG(FATAL) << "you must set config_dir";
+  //  }
+  //
+  //  if (gflags::GetCommandLineFlagInfoOrDie("server").is_default) {
+  //    LOG(FATAL) << "you must set management server";
+  //  }
 
   // collect ip addr info
   std::vector<IPAddr> known_host;
@@ -57,7 +57,6 @@ int main(int argc, char *argv[], const char *envp[]) {
 
   auto config = std::make_shared<Config>();
 
-
   // testing config folder
   if (!fs::exists(config->config_folder())) {
     LOG(WARNING) << "[" << config->config_folder() << "] not exist, will trying to create!";
@@ -66,18 +65,18 @@ int main(int argc, char *argv[], const char *envp[]) {
   }
 
   // todo fix configuration file later
-//  // testing config file
-//  auto config_file = data_folder / CONFIG_FILE_NAME;
-//  if (!fs::exists(config_file)) {
-//    if (!generate_default_config(config_file))
-//      LOG(FATAL) << "failed to create default config at [" << config_file.string() << "]";
-//  }
-//
-//  // loading the config file
-//  auto config = parse_comfig_file(config_file);
-//  if(config == nullptr){
-//    LOG(FATAL) << "failed to parse config file at [" << config_file.string() << "]";
-//  }
+  //  // testing config file
+  //  auto config_file = data_folder / CONFIG_FILE_NAME;
+  //  if (!fs::exists(config_file)) {
+  //    if (!generate_default_config(config_file))
+  //      LOG(FATAL) << "failed to create default config at [" << config_file.string() << "]";
+  //  }
+  //
+  //  // loading the config file
+  //  auto config = parse_comfig_file(config_file);
+  //  if(config == nullptr){
+  //    LOG(FATAL) << "failed to parse config file at [" << config_file.string() << "]";
+  //  }
 
   // check data folder
   fs::path data_dir_path(config->config_folder());
@@ -94,18 +93,19 @@ int main(int argc, char *argv[], const char *envp[]) {
   std::thread handler(&manage_interface_thread, std::ref(server_sock), AF_UNIX);
 
   // initliing server kit
-  if(!Serverkit::DeviceContext::init_dev_ctx(config->get_management_server_url(),
-                                         config->get_client_config_path())){
+  if (!Serverkit::DeviceContext::init_dev_ctx(config->get_management_server_url(),
+                                              config->config_folder())) {
     LOG(FATAL) << "failed to init device context!";
   }
 
   // starting server handler
-  if(ProtocolServer::init(config,Serverkit::DeviceContext::get_dev_ctx())){
+  if (P2PServerContext::init(config, Serverkit::DeviceContext::get_dev_ctx())) {
     LOG(INFO) << "p2p server listener is started!";
   } else {
     LOG(FATAL) << "p2p server handler is filed to start";
   }
   // waiting server handler to stop
   handler.join();
+  P2PServerContext::get_instance()->block_util_server_stop();
   return 0;
 }

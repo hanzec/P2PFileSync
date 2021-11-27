@@ -12,31 +12,59 @@
 #include <cstdint>
 #include <cstdlib>
 #include <filesystem>
-#include <regex>
 #include <string>
 
 #include "p2p_interface.h"
 #include "packet/tasks.h"
 #include "utils/data_struct/fifo_cache.h"
-#include "utils/data_struct/routing_table.h"
 #include "utils/data_struct/thread_pool.h"
 #include "utils/ip_addr.h"
-#include "utils/log.h"
 
+#ifdef UNDER_UNIX
+#include <cerrno>
+#endif
 namespace P2PFileSync {
 
-// get instance of ProtocolServer object
-std::shared_ptr<ProtocolServer> ProtocolServer::get_instance() {
+void P2PServerContext::block_util_server_stop() {
+  if (_thread_ref->joinable()) {
+    _thread_ref->join();
+  }
+}
+
+// get instance of P2PServerContext object
+std::shared_ptr<P2PServerContext> P2PServerContext::get_instance() {
   if (_instance == nullptr) {
     return nullptr;
   } else {
-    return _instance->shared_from_this();
+    return _instance;
   }
 };
 
+const std::unordered_map<std::string, std::pair<std::shared_ptr<IPAddr>, uint32_t>>
+    &P2PServerContext::get_online_peers() {
+  return get_routing_table();
+}
+
+bool P2PServerContext::start(int fd) {
+  if (_thread_ref == nullptr) {
+    _thread_ref = std::make_unique<std::thread>(listening_thread, fd);
+
+    ProtoHelloMessage hello_message = new_hello_payload(nullptr);
+
+    for (const auto &ip : _device_context->peer_list()) {
+      auto ip_addr = std::make_shared<IPAddr>(ip.second);
+      send_pkg(package_pkg<ProtoHelloMessage>(hello_message, ip.first), ip_addr);
+    }
+
+    return true;
+  } else {
+    return false;
+  }
+}
+
 // initlized protol instance
-bool ProtocolServer::init(const std::shared_ptr<Config> &config,
-                          const std::shared_ptr<Serverkit::DeviceContext> &device_context) {
+bool P2PServerContext::init(const std::shared_ptr<Config> &config,
+                            const std::shared_ptr<Serverkit::DeviceContext> &device_context) {
   // prevent init twice
   if (_instance != nullptr) return false;
 
@@ -44,15 +72,19 @@ bool ProtocolServer::init(const std::shared_ptr<Config> &config,
   while (!device_context->is_enabled()) {
     LOG(ERROR) << "current device is not enabled, will check activate status in 1 minutes "
                   "later";
-    sleep(60);   // wait for 1 minutes and check activation status again
+    sleep(60);  // wait for 1 minutes and check activation status again
   }
 
   // creating socket
-  int socket_fd;
+  int socket_fd = -1;
   {
     // build the socket for server
-    if ((socket_fd = socket(AF_INET, SOCK_STREAM, 0) < 0)) {
+    if ((socket_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+#ifdef UNDER_UNIX
+      LOG(ERROR) << "create socket failed, errno:" << errno << "(" << strerror(errno) << ")";
+#else
       LOG(ERROR) << "socket cannot open";
+#endif
       return false;
     }
 
@@ -71,9 +103,14 @@ bool ProtocolServer::init(const std::shared_ptr<Config> &config,
     }
 
     // bind the socket to listen address
-    if (bind(socket_fd, (struct sockaddr *)&adr_s, sizeof(adr_s)) == -1) {
+    if (bind(socket_fd, (struct sockaddr *)&adr_s, sizeof(adr_s)) != 0) {
+#ifdef UNDER_UNIX
+      LOG(ERROR) << "cannot bind socket to interface, errno:" << errno << "("
+                 << strerror(errno) << ")";
+#else
+      LOG(ERROR) << "cannot bind socket to interface";
+#endif
       close(socket_fd);
-      LOG(ERROR) << "cannot bind socket to interface!";
       return false;
     }
 
@@ -97,47 +134,45 @@ bool ProtocolServer::init(const std::shared_ptr<Config> &config,
   }
 
   // unpacking client certificate from PCSC12
-  if (!PKCS12_parse(cert, nullptr, &client_priv_key, &client_cert, &sign_chain)) {
+  if (!PKCS12_parse(cert, device_context->device_id().c_str(), &client_priv_key, &client_cert,
+                    &sign_chain)) {
     LOG(ERROR) << "Error parsing PKCS#12 file\n";
     return false;
   }
 
   // creating instance
   _device_context = device_context;
-  _instance = std::shared_ptr<ProtocolServer>(new ProtocolServer(
-      config->get_workder_thread_num(), socket_fd, config->get_packet_cache_size(),
-      client_cert, client_priv_key, sign_chain));
+  _instance = create(config->get_workder_thread_num(), config->get_packet_cache_size(),
+                     client_cert, client_priv_key, sign_chain);
 
-  return true;
+  return _instance->start(socket_fd);
 };
 
-ProtocolServer::ProtocolServer(uint8_t number_worker, int fd, uint32_t packet_cache_size,
-                               X509 *cert, EVP_PKEY *private_key, STACK_OF(X509) * ca)
+P2PServerContext::P2PServerContext(const this_is_private &, uint8_t number_worker,
+                                   uint32_t packet_cache_size, X509 *cert,
+                                   EVP_PKEY *private_key,
+                                   STACK_OF(X509) * ca)
     : FIFOCache(packet_cache_size),  // initial packet cache
       ThreadPool(number_worker),     // initial thread pool
-      _client_priv_key(private_key),
       _x509_store(X509_STORE_new()),
-      _x509_store_ctx(X509_STORE_CTX_new()),
-      _thread_ref(std::thread(listening_thread, fd)) {
-  VLOG(INFO) << "Initialized instance of packet server";
+      _client_priv_key(private_key),
+      _x509_store_ctx(X509_STORE_CTX_new()) {
+  LOG(INFO) << "Initialized instance of packet server";
 
-  // initialized base_event
-  if ((_event_base = event_base_new()) == nullptr)
-    LOG(FATAL) << "libevent base event create failed!";
+  if (nullptr == (_event_base = event_base_new())) {
+    LOG(FATAL) << "cannot initialize event base";
+  }
 
   // openssl related structure
   X509_STORE_CTX_init(_x509_store_ctx, _x509_store, cert, ca);
-
-  ProtoHelloMessage hello_message = new_hello_payload(cert);
-
-  for (const auto &ip : _device_context->peer_list()) {
-    auto ip_addr = std::make_shared<IPAddr>(ip.second);
-    send_pkg(package_pkg<ProtoHelloMessage>(hello_message, ip.first), ip_addr);
-  }
 };
 
-void ProtocolServer::listening_thread(int fd) {
+void P2PServerContext::listening_thread(int fd) {
   auto proto = get_instance();
+
+  // initialized base_event
+  if (nullptr == proto->_event_base) LOG(FATAL) << "libevent base event create failed!";
+
   auto *ev = event_new(proto->event_base(), fd, EV_READ | EV_PERSIST, libev_callback, nullptr);
   event_add(ev, nullptr);
   event_base_dispatch(proto->event_base());
@@ -145,7 +180,7 @@ void ProtocolServer::listening_thread(int fd) {
   event_base_free(proto->event_base());
 };
 
-void ProtocolServer::libev_callback(evutil_socket_t fd, short event, void *arg) {
+void P2PServerContext::libev_callback(evutil_socket_t fd, short event, void *arg) {
   int new_fd = 0;
   socklen_t size = sizeof(struct sockaddr_in);
   auto sin = static_cast<struct sockaddr_in *>(malloc(size));
@@ -162,7 +197,7 @@ void ProtocolServer::libev_callback(evutil_socket_t fd, short event, void *arg) 
   bufferevent_enable(bev, EV_READ | EV_WRITE | EV_PERSIST);
 }
 
-void ProtocolServer::read_callback(struct bufferevent *bev, void *sin) {
+void P2PServerContext::read_callback(struct bufferevent *bev, void *sin) {
   auto proto_server = get_instance();
   struct evbuffer *buf = bufferevent_get_input(bev);
   auto incoming_connection = static_cast<struct sockaddr_in *>(sin);
@@ -176,6 +211,9 @@ void ProtocolServer::read_callback(struct bufferevent *bev, void *sin) {
   if (evbuffer_copyout(buf, &packet_len, sizeof(uint32_t)) != packet_len)
     LOG(FATAL) << "read data from evbuffer failed!";
   if (recv_size - sizeof(uint32_t) < packet_len) return;
+
+  // handling incoming packet
+  LOG(INFO) << "Received packet of size:[" << packet_len << "]";
 
   // parse data packet
   ProtoMessage proto_msg;
@@ -233,7 +271,7 @@ void ProtocolServer::read_callback(struct bufferevent *bev, void *sin) {
   }
 }
 
-void ProtocolServer::event_callback(struct bufferevent *bev, short events, void *ctx) {
+void P2PServerContext::event_callback(struct bufferevent *bev, short events, void *ctx) {
   struct evbuffer *input = bufferevent_get_input(bev);
   int finished = 0;
 
@@ -255,8 +293,8 @@ void ProtocolServer::event_callback(struct bufferevent *bev, short events, void 
   }
 }
 
-std::future<bool> ProtocolServer::send_pkg(const ProtoMessage &data,
-                                           const std::shared_ptr<IPAddr> &peer) {
+std::future<bool> P2PServerContext::send_pkg(const ProtoMessage &data,
+                                             const std::shared_ptr<IPAddr> &peer) {
   size_t digest_len;
   auto raw_packet_size = data.ByteSizeLong();
   auto raw_packer = std::malloc(raw_packet_size);
@@ -288,7 +326,7 @@ std::future<bool> ProtocolServer::send_pkg(const ProtoMessage &data,
 }
 
 template <typename T>
-ProtoMessage ProtocolServer::package_pkg(const T &data, const std::string &receiver) {
+ProtoMessage P2PServerContext::package_pkg(const T &data, const std::string &receiver) {
   ProtoMessage ret;
   auto *timestamp =
       new google::protobuf::Timestamp(google::protobuf::util::TimeUtil::GetCurrentTime());
@@ -311,7 +349,7 @@ ProtoMessage ProtocolServer::package_pkg(const T &data, const std::string &recei
   return ret;
 }
 
-ProtoHelloMessage ProtocolServer::new_hello_payload(X509 *cert) {
+ProtoHelloMessage P2PServerContext::new_hello_payload(X509 *cert) {
   size_t raw_cert_size = 0;
   uint8_t *raw_cert = nullptr;
 
@@ -333,4 +371,5 @@ ProtoHelloMessage ProtocolServer::new_hello_payload(X509 *cert) {
 
   return hello_message;
 }
+
 }  // namespace P2PFileSync

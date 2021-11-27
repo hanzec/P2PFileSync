@@ -9,9 +9,8 @@ class TimeCommand : public AutoRegCommand<TimeCommand> {
   REGISTER_COMMAND(TimeCommand, TIME, DEFAULT);
 
  public:
-  void exec(std::ostringstream& out,
-            const std::vector<std::string>& args) final {
-    if (args.size() > 0) {
+  void exec(std::ostringstream& out, const std::vector<std::string>& args) final {
+    if (!args.empty()) {
       out << "TIME command does not need any arguments!";
     }
 

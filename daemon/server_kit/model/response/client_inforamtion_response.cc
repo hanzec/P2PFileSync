@@ -5,19 +5,19 @@
 #include "client_information_response.h"
 namespace P2PFileSync::Serverkit {
 
-ClientInfoResponse::ClientInfoResponse(char* json) : IJsonModel(json){};
+DeviceInfoResponse::DeviceInfoResponse(char* json) : IJsonModel(json){};
 
-std::string ClientInfoResponse::get_client_id() {
+std::string DeviceInfoResponse::device_id() {
   return get_value<std::string>("client_id");
 }
 
-std::string ClientInfoResponse::get_client_machine_id() {
+std::string DeviceInfoResponse::machine_id() {
   return get_value<std::string>("machine_id");
 }
-std::string ClientInfoResponse::get_client_ip_address() {
+std::string DeviceInfoResponse::device_ip() {
   return get_value<std::string>("ip_address");
 }
-std::string ClientInfoResponse::get_client_register_by() {
+std::string DeviceInfoResponse::register_user() {
   return get_value<std::string>("register_by");
 }
 }  // namespace P2PFileSync::Serverkit

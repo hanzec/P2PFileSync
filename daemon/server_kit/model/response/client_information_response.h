@@ -13,14 +13,14 @@ namespace P2PFileSync::Serverkit {
  * @note for any object as returned value, the caller need to take responsable
  * for free
  */
-class ClientInfoResponse : public IJsonModel {
+class DeviceInfoResponse : public IJsonModel {
  public:
   /**
    * @brief Construct a new request client certificate object with empty
    * response is deleted
    *
    */
-  ClientInfoResponse() = delete;
+  DeviceInfoResponse() = delete;
 
   /**
    * @brief Construct a new request client certificate object from exist json
@@ -32,14 +32,14 @@ class ClientInfoResponse : public IJsonModel {
    * @param json the json string wants to parse as request client certificate
    * Object
    */
-  explicit ClientInfoResponse(char* json);
+  explicit DeviceInfoResponse(char* json);
 
   /**
    * @brief Get the client id in RequestClientInfo Response object
    *
    * @return std::string the client id registered in server
    */
-  EXPORT_FUNC std::string get_client_id();
+  EXPORT_FUNC std::string device_id();
 
   /**
    * @brief Get the machine id of the response in RequestClientInfo Response object
@@ -47,7 +47,7 @@ class ClientInfoResponse : public IJsonModel {
    * @return std::string the raw jwt login token certificate encoded by
    * BASE64
    */
-  EXPORT_FUNC std::string get_client_machine_id();
+  EXPORT_FUNC std::string machine_id();
 
   /**
    * @brief Get the client ip address in RequestClientInfo Response object
@@ -55,7 +55,7 @@ class ClientInfoResponse : public IJsonModel {
    * @return std::string the raw jwt login token certificate encoded by
    * BASE64
    */
-  EXPORT_FUNC std::string get_client_ip_address();
+  EXPORT_FUNC std::string device_ip();
 
   /**
    * @brief Get the the register operator in RequestClientInfo Response object
@@ -63,7 +63,7 @@ class ClientInfoResponse : public IJsonModel {
    * @return std::string the raw jwt login token certificate encoded by
    * BASE64
    */
-  EXPORT_FUNC std::string get_client_register_by();
+  EXPORT_FUNC std::string register_user();
 };
 }  // namespace P2PFileSync::Serverkit
 

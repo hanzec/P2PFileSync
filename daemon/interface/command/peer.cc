@@ -1,0 +1,30 @@
+//
+// Created by hanzech on 11/27/21.
+//
+#include "p2p_interface.h"
+#include "../command_executor.h"
+
+namespace P2PFileSync {
+class PeerCommand : public AutoRegCommand<PeerCommand> {
+  REGISTER_COMMAND(PeerCommand, PEER, DEFAULT);
+
+ public:
+  void exec(std::ostringstream& out, const std::vector<std::string>& args) final {
+    if (!args.empty()) {
+      out << "TIME command does not need any arguments!";
+    }
+
+    auto p2p_server_ctx = P2PServerContext::get_instance();
+
+    out << std::setw(15) << std::left << "Peer ID" << " "
+        << std::setw(15) << std::left << "Next Jump Node" << " "
+        << std::setw(15) << std::left << "TTL" << std::endl;
+
+    for (auto& peer : p2p_server_ctx->get_online_peers()){
+      out << std::setw(15) << std::left << peer.first << " "
+          << std::setw(15) << std::left << peer.second.first << " "
+          << std::setw(15) << std::left << peer.second.second << std::endl;
+    }
+  };
+};
+}  // namespace P2PFileSync

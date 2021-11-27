@@ -13,6 +13,7 @@ add_executable(daemon_test)
 # google log
 find_package(glog CONFIG REQUIRED)
 target_link_libraries(daemon glog::glog)
+target_link_libraries(daemon_test glog::glog)
 target_include_directories(daemon PRIVATE ${glog_INCLUDE_DIRS})
 
 # google flag
@@ -33,6 +34,7 @@ target_include_directories(daemon PRIVATE ${OPENSSL_INCLUDE_DIR})
 # yaml-cpp
 find_package(yaml-cpp CONFIG REQUIRED)
 target_link_libraries(daemon ${YAML_CPP_LIBRARIES})
+target_link_libraries(daemon_test ${YAML_CPP_LIBRARIES})
 target_include_directories(daemon PRIVATE ${YAML_CPP_INCLUDE_DIR})
 
 # libevent
@@ -47,11 +49,10 @@ target_link_libraries(daemon ${LIBUUID_LIBRARY})
 target_include_directories(daemon PRIVATE ${LIBUUID_INCLUDE_DIR})
 
 # google test deps(require pthread)
-find_package(GTest REQUIRED)
 find_package(Threads REQUIRED)
+find_package(GTest CONFIG REQUIRED)
 target_link_libraries(daemon_test Threads::Threads)
-target_link_libraries(daemon_test ${GTEST_LIBRARY})
-target_include_directories(daemon_test PRIVATE ${GTEST_INCLUDE_DIRS})
+target_link_libraries(daemon_test GTest::gmock GTest::gtest GTest::gmock_main GTest::gtest_main)
 
 ###############################################################################
 ## Compile Config #############################################################
@@ -90,14 +91,14 @@ target_sources(daemon
         PRIVATE
         "common.h" "main.cc" "server_kit/export.h"
         "manage_interface.cc" "manage_interface.h"
-        "peer_session.cc" "protocol_server.cc" "p2p_interface.h")
+        "peer_session.cc" "p2p_server_context.cc" "p2p_interface.h")
 target_include_directories(daemon PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 ###############################################################################
 ## Testing ####################################################################
 ###############################################################################
 # test main
-target_sources(daemon_test PRIVATE "test_main.cc")
+target_sources(daemon_test PRIVATE "test_main.cc" "common.h")
 
 # scan for possibale test
 gtest_discover_tests(daemon_test)

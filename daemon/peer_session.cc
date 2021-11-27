@@ -84,10 +84,10 @@ const constexpr char* get_validation_errstr(long e) {
   }
 }
 
-std::shared_ptr<ProtocolServer::PeerSession> ProtocolServer::PeerSession::new_session(
+std::shared_ptr<P2PServerContext::PeerSession> P2PServerContext::PeerSession::new_session(
     const std::string& raw_cert, STACK_OF(X509) * ca) noexcept {
   X509* cert;
-  std::shared_ptr<ProtocolServer::PeerSession> ret = nullptr;
+  std::shared_ptr<P2PServerContext::PeerSession> ret = nullptr;
   const auto* data = reinterpret_cast<const unsigned char*>(raw_cert.c_str());
 
   // construct X509 Certificate from raw
@@ -101,8 +101,8 @@ std::shared_ptr<ProtocolServer::PeerSession> ProtocolServer::PeerSession::new_se
   X509_STORE_CTX_init(x509_store_ctx, x509_store, cert, ca);
 
   if (X509_verify_cert(x509_store_ctx) == 1) {
-    ret = std::shared_ptr<ProtocolServer::PeerSession>(
-        new ProtocolServer::PeerSession(X509_get_pubkey(cert)));
+    ret = std::shared_ptr<P2PServerContext::PeerSession>(
+        new P2PServerContext::PeerSession(X509_get_pubkey(cert)));
   } else {
     LOG(ERROR) << get_validation_errstr(X509_STORE_CTX_get_error(x509_store_ctx));
   }
@@ -114,17 +114,17 @@ std::shared_ptr<ProtocolServer::PeerSession> ProtocolServer::PeerSession::new_se
   return ret;
 }
 
-ProtocolServer::PeerSession::~PeerSession() {
+P2PServerContext::PeerSession::~PeerSession() {
   EVP_PKEY_free(_public_key);
   if(_evp_md_ctx != nullptr) EVP_MD_CTX_free(_evp_md_ctx);
 }
 
-ProtocolServer::PeerSession::PeerSession(EVP_PKEY* _public_key) noexcept : _public_key(_public_key){
+P2PServerContext::PeerSession::PeerSession(EVP_PKEY* _public_key) noexcept : _public_key(_public_key){
   LOG(INFO) << "create peer instance";
 }
 
 // TODO modify here using protobuf enum of digest Algorithm
-bool ProtocolServer::PeerSession::verify(const std::string& data, const std::string& sig,
+bool P2PServerContext::PeerSession::verify(const std::string& data, const std::string& sig,
                                          const std::string& method) noexcept{
   if(_evp_md_ctx == nullptr){
     // creating ctx

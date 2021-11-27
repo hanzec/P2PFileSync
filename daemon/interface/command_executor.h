@@ -52,9 +52,7 @@ class CommandBase {
   virtual void exec(std::ostringstream& output, COMMAND_ARG& arguments) = 0;
 
  protected:
-  std::shared_ptr<ConnectionSession> get_demon_status() {
-    return _daemon_status;
-  }
+  std::shared_ptr<ConnectionSession> get_demon_status() { return _daemon_status; }
 
   // Prevent anyone from directly inhereting from CommandBase
   virtual void DoNotInheritFromThisClassButAutoRegCommandInstead() = 0;
@@ -63,8 +61,7 @@ class CommandBase {
   std::shared_ptr<ConnectionSession> _daemon_status;
 };
 
-using PTRC_OBJECT =
-    std::function<CommandBase*(std::shared_ptr<ConnectionSession>)>;
+using PTRC_OBJECT = std::function<CommandBase*(std::shared_ptr<ConnectionSession>)>;
 
 class CommandExecuter {
  public:
@@ -105,8 +102,7 @@ class CommandExecuter {
    */
   class RegisterHelper {
    protected:
-    static bool reg_command_warper(const std::string_view& cmd,
-                                   const std::string_view& desc,
+    static bool reg_command_warper(const std::string_view& cmd, const std::string_view& desc,
                                    PTRC_OBJECT&& obj) {
       return reg_command(std::forward<PTRC_OBJECT>(obj), cmd, desc);
     };
@@ -128,8 +124,7 @@ class CommandExecuter {
    * @brief static map storage command handler construct function and its
    * description by command str as key
    */
-  inline static std::unordered_map<std::string_view,
-                                   std::pair<std::string_view, PTRC_OBJECT>>
+  inline static std::unordered_map<std::string_view, std::pair<std::string_view, PTRC_OBJECT>>
       _constructor_map;
 
   /**
@@ -140,8 +135,7 @@ class CommandExecuter {
    * @param command_handler the pointer of command handler function
    * @return bool the registation status of current regist process
    */
-  static bool reg_command(PTRC_OBJECT&& command_obj,
-                          const std::string_view& command,
+  static bool reg_command(PTRC_OBJECT&& command_obj, const std::string_view& command,
                           const std::string_view& description);
 };
 
@@ -151,11 +145,9 @@ class CommandExecuter {
  * @tparam T the command need to mark as auto regiter
  */
 template <typename T>
-class AutoRegCommand : public CommandBase,
-                       private CommandExecuter::RegisterHelper {
+class AutoRegCommand : public CommandBase, private CommandExecuter::RegisterHelper {
  public:
-  AutoRegCommand(std::shared_ptr<ConnectionSession> session)
-      : CommandBase(session) {
+  explicit AutoRegCommand(std::shared_ptr<ConnectionSession> session) : CommandBase(session) {
     (void)AutoRegCommand<T>::_reg_status;
   };
 
@@ -183,18 +175,15 @@ class AutoRegCommand : public CommandBase,
 };
 
 template <typename T>
-const bool AutoRegCommand<T>::_reg_status =
-    AutoRegCommand<T>::reg_command_warper(T::COMMAND_NAME,
-                                          T::COMMAND_DESCRIPTION,
-                                          [](auto a) { return new T(a); });
+const bool AutoRegCommand<T>::_reg_status = AutoRegCommand<T>::reg_command_warper(
+    T::COMMAND_NAME, T::COMMAND_DESCRIPTION, [](auto a) { return new T(a); });
 }  // namespace P2PFileSync
 
 #define REGISTER_COMMAND(class, name, description)                    \
  public:                                                              \
-  class(std::shared_ptr<ConnectionSession> session)                   \
+  explicit class(std::shared_ptr<ConnectionSession> session)          \
       : AutoRegCommand<class>(std::move(session)){};                  \
   static const constexpr std::string_view COMMAND_NAME = "" #name ""; \
-  static const constexpr std::string_view COMMAND_DESCRIPTION =       \
-      "" #description "";
+  static const constexpr std::string_view COMMAND_DESCRIPTION = "" #description "";
 
 #endif  // P2P_FILE_SYNC_MANAGE_INTERFACE_COMMAND_EXECTORS_H

@@ -18,7 +18,7 @@ class CASQueue {
    * @brief Construct a new CASQueue object which will initialized head and tail
    *
    */
-  CASQueue() : _head(nullptr), _tail(_head.load()->next()){};
+  CASQueue(){};
 
   /**
    * @brief Push data to the queue by CAS
@@ -139,12 +139,12 @@ class CASQueue {
    private:
     T _data;         // data container
     std::atomic<int> _ref {0};                 // refernce count
-    std::atomic<Node*> _next = nullptr;    // next node refernce
+    std::atomic<Node*> _next{nullptr};    // next node refernce
   };
 
  private:
-  std::atomic<Node*> _head;  // head of queue
-  std::atomic<Node*> &_tail;  // ref of tail of queue
+  std::atomic<Node*> _head{nullptr};  // head of queue
+  std::atomic<Node*> &_tail = _head;  // ref of tail of queue
 };
 }  // namespace P2PFileSync::Protocol
 #endif // P2P_FILE_SYNC_PROTOCOL_UTILS_CAS_QUEUE_H

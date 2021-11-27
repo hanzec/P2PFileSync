@@ -54,7 +54,7 @@ std::pair<std::string, std::string> register_client(
     DeviceConfiguration conf(resp);
     LOG(INFO) << "save client configuration to " << configuration_path;
 
-    conf.save_to_disk(configuration_path / CLIENT_CONFIGURE_FILE_NAME);
+    conf.save_to_disk(configuration_path);
 
 
     LOG(INFO) << resp.get_enable_url();

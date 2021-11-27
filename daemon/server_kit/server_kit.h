@@ -126,16 +126,16 @@ class EXPORT_FUNC DeviceContext{
    *     and get JWT Login Token, then write all of client information and token
    *     to client.cfg
    * @param server_address
-   * @param conf
+   * @param client_conf
    * @return true success initialized device context
    * @return false failed to initialized device context
    */
   [[nodiscard]] EXPORT_FUNC static bool init_dev_ctx(
-      const std::string& server_address, const std::filesystem::path& conf) noexcept;
+      const std::string& server_address, const std::filesystem::path& client_conf) noexcept;
 
   /**
    * @brief return the enabled status at remote management server, in this
-   * function will call client_info() to test the response will return
+   * function will call device_info() to test the response will return
    * errors or not, if downloaded reponse is contains a valid json format with
    * success and its value is true than we can say the client is enabled
    * @return true this client is enabled at management server
@@ -170,9 +170,9 @@ class EXPORT_FUNC DeviceContext{
    * @brief Returned current client register information from remote management
    * server
    *
-   * @return ClientInfoResponse the response struct contains information
+   * @return DeviceInfoResponse the response struct contains information
    */
-  [[nodiscard]] EXPORT_FUNC std::unique_ptr<ClientInfoResponse> client_info() const;
+  [[nodiscard]] EXPORT_FUNC std::unique_ptr<DeviceInfoResponse> device_info() const;
 
  protected:
   /**
