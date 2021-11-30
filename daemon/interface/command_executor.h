@@ -28,9 +28,9 @@ using COMMAND_ARG = const std::vector<std::string>;
 /**
  * @brief The base class for the command
  * @note for every command, the program will create instance of the
- * the command object for all different incoming file discriptor by
- * creating mutiple instance of CommandExecuter for each created connection, and
- * destroyed when conenction is close or have exceptions
+ * the command object for all different incoming file descriptor by
+ * creating multiple instance of CommandExecutor for each created connection, and
+ * destroyed when connection is close or have exceptions
  */
 class CommandBase {
  public:
@@ -39,7 +39,7 @@ class CommandBase {
    *
    * @param daemon_status
    */
-  CommandBase(std::shared_ptr<ConnectionSession> daemon_status) {
+  explicit CommandBase(std::shared_ptr<ConnectionSession> daemon_status) {
     _daemon_status = std::move(daemon_status);
   };
 
@@ -54,7 +54,7 @@ class CommandBase {
  protected:
   std::shared_ptr<ConnectionSession>& session() { return _daemon_status; }
 
-  // Prevent anyone from directly inhereting from CommandBase
+  // Prevent anyone from directly inheriting from CommandBase
   virtual void DoNotInheritFromThisClassButAutoRegCommandInstead() = 0;
 
  private:
@@ -63,23 +63,16 @@ class CommandBase {
 
 using PTRC_OBJECT = std::function<CommandBase*(std::shared_ptr<ConnectionSession>)>;
 
-class CommandExecuter {
+class CommandExecutor {
  public:
-  /**
-   * @brief For each singale CommandExecuter it will only server for one
-   * connection since almost every conenction will keep long time. And for every
-   * instance of command object, it will have its own Connection session.
-   */
-  CommandExecuter()
-      : _session(
-            std::make_shared<ConnectionSession>(Serverkit::ServerContext::get_usr_ctx())){};
+  CommandExecutor();
 
   /**
-   * @brief Destroy the CommandExecuter object, when destroy this object will do
-   * folllowing thins:
+   * @brief Destroy the CommandExecutor object, when destroy this object will do
+   * following thins:
    *  1. Clean all created existed command interface in _instance_map
    */
-  ~CommandExecuter();
+  ~CommandExecutor();
 
   /**
    * @brief pprint the help message
@@ -104,8 +97,8 @@ class CommandExecuter {
    */
   class RegisterHelper {
    protected:
-    static bool reg_command_warper(const std::string_view& cmd, const std::string_view& desc,
-                                   PTRC_OBJECT&& obj) {
+    static bool reg_command_wrapper(const std::string_view& cmd, const std::string_view& desc,
+                                   PTRC_OBJECT&& obj) noexcept {
       return reg_command(std::forward<PTRC_OBJECT>(obj), cmd, desc);
     };
   };
@@ -113,7 +106,7 @@ class CommandExecuter {
  private:
   // TODO command requirement need to be implemented
   /**
-   * @brief Connection session for every CommandExecuter object
+   * @brief Connection session for every CommandExecutor object
    */
   std::shared_ptr<ConnectionSession> _session;
 
@@ -147,26 +140,18 @@ class CommandExecuter {
  * @tparam T the command need to mark as auto regiter
  */
 template <typename T>
-class AutoRegCommand : public CommandBase, private CommandExecuter::RegisterHelper {
+class AutoRegCommand : public CommandBase, private CommandExecutor::RegisterHelper {
  public:
   explicit AutoRegCommand(std::shared_ptr<ConnectionSession> session) : CommandBase(session) {
     (void)AutoRegCommand<T>::_reg_status;
   };
-
-  /**
-   * @brief Return the registation status of the current command class
-   *
-   * @return true class is registered in command exector
-   * @return false class is NOT registered in command exector
-   */
-  static bool get_reg_status() { return AutoRegCommand<T>::_reg_status; };
 
   static const constexpr std::string_view COMMAND_NAME;
 
   static const constexpr std::string_view COMMAND_DESCRIPTION;
 
  protected:
-  // Prevent anyone from directly inhereting from CommandBase
+  // Prevent anyone from directly inheriting from CommandBase
   void DoNotInheritFromThisClassButAutoRegCommandInstead() final{};
 
  private:
@@ -177,7 +162,7 @@ class AutoRegCommand : public CommandBase, private CommandExecuter::RegisterHelp
 };
 
 template <typename T>
-const bool AutoRegCommand<T>::_reg_status = AutoRegCommand<T>::reg_command_warper(
+const bool AutoRegCommand<T>::_reg_status = AutoRegCommand<T>::reg_command_wrapper(
     T::COMMAND_NAME, T::COMMAND_DESCRIPTION, [](auto a) { return new T(a); });
 }  // namespace P2PFileSync
 

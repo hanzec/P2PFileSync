@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <sstream>
 #include <string>
-namespace P2PFileSync::Serverkit::Base64 {
+namespace P2PFileSync::ServerKit::Base64 {
 static const constexpr char alphabet_map[] ={
     'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
     'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',

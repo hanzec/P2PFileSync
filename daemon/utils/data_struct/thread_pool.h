@@ -17,10 +17,10 @@ class ThreadPool {
  public:
   /**
    * @brief Construct a new Thread Pool
-   * @note the max count of therad worker is the max size of uint8_t;
+   * @note the max count of thread worker is the max size of uint8_t;
    * @param thread_size the thread worker size
    */
-  ThreadPool(const uint8_t thread_size) : _worker_pool(std::vector<std::thread>(thread_size)) {
+  explicit ThreadPool(const uint8_t thread_size) : _worker_pool(std::vector<std::thread>(thread_size)) {
     // initialize working thread
     for (size_t i = 0; i < _worker_pool.size(); ++i) {
       _worker_pool[i] = std::thread(ThreadWorker(this, i));
@@ -66,7 +66,7 @@ class ThreadPool {
     return task->get_future();
   }
 
-  // prevent refernce and copy
+  // prevent reference and copy
   ThreadPool(ThreadPool &&) = delete;
   ThreadPool(const ThreadPool &) = delete;
   ThreadPool &operator=(ThreadPool &&) = delete;
@@ -107,9 +107,9 @@ class ThreadPool {
 
    protected:
     /**
-     * @brief Constructor for Thread workder, for pervent outter class
+     * @brief Constructor for Thread worker, for prevent outer class
      * initialized ThreadWorker with unexpected behaviors, the ThreadWorker are
-     * marked as protected and mark ThreadPool class as frient class which allow
+     * marked as protected and mark ThreadPool class as friend class which allow
      * ThreadPool called constructor
      *
      */
@@ -118,7 +118,7 @@ class ThreadPool {
 
    private:
     uint8_t _id;        // thread id
-    ThreadPool *_pool;  // master pool refernce
+    ThreadPool *_pool;  // master pool reference
   };
 };
 }  // namespace P2PFileSync::Protocol

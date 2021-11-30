@@ -13,7 +13,7 @@ class InfoCommand : public AutoRegCommand<InfoCommand> {
       return;
     }
 
-    auto device_ctx = Serverkit::ServerContext::get_dev_ctx();
+    auto device_ctx = ServerKit::ServerContext::get_dev_ctx();
     auto device_info = device_ctx->device_info();
 
     out << "Device info: " << std::endl;
@@ -21,7 +21,7 @@ class InfoCommand : public AutoRegCommand<InfoCommand> {
     out << "  Device status: " << std::boolalpha << device_ctx->is_enabled() << std::endl;
     out << "  Device hardware id: " << device_info->machine_id() << std::endl;
     out << "  Device Registered ip: " << device_info->device_ip() << std::endl;
-    out << "  Device Register User: " << device_info->register_user() << std::endl;
+    out << "  Device Register User: " << device_info->register_user();
   };
 };
 }  // namespace P2PFileSync

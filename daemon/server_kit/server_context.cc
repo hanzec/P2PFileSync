@@ -8,7 +8,7 @@
 #include "server_endpoint.h"
 #include "server_kit.h"
 
-namespace P2PFileSync::Serverkit {
+namespace P2PFileSync::ServerKit {
 void ServerContext::init(const std::string& server_address, const std::filesystem::path& conf) {
   if (_instance == nullptr) {
     _instance = ServerContext::create(server_address, conf);
@@ -55,4 +55,4 @@ std::shared_ptr<DeviceContext> ServerContext::get_dev_ctx() noexcept {
     return _instance->_device_ctx_instance;
   }
 }
-}  // namespace P2PFileSync::Serverkit
+}  // namespace P2PFileSync::ServerKit

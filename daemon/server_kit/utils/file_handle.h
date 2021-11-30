@@ -6,13 +6,13 @@
 #define P2P_FILE_SYNC_FILE_HANDLE_H
 #include <filesystem>
 
-namespace P2PFileSync::Serverkit {
+namespace P2PFileSync::ServerKit {
 class FIleHandle{
  public:
   std::shared_ptr<FIleHandle> new_handler(std::filesystem::path path, const char* read_mode);
 
  protected:
-  FIleHandle(FILE * fp);
+  explicit FIleHandle(FILE * fp);
 
  private:
   FILE * _fp;

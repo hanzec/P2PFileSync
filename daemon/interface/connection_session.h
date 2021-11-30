@@ -15,8 +15,7 @@
 namespace P2PFileSync {
 class ConnectionSession {
  public:
-  ConnectionSession() = delete;
-  ConnectionSession(std::shared_ptr<Serverkit::UserContext> session);
+  ConnectionSession(std::shared_ptr<ServerKit::UserContext> user_ctx);
 
   template <typename T>
   T get_option(const char * key);
@@ -27,13 +26,13 @@ class ConnectionSession {
 
   void store_option(const std::string& key, std::any value);
 
-  void set_register_status(bool status);
+  static void set_register_status(bool status);
 
   static bool get_register_status() {
     return P2PFileSync::ConnectionSession::register_status;
   }
 
-  std::shared_ptr<Serverkit::UserContext>& get_usr_ctx() {
+  std::shared_ptr<ServerKit::UserContext>& get_usr_ctx() {
     return _user_session;
   }
 
@@ -44,7 +43,7 @@ class ConnectionSession {
   /**
    *  Following variables are genearted per session
    */
-  std::shared_ptr<Serverkit::UserContext> _user_session;
+  std::shared_ptr<ServerKit::UserContext> _user_session;
 
   std::unordered_map<std::string, std::any> _session_storage;
 };

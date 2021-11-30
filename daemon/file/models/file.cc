@@ -36,7 +36,7 @@ bool FileNode::replace_block(const std::string& commit_id, size_t index,
   _blocks[index] = std::move(block);
 
   _versions.push_back(commit_id);
-  return false;
+  return true;
 }
 
 bool FileNode::replace_block(const std::string& commit_id,
@@ -87,6 +87,6 @@ bool FileNode::add_and_replace_block(const std::string& commit_id, size_t index,
     }
   }
   _versions.push_back(commit_id);
-  return false;
+  return true;
 }
 }  // namespace P2PFileSync

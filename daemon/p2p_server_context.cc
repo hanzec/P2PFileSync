@@ -64,7 +64,7 @@ bool P2PServerContext::start(int fd) {
 // initlized protol instance
 bool P2PServerContext::init(const std::shared_ptr<Config> &config,
                             std::shared_ptr<ThreadPool> thread_pool,
-                            const std::shared_ptr<Serverkit::DeviceContext> &device_context) {
+                            const std::shared_ptr<ServerKit::DeviceContext> &device_context) {
   // prevent init twice
   if (_instance != nullptr) return false;
 

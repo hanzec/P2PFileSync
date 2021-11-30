@@ -1,5 +1,5 @@
 
-#include <model/response/user_login_response.h>
+#include <model/response/user/user_login_response.h>
 
 #include "server_endpoint.h"
 #include "server_kit.h"
@@ -7,7 +7,7 @@
 
 namespace fs = std::filesystem;
 
-namespace P2PFileSync::Serverkit {
+namespace P2PFileSync::ServerKit {
 
 UserContext::UserContext(const this_is_private&, std::string& server_address)
     : _server_address(server_address), _share_handle(curl_share_init()) {
@@ -76,4 +76,4 @@ std::unique_ptr<UserDetailResponse> UserContext::user_detail() const {
 
 bool UserContext::is_logged_in() const { return _login; }
 
-}  // namespace P2PFileSync::Serverkit
+}  // namespace P2PFileSync::ServerKit

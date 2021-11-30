@@ -1,7 +1,7 @@
 #include <model/data/device_conf.h>
-#include <model/response/client_certificate_response.h>
-#include <model/response/client_information_response.h>
-#include <model/response/get_peer_list_response.h>
+#include <model/response/client/client_certificate_response.h>
+#include <model/response/client/client_information_response.h>
+#include <model/response/client/get_peer_list_response.h>
 
 #include <filesystem>
 #include <memory>
@@ -14,7 +14,7 @@
 #include "utils/base64_utils.h"
 #include "utils/curl_utils.h"
 
-namespace P2PFileSync::Serverkit {
+namespace P2PFileSync::ServerKit {
 
 DeviceContext::DeviceContext(const this_is_private &, std::string device_id,
                              std::string client_token, std::string& server_address,
@@ -58,7 +58,7 @@ std::filesystem::path DeviceContext::client_certificate() const {
           nullptr, std::string(_server_address).append(GET_CLIENT_CERTIFICATE_ENDPOINT_V1),
           {"Authorization:" + _login_token}, false);
       ClientCertResponse resp(static_cast<char *>(raw_json));
-      auto cert = Base64::decode(resp.get_client_PSCK12_certificate());
+      auto cert = Base64::decode(resp.PSCK12_certificate());
 
       // first write to file
       std::ofstream file_stream(cert_file, std::ios::out | std::ios::binary);
@@ -81,4 +81,4 @@ std::map<std::string, std::string> DeviceContext::peer_list() const {
   return resp.get_peer_list();
 }
 
-}  // namespace P2PFileSync::Serverkit
+}  // namespace P2PFileSync::ServerKit

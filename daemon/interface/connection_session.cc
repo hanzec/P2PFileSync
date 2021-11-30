@@ -3,10 +3,10 @@
 
 namespace P2PFileSync {
 
-ConnectionSession::ConnectionSession(std::shared_ptr<Serverkit::UserContext> session)
-    : _user_session(std::move(session)) {
+ConnectionSession::ConnectionSession(std::shared_ptr<ServerKit::UserContext> user_ctx)
+    : _user_session(std::move(user_ctx)) {
   if (!get_register_status()) {
-    // set_register_status(Serverkit::get_register_status());
+    // set_register_status(ServerKit::get_register_status());
   }
 };
 

@@ -5,9 +5,11 @@
 
 #ifndef P2P_FILE_SYNC_USER_DETAIL_RESPONSE_H
 #define P2P_FILE_SYNC_USER_DETAIL_RESPONSE_H
-#include "../IJsonModel.h"
+#include <unordered_set>
 
-namespace P2PFileSync::Serverkit {
+#include "../../IJsonModel.h"
+
+namespace P2PFileSync::ServerKit {
 
 class UserDetailResponse : public IJsonModel {
  public:
@@ -28,10 +30,13 @@ class UserDetailResponse : public IJsonModel {
    */
   UserDetailResponse(char* json);
 
-  std::string name() const;
+  [[nodiscard]] std::string name() const;
 
-  std::string email() const;
+  [[nodiscard]] std::string email() const;
+
+  [[nodiscard]] std::unordered_map<int,std::pair<std::string, std::string>> group() const;
+
 };
 
-}  // namespace P2PFileSync::Serverkit
+}  // namespace P2PFileSync::ServerKit
 #endif  // P2P_FILE_SYNC_USER_DETAIL_RESPONSE_H

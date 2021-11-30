@@ -21,24 +21,24 @@ enum __attribute__((__packed__)) StatusCode {
 
   /**
    * Status which means current method or parameter combination are not
-   * supported or even not implemented or resoure not found
+   * supported or even not implemented or resource not found
    */
   NOT_FOUND = 2,
   
   /**
    * Status which means current method or parameter combination are exist
-   * but does not avalibale at this time
+   * but does not available at this time
    */
   INTERNAL = 2,
 
   /**
    * Status which means current method or parameter combination are exist
-   * but does not avalibale at this time
+   * but does not available at this time
    */
   UNAVAILABLE = 3,
 
   /**
-   * Sataus which means current method argument are incorrect
+   * Status which means current method argument are incorrect
    *
    */
   INVALID_ARGUMENT = 4,
@@ -46,7 +46,7 @@ enum __attribute__((__packed__)) StatusCode {
 
 class Status {
  public:
-  Status(StatusCode code) : Status(code, "No message Provided") {}
+  explicit Status(StatusCode code) : Status(code, "No message Provided") {}
 
   Status(StatusCode code, std::string &&msg) {
     this->status_code_ = code;
@@ -57,7 +57,7 @@ class Status {
   [[nodiscard]] std::string Message() const { return this->msg_; }
   [[nodiscard]] bool ok() const { return status_code_ == StatusCode::OK; }
 
-  static const Status OK() {
+  static Status OK() {
     return Status(StatusCode::OK, "Return Ok without error!");
   }
 

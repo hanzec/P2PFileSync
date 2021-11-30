@@ -9,7 +9,7 @@
 #include <string>
 #include <string_view>
 
-namespace P2PFileSync::Serverkit {
+namespace P2PFileSync::ServerKit {
   /**
    * Server-kit Configuration file Name
    */
@@ -41,5 +41,5 @@ namespace P2PFileSync::Serverkit {
   const constexpr static std::string_view GET_CLIENT_PEER_INFO_ENDPOINT_V1 = "/api/v1/client/peer";
   const constexpr static std::string_view GET_CLIENT_GROUP_INFO_ENDPOINT_V1 = "/api/v1/client/group";
   const constexpr static std::string_view GET_CLIENT_CERTIFICATE_ENDPOINT_V1 = "/api/v1/client/certificate";
-} // namespace P2PFileSync::P2PFileSync::Serverkit
+} // namespace P2PFileSync::P2PFileSync::ServerKit
 #endif //P2P_FILE_SYNC_SERVER_KIT_SERVER_CONST_H

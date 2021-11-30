@@ -9,8 +9,17 @@ class FileCommand : public AutoRegCommand<FileCommand> {
 
  public:
   void exec(std::ostringstream& out, const std::vector<std::string>& args) final {
-    if (!args.empty()) {
-      out << "TIME command does not need any arguments!";
+    auto& user_ctx = session()->get_usr_ctx();
+
+    // check arguments
+    if (args.empty()) {
+      out << "Usage: file <command> [args]\n";
+    }
+
+    // check if the user is logged in
+    if(!user_ctx->is_logged_in()){
+      out << "You are not logged in.\n";
+      return;
     }
 
     auto end = std::chrono::system_clock::now();

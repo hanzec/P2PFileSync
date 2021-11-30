@@ -23,7 +23,7 @@
 
 namespace P2PFileSync {
 
-std::unordered_map<int, std::shared_ptr<CommandExecuter>> executor_map;
+std::unordered_map<int, std::shared_ptr<CommandExecutor>> executor_map;
 
 inline std::string read_by_line(struct bufferevent *bev) {
   std::ostringstream output_buf;
@@ -39,15 +39,15 @@ inline std::string read_by_line(struct bufferevent *bev) {
 };
 
 void read_handler(struct bufferevent *bev, void *ce_ptr) {
-  std::shared_ptr<CommandExecuter> ce;
+  std::shared_ptr<CommandExecutor> ce;
 
-  // looking fot exist connamd executor object
+  // looking fot exist command executor object
   {
     auto fd = bufferevent_getfd(bev);
     auto ce_index = executor_map.find(fd);
     if (ce_index == executor_map.end()) {
       DLOG(INFO) << "create new command executor object for fd " << fd;
-      executor_map.emplace(fd, (ce = std::make_shared<CommandExecuter>()));
+      executor_map.emplace(fd, (ce = std::make_shared<CommandExecutor>()));
     } else {
       ce = ce_index->second;
     }
@@ -73,13 +73,13 @@ void error_handler(struct bufferevent *bev, short event, void *arg) {
 }
 
 void accept_handler(evutil_socket_t fd, short event, void *arg) {
-  struct sockaddr_un sin;
-  socklen_t slen = sizeof(sin);
+  struct sockaddr_un sin{};
+  socklen_t len = sizeof(sin);
   auto *base = (struct event_base *)arg;
 
   // waiting for new connection accepted
   int new_fd;
-  if ((new_fd = accept(fd, (struct sockaddr *)&sin, (socklen_t *)&slen)) < 0) {
+  if ((new_fd = accept(fd, (struct sockaddr *)&sin, (socklen_t *)&len)) < 0) {
     LOG(ERROR) << "Error when handling incoming connection";
     return;
   }else{
@@ -99,7 +99,7 @@ void manage_interface_thread(const std::string &sockets, int listen_type) {
     LOG(FATAL) << "socket file path cannot be longer than 108 character";
   }
 
-  // set up file descripter
+  // set up file descriptor
   int listen_fd = 0;
   if ((listen_fd = socket(listen_type, SOCK_STREAM, 0)) == -1) {
     LOG(FATAL) << "can not create socket";
@@ -107,7 +107,7 @@ void manage_interface_thread(const std::string &sockets, int listen_type) {
 
   // init structure
   unlink(sockets.c_str());
-  struct sockaddr_un addr;
+  struct sockaddr_un addr{};
   addr.sun_family = listen_type;
   memcpy(addr.sun_path, sockets.c_str(), sockets.length());
 

@@ -3,11 +3,11 @@
 //
 
 #include "user_login_response.h"
-namespace P2PFileSync::Serverkit {
+namespace P2PFileSync::ServerKit {
 
 UserLoginResponse::UserLoginResponse(char* json) : IJsonModel(json){};
 
 std::string UserLoginResponse::user_id() const { return get_value<std::string>("user_id"); }
 
 std::string UserLoginResponse::user_email() const { return get_value<std::string>("email"); }
-}  // namespace P2PFileSync::Serverkit
+}  // namespace P2PFileSync::ServerKit

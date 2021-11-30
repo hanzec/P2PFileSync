@@ -3,7 +3,7 @@
 
 #include <array>
 
-namespace P2PFileSync::Serverkit::Base64 {
+namespace P2PFileSync::ServerKit::Base64 {
 
   /**
    * @brief return a new string object contains the Base64 encoded string
@@ -14,10 +14,10 @@ namespace P2PFileSync::Serverkit::Base64 {
   std::string encode(const std::string& text);
 
   /**
-   * @brief returned a new string object contins the decoded base 64 string
+   * @brief returned a new string object contains the decoded base 64 string
    * 
    * @param text the base 64 encoded string
-   * @return std::string the decoded retsult
+   * @return std::string the decoded result
    */
   std::string decode(const std::string& text);
 

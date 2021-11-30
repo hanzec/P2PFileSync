@@ -1,21 +1,18 @@
 //
-// Created by hanzech on 11/29/21.
+// Created by hanzech on 11/30/21.
 //
 
-#ifndef P2P_FILE_SYNC_USER_LOGIN_RESPONSE_H
-#define P2P_FILE_SYNC_USER_LOGIN_RESPONSE_H
-#include "../IJsonModel.h"
+#ifndef P2P_FILE_SYNC_USER_GROUP_RESPONSE_H
+#define P2P_FILE_SYNC_USER_GROUP_RESPONSE_H
+#include "model/IJsonModel.h"
 
-//todo moodify the document
-namespace P2PFileSync::Serverkit {
-
-class UserLoginResponse :public IJsonModel {
- public:
+namespace P2PFileSync::ServerKit {
+class UserGroupResponse: public IJsonModel{
   /**
    * @brief Construct a new Register Client Response object
    *
    */
-  UserLoginResponse() = delete;
+  UserGroupResponse() = delete;
 
   /**
    * @brief Construct a new Register Client Response object from exist json ptr,
@@ -26,11 +23,10 @@ class UserLoginResponse :public IJsonModel {
    * @param json the json string wants to parse as Register Client Response
    * Object
    */
-  UserLoginResponse(char* json);
+  explicit UserGroupResponse(char* json);
 
-  std::string user_id() const;
+  [[nodiscard]] std::unordered_map<int,std::pair<std::string, std::string>> group() const;
 
-  std::string user_email() const;
 };
 }
-#endif  // P2P_FILE_SYNC_USER_LOGIN_RESPONSE_H
+#endif  // P2P_FILE_SYNC_USER_GROUP_RESPONSE_H

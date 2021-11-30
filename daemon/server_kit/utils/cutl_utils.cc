@@ -10,7 +10,7 @@
 
 #include "curl_utils.h"
 
-namespace P2PFileSync::Serverkit {
+namespace P2PFileSync::ServerKit {
 
 using ptr_data = struct ptr_data_t {
   void* data;
@@ -22,14 +22,14 @@ size_t write_to_ptr(char* ptr, size_t size, size_t nmemb, void* userdata) {
   ptr_data* file_ptr;
   size_t block_size = nmemb * size;
 
-  // has to be have a type of ptr_data
+  // has to be had a type of ptr_data
   if ((file_ptr = static_cast<ptr_data*>(userdata)) != nullptr) {
     // check if need to do relocate
     if (file_ptr->current_size < file_ptr->head + block_size) {
       LOG(INFO) << "relocate ptr: [" << std::hex << file_ptr->data << "]";
       void* new_ptr = realloc(file_ptr->data, file_ptr->current_size * 2);
 
-      // handled when realloc is failed
+      // handled when malloc is failed
       if (new_ptr == nullptr) {
         free(file_ptr->data);
         return 0;
@@ -103,7 +103,7 @@ void* POST_and_save_to_ptr(CURLSH* curl_handler, const std::string& request_url,
 }
 
 void* GET_and_save_to_ptr(CURLSH* curl_handler, const std::string& request_url,
-                          std::vector<std::string> header, bool force_ssl) {
+                          const std::vector<std::string>& header, bool force_ssl) {
   auto* data = static_cast<ptr_data*>(malloc(sizeof(ptr_data)));
 
   // assign spaces
@@ -220,4 +220,4 @@ error:
   return false;
 };
 
-};  // namespace P2PFileSync::Serverkit
+};  // namespace P2PFileSync::ServerKit

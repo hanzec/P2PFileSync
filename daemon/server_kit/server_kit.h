@@ -11,13 +11,13 @@
 
 #include "common.h"
 #include "export.h"
-#include "model/response/user_detail_response.h"
-#include "model/response/client_information_response.h"
+#include "model/response/client/client_information_response.h"
+#include "model/response/user/user_detail_response.h"
 
 #ifndef P2P_FILE_SYNC_SERVER_KIT_SERVER_KIT_H
 #define P2P_FILE_SYNC_SERVER_KIT_SERVER_KIT_H
 
-namespace P2PFileSync::Serverkit {
+namespace P2PFileSync::ServerKit {
 
 /**
  * @brief Check if client is registered or not by following rules:
@@ -66,9 +66,9 @@ class UserContext {
 
   EXPORT_FUNC void logout();
 
-  EXPORT_FUNC bool is_logged_in() const;
+  [[nodiscard]] EXPORT_FUNC bool is_logged_in() const;
 
-  EXPORT_FUNC std::unique_ptr<UserDetailResponse> user_detail() const;
+  [[nodiscard]] EXPORT_FUNC std::unique_ptr<UserDetailResponse> user_detail() const;
 
   EXPORT_FUNC bool login(const std::string& email, const std::string& password);
 
@@ -280,6 +280,6 @@ class EXPORT_FUNC ServerContext {
   // instance ptr
   std::shared_ptr<DeviceContext> _device_ctx_instance = nullptr;
 };
-}  // namespace P2PFileSync::Serverkit
+}  // namespace P2PFileSync::ServerKit
 
 #endif  // P2P_FILE_SYNC_SERVER_KIT_SERVER_KIT_H

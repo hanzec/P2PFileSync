@@ -4,7 +4,7 @@
 
 #include <fstream>
 
-namespace P2PFileSync::Serverkit {
+namespace P2PFileSync::ServerKit {
 
 DeviceConfiguration::DeviceConfiguration(const std::filesystem::path& device_cfg_file)
     : IJsonModel() {
@@ -46,4 +46,4 @@ std::string DeviceConfiguration::device_id() const {
   return get_value<std::string>("device_id");
 }
 
-}  // namespace P2PFileSync::Serverkit
+}  // namespace P2PFileSync::ServerKit

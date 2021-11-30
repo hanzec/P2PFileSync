@@ -9,7 +9,7 @@ class UserCommand : public AutoRegCommand<UserCommand> {
 
  public:
   void exec(std::ostringstream& out, const std::vector<std::string>& args) final {
-    if(args.empty()) {
+    if (args.empty()) {
       out << "Usage: USER [COMMAND] [OPTIONS]";
       return;
     }
@@ -17,29 +17,29 @@ class UserCommand : public AutoRegCommand<UserCommand> {
     auto& user_ctx = session()->get_usr_ctx();
 
     // Handle login
-    if(args[0] == "LOGIN"){
-      if(args.size() < 3) {
+    if (args[0] == "LOGIN") {
+      if (args.size() < 3) {
         out << "Usage: USER LOGIN <email> <password>";
         return;
       }
 
-      if(user_ctx->is_logged_in()) {
+      if (user_ctx->is_logged_in()) {
         out << "You are already logged in.";
         return;
       }
 
-      if(user_ctx->login(args[1], args[2])) {
+      if (user_ctx->login(args[1], args[2])) {
         out << "Login successful.";
       } else {
         out << "Login failed.";
       }
-    } else if(args[0] == "INFO") {
-      if(args.size() != 1){
+    } else if (args[0] == "INFO") {
+      if (args.size() != 1) {
         out << "Usage: USER INFO";
         return;
       }
 
-      if(!user_ctx->is_logged_in()) {
+      if (!user_ctx->is_logged_in()) {
         out << "You are not logged in.";
         return;
       }
@@ -47,13 +47,22 @@ class UserCommand : public AutoRegCommand<UserCommand> {
       out << "User info:" << std::endl;
       out << "  name: " << info->name() << std::endl;
       out << "  email: " << info->email() << std::endl;
+      out << "  group: " << std::endl;
+      out << "    " << std::left << std::setw(5) << "id" << std::setw(15) << "name"
+          << std::setw(20) << "description" << std::endl;
+
+      for (const auto& group : info->group()) {
+        out << "    " << std::left << std::setw(5) << group.first << std::setw(15)
+            << group.second.first << std::setw(20) << group.second.second << std::endl;
+      }
+
     } else if (args[0] == "LOGOUT") {
-      if(args.size() != 1){
+      if (args.size() != 1) {
         out << "Usage: USER LOGOUT";
         return;
       }
 
-      if(!user_ctx->is_logged_in()) {
+      if (!user_ctx->is_logged_in()) {
         out << "You are not logged in.";
         return;
       }
@@ -62,7 +71,6 @@ class UserCommand : public AutoRegCommand<UserCommand> {
     } else {
       out << "Unknown command: " << args[0];
     }
-
   };
 };
 }  // namespace P2PFileSync

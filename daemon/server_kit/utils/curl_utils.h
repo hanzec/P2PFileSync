@@ -12,7 +12,7 @@
 
 #include "functional"
 
-namespace P2PFileSync::Serverkit {
+namespace P2PFileSync::ServerKit {
 
 /**
  * @brief Perform HTTP GET for giving address and saving the response body to
@@ -44,7 +44,7 @@ bool GET_and_save_to_path(CURLSH* curl_handler, const std::string& request_url,
  * @return void* the returned data in response body
  */
 void* GET_and_save_to_ptr(CURLSH* curl_handler, const std::string& request_url,
-                          std::vector<std::string> header, bool force_ssl);
+                          const std::vector<std::string>& header, bool force_ssl);
 
 /**
  * @brief Perfrom HTTP POST for giving address and post data and return raw ptr
@@ -70,6 +70,6 @@ inline bool get_data_from_server(const std::string& http_method, const void* inp
                                  size_t (*write_function)(char*, size_t, size_t, void*),
                                  bool force_ssl);
 
-};  // namespace P2PFileSync::Serverkit
+};  // namespace P2PFileSync::ServerKit
 
 #endif  // P2P_FILE_SYNC_SERVER_KIT_SERVER_KIT_UTILS_CURL_UTILS_H

@@ -40,10 +40,10 @@ Status parsing_command(const std::string& input_command, COMMAND& parsed_command
     input.erase(0, current + 1);
 
     // get the arguments
-    while (input.npos != (current = input.find(' '))) {
+    while (std::string::npos != (current = input.find(' '))) {
       if (input[0] == '\"') {
         auto quoter_start = current;
-        if ((current = input.find('\"', quoter_start + 1)) == input.npos) {
+        if ((current = input.find('\"', quoter_start + 1)) == std::string::npos) {
           return {StatusCode::INVALID_ARGUMENT,
                   generte_nice_error_msg("could not found pair of double quotes", quoter_start,
                                          input)};

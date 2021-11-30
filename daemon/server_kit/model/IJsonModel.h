@@ -24,7 +24,7 @@
 
 #include "../export.h"
 
-namespace P2PFileSync::Serverkit {
+namespace P2PFileSync::ServerKit {
 /**
  * @brief base model of request/response model which used in server
  * communication
@@ -61,7 +61,7 @@ class IJsonModel {
    *
    * @param json
    */
-  IJsonModel(const std::filesystem::path& json_file) {
+  explicit IJsonModel(const std::filesystem::path& json_file) {
 #ifdef UNDER_UNIX
     FILE* fp = fopen(json_file.c_str(), "rb");  // non-Windows use "r"
 #elifdef UNDER_WINDOWS
@@ -123,7 +123,20 @@ class IJsonModel {
    */
   rapidjson::Document& get_root() { return root; };
 
-  /**
+  auto& get_raw_node(const char* key) const {
+    if (_response_flag ? root["responseBody"].HasMember(key) : root.HasMember(key)) {
+      if (!_response_flag) {
+        return root[key];
+      } else {
+        return root["responseBody"][key];
+      }
+    } else {
+      LOG(ERROR) << "key [" << key << "] not found!";
+      throw std::exception();
+    }
+  }
+
+      /**
    * @brief Get the value object
    * @note by defult if key is not exist then this fuction will return nullptr
    * for object and 0/0.0 or nurmical values. And fot string variables, this
@@ -172,7 +185,7 @@ class IJsonModel {
     std::map<std::string, T> ret;
     if (_response_flag ? root.HasMember(key) : root["responseBody"].HasMember(key)) {
       for (auto const& in :
-           _response_flag ? root[key].GetArray() : root["responseBody"].GetArray()) {
+           _response_flag ? root[key].GetArray() : root["responseBody"][key].GetArray()) {
         // skip if current node is a list
         if (in.IsArray()) break;
 
@@ -277,5 +290,5 @@ class IJsonModel {
    */
   rapidjson::Document root;
 };
-}  // namespace P2PFileSync::Serverkit
+}  // namespace P2PFileSync::ServerKit
 #endif  // P2P_FILE_SYNC_Serverkit_MODEL_JSON_MODEL_H

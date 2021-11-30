@@ -26,7 +26,7 @@
 
 namespace P2PFileSync {
 
-using DeviceContextPtr = std::shared_ptr<Serverkit::DeviceContext>;
+using DeviceContextPtr = std::shared_ptr<ServerKit::DeviceContext>;
 
 class P2PServerContext : private RoutingTable<std::string>,
                          private FIFOCache<std::basic_string<char>> {
@@ -217,7 +217,7 @@ class P2PServerContext : private RoutingTable<std::string>,
    * Private instance
    */
   inline static std::shared_ptr<P2PServerContext> _instance = nullptr;
-  inline static std::shared_ptr<Serverkit::DeviceContext> _device_context = nullptr;
+  inline static std::shared_ptr<ServerKit::DeviceContext> _device_context = nullptr;
 
   /**
    * Client Certificate //TODO delete those when deconstruct avoid leaking

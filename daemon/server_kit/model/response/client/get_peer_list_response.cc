@@ -4,7 +4,7 @@
 
 #include "get_peer_list_response.h"
 
-namespace P2PFileSync::Serverkit {
+namespace P2PFileSync::ServerKit {
 
 GetPeerListResponse::GetPeerListResponse(char* json) : IJsonModel(json){};
 
@@ -12,4 +12,4 @@ std::map<std::string,std::string> GetPeerListResponse::get_peer_list() {
   return get_map<std::string>("\\peer");
 }
 
-}  // namespace P2PFileSync::Serverkit
+}  // namespace P2PFileSync::ServerKit

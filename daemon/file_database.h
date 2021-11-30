@@ -19,7 +19,8 @@ class FileDatabaseContext {
   struct this_is_private;
 
  public:
-
+ static bool init(std::filesystem::path  data_storage_path,
+                   std::shared_ptr<ThreadPool>  thread_pool);
  protected:
   FileDatabaseContext(std::filesystem::path  data_storage_path,
                       std::shared_ptr<ThreadPool>  thread_pool);

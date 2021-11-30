@@ -1,7 +1,7 @@
 #include "command_executor.h"
 
 namespace P2PFileSync {
-CommandExecuter::~CommandExecuter() {
+CommandExecutor::~CommandExecutor() {
   for (const auto& pair : _instance_map) {
     free(pair.second);
     VLOG(3) << "destroy [" << pair.first << "] object";
@@ -9,18 +9,18 @@ CommandExecuter::~CommandExecuter() {
 };
 
 // print help message
-void CommandExecuter::get_help_msg(std::ostringstream& output) noexcept {
-  for (const auto& pair : CommandExecuter::_constructor_map) {
+void CommandExecutor::get_help_msg(std::ostringstream& output) noexcept {
+  for (const auto& pair : CommandExecutor::_constructor_map) {
     output << std::setw(15) << pair.first << std::setw(0) << pair.second.first << std::endl;
   }
 };
 
 // command factory producer
-void CommandExecuter::exec(std::ostringstream& output, const std::string& command,
+void CommandExecutor::exec(std::ostringstream& output, const std::string& command,
                            COMMAND_ARG& arguments) {
   // the only special case will handle_difficult by command factory
   if (command == "help") {
-    CommandExecuter::get_help_msg(output);
+    CommandExecutor::get_help_msg(output);
   } else {
     // todo memory leak here need to fix
     CommandBase* command_obj;
@@ -41,8 +41,8 @@ void CommandExecuter::exec(std::ostringstream& output, const std::string& comman
     }
 
     // return failied when command not found
-    auto command_index = CommandExecuter::_constructor_map.find(command);
-    if (command_index == CommandExecuter::_constructor_map.end()) {
+    auto command_index = CommandExecutor::_constructor_map.find(command);
+    if (command_index == CommandExecutor::_constructor_map.end()) {
       output << "command [" << command << "] not found!" << std::endl;
       return;
     }
@@ -55,7 +55,7 @@ void CommandExecuter::exec(std::ostringstream& output, const std::string& comman
           std::forward<std::shared_ptr<ConnectionSession>>(_session));
 
       // add to managed interface map
-      CommandExecuter::_instance_map.emplace(command, command_obj);
+      CommandExecutor::_instance_map.emplace(command, command_obj);
     } else {
       command_obj = command_obj_index->second;
     }
@@ -69,15 +69,16 @@ void CommandExecuter::exec(std::ostringstream& output, const std::string& comman
 }
 
 // register avaliable command
-bool CommandExecuter::reg_command(PTRC_OBJECT&& command_obj, const std::string_view& command,
+bool CommandExecutor::reg_command(PTRC_OBJECT&& command_obj, const std::string_view& command,
                                   const std::string_view& description) {
-  if (CommandExecuter::_constructor_map.find(command) !=
-      CommandExecuter::_constructor_map.end()) {
+  if (CommandExecutor::_constructor_map.find(command) !=
+      CommandExecutor::_constructor_map.end()) {
     return false;
   }
-  CommandExecuter::_constructor_map.emplace(
+  CommandExecutor::_constructor_map.emplace(
       command, std::make_pair(description, std::move(command_obj)));
   return true;
 }
+CommandExecutor::CommandExecutor():_session(std::make_shared<ConnectionSession>(ServerKit::ServerContext::get_usr_ctx())) {}
 
 }  // namespace P2PFileSync

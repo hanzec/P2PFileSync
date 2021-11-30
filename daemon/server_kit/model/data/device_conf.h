@@ -5,9 +5,9 @@
 #include <string>
 
 #include "../IJsonModel.h"
-#include "model/response/register_client_response.h"
+#include "model/response/client/register_client_response.h"
 
-namespace P2PFileSync::Serverkit {
+namespace P2PFileSync::ServerKit {
 /**
  * @brief Request Model of Client Register
  */
@@ -27,7 +27,7 @@ class DeviceConfiguration : public IJsonModel {
   /**
    * @brief Construct a new Device configuration file
    */
-  DeviceConfiguration(const RegisterClientResponse& register_device_response);
+  explicit DeviceConfiguration(const RegisterClientResponse& register_device_response);
 
  /**
    * @brief Set the IP address section of RegisterClientRequest
@@ -58,6 +58,6 @@ class DeviceConfiguration : public IJsonModel {
    */
   void set_device_id(const std::string& device_id);
 };
-}  // namespace P2PFileSync::Serverkit
+}  // namespace P2PFileSync::ServerKit
 
 #endif  // P2P_FILE_SYNC_Serverkit_MODEL_DATA_DEVICE_CONF_H
