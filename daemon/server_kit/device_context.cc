@@ -17,44 +17,12 @@
 namespace P2PFileSync::Serverkit {
 
 DeviceContext::DeviceContext(const this_is_private &, std::string device_id,
-                             std::string client_token, std::string server_address,
-                             std::filesystem::path conf)
+                             std::string client_token, std::string& server_address,
+                             std::filesystem::path& conf)
     : _device_id(std::move(device_id)),
       _login_token(std::move(client_token)),
       _server_address(std::move(server_address)),
       _server_configuration_path(std::move(conf)){};
-
-std::shared_ptr<DeviceContext> DeviceContext::get_dev_ctx() noexcept {
-  if (_instance == nullptr) {
-    return nullptr;
-  }
-  return _instance;
-}
-
-bool DeviceContext::init_dev_ctx(const std::string &server_address,
-                                 const std::filesystem::path &client_conf) noexcept {
-  if (_instance == nullptr) {
-    if (std::filesystem::exists(client_conf/CLIENT_CONFIGURE_FILE_NAME)) {
-      LOG(INFO) << "Device is registered, loading configuration...";
-      DeviceConfiguration conf_file(client_conf/CLIENT_CONFIGURE_FILE_NAME);
-      _instance =
-          create(conf_file.device_id(), conf_file.jwt_key(), server_address, client_conf);
-      return _instance != nullptr;
-    } else {
-      LOG(INFO) << "Device is not registered, generating configuration...";
-      auto param = register_client(server_address, client_conf);
-      if (param.first.empty() && param.second.empty()) {
-        LOG(ERROR) << "Failed to register device";
-        return false;
-      } else {
-        _instance = create(param.second, param.first, server_address, client_conf);
-        return _instance != nullptr;
-      }
-    }
-  } else {
-    return true;
-  }
-}
 
 bool DeviceContext::is_enabled() const { return device_info() != nullptr; }
 

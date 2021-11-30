@@ -24,7 +24,15 @@ namespace P2PFileSync::Serverkit {
   /**
    * Authenticate related API
    */
+  const constexpr static std::string_view SERVER_PASSWORD_LOGOUT_V1 = "/logout";
+  const constexpr static std::string_view SERVER_PASSWORD_LOGIN_V1 = "/api/v1/login";
   const constexpr static std::string_view SERVER_REGISTER_ENDPOINT_V1 = "/api/v1/register_client";
+
+  /**
+   * User management related API
+   */
+  const constexpr static std::string_view SERVER_USER_DETAIL_V1 = "/api/v1/user";
+
 
   /**
    * Client management related API

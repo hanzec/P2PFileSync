@@ -53,12 +53,9 @@ void read_handler(struct bufferevent *bev, void *ce_ptr) {
     }
   }
 
-  // recv new incoming command
-  auto raw_command = read_by_line(bev);
-
   // parsing command
   COMMAND command;
-  auto parse_ret = P2PFileSync::parsing_command(raw_command, command);
+  auto parse_ret = P2PFileSync::parsing_command(read_by_line(bev), command);
 
   // check if parsing is failed
   if (!parse_ret.ok()) {

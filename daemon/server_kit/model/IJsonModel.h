@@ -4,6 +4,7 @@
 #include <glog/logging.h>
 #include <rapidjson/allocators.h>
 #include <rapidjson/document.h>
+#include <rapidjson/error/en.h>
 #include <rapidjson/filereadstream.h>
 #include <rapidjson/filewritestream.h>
 #include <rapidjson/rapidjson.h>
@@ -44,7 +45,12 @@ class IJsonModel {
    * @param json
    */
   explicit IJsonModel(char* json) : json_buf(json) {
-    root.Parse(json);
+    rapidjson::ParseResult ret = root.Parse(json);
+
+    if (!ret) {
+      LOG(FATAL) << "parse json error: " << rapidjson::GetParseError_En(ret.Code()) << ":" << ret.Offset() << ":"
+                 << json;
+    }
 
     // check if is response model or not
     _response_flag = root.HasMember("success") && root.HasMember("responseBody");

@@ -8,16 +8,16 @@
 
 namespace P2PFileSync::UUID {
 // TODO documents
-static bool is_valid(const std::string& uuid_string){
+bool is_valid(const std::string& uuid_string){
   return false;
 }
 
 // TODO documents
-static bool is_valid(const std::array<std::byte, 16>& uuid){
+bool is_valid(const std::array<std::byte, 16>& uuid){
   return false;
 }
 
-static std::array<std::byte, 16> to_array(const std::string& uuid_string){
+std::array<std::byte, 16> to_array(const std::string& uuid_string){
   std::array<std::byte, 16> ret{static_cast<std::byte>(0)};
 
   if(uuid_parse(uuid_string.c_str(), (unsigned char*)ret.front()) == 0){
@@ -29,7 +29,7 @@ static std::array<std::byte, 16> to_array(const std::string& uuid_string){
 
 }
 
-static bool compare(const std::array<std::byte, 16>& uuid, const std::string& uuid_string){
+bool compare(const std::array<std::byte, 16>& uuid, const std::string& uuid_string){
   // valid uuid has to be had a length of 16 bytes
   if(uuid_string.size() != uuid.size()){
     return false;

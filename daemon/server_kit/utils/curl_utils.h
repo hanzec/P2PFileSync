@@ -28,8 +28,7 @@ namespace P2PFileSync::Serverkit {
  * @return false failed to download
  */
 bool GET_and_save_to_path(CURLSH* curl_handler, const std::string& request_url,
-                          const std::filesystem::path& file,
-                          bool force_ssl = true);
+                          const std::filesystem::path& file, bool force_ssl = true);
 
 /**
  * @brief Perfrom HTTP GET for giving address and post data and return raw ptr
@@ -44,8 +43,8 @@ bool GET_and_save_to_path(CURLSH* curl_handler, const std::string& request_url,
  * @param force_ssl the flag where enable SSL verify or not
  * @return void* the returned data in response body
  */
-void * GET_and_save_to_ptr(CURLSH * curl_handler, const std::string& request_url, std::vector<std::string> header, bool force_ssl);
-
+void* GET_and_save_to_ptr(CURLSH* curl_handler, const std::string& request_url,
+                          std::vector<std::string> header, bool force_ssl);
 
 /**
  * @brief Perfrom HTTP POST for giving address and post data and return raw ptr
@@ -60,12 +59,16 @@ void * GET_and_save_to_ptr(CURLSH * curl_handler, const std::string& request_url
  * @param force_ssl the flag where enable SSL verify or not
  * @return void* the returned data in response body
  */
-void * POST_and_save_to_ptr(CURLSH * curl_handler, const std::string& request_url, const void * post_data, bool force_ssl);
+void* POST_and_save_to_ptr(CURLSH* curl_handler, const std::string& request_url,
+                           const void* post_data, bool is_json, bool force_ssl);
 
 // TODO write document later
-inline bool get_data_from_server(const std::string& http_method, const void* input_data, const void * post_data,
-                          CURLSH* curl_share, const std::string& request_url,const std::vector<std::string>& header,
-                          size_t (*write_function)(char*, size_t, size_t, void*), bool force_ssl);
+inline bool get_data_from_server(const std::string& http_method, const void* input_data,
+                                 const void* post_data, bool json_string, CURLSH* curl_share,
+                                 const std::string& request_url,
+                                 const std::vector<std::string>& header,
+                                 size_t (*write_function)(char*, size_t, size_t, void*),
+                                 bool force_ssl);
 
 };  // namespace P2PFileSync::Serverkit
 

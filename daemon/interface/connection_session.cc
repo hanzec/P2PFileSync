@@ -3,9 +3,10 @@
 
 namespace P2PFileSync {
 
-ConnectionSession::ConnectionSession() : _management(new Serverkit::UserContext(false)){
-  if(!get_register_status()){
-    //set_register_status(Serverkit::get_register_status());
+ConnectionSession::ConnectionSession(std::shared_ptr<Serverkit::UserContext> session)
+    : _user_session(std::move(session)) {
+  if (!get_register_status()) {
+    // set_register_status(Serverkit::get_register_status());
   }
 };
 
@@ -18,9 +19,7 @@ template <>
 int ConnectionSession::get_option(const char* key) {
   return std::any_cast<int>(_session_storage[key]);
 }
-void ConnectionSession::del_option(const std::string& key) {
-  _session_storage.erase(key);
-}
+void ConnectionSession::del_option(const std::string& key) { _session_storage.erase(key); }
 
 bool ConnectionSession::exist_option(const std::string& key) {
   auto it{_session_storage.find(key)};
@@ -34,7 +33,5 @@ void ConnectionSession::store_option(const std::string& key, std::any value) {
 void ConnectionSession::set_register_status(bool status) {
   P2PFileSync::ConnectionSession::register_status = status;
 }
-
-
 
 }  // namespace P2PFileSync

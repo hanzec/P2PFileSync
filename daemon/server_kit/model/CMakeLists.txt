@@ -26,6 +26,7 @@ file(GLOB RESPONSE_MODEL_SRCS ${CMAKE_CURRENT_LIST_DIR}/response/*.cc)
 
 target_sources(server_connection
         PRIVATE
+        "IJsonModel.h"
         ${RESPONSE_MODEL_HDRS} ${RESPONSE_MODEL_SRCS})
 
 ###############################################################################

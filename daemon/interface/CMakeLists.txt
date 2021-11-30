@@ -9,7 +9,7 @@ target_sources(daemon PRIVATE ${COMMAND_SRCS})
 ## Sources ####################################################################
 ###############################################################################
 # project sources
-target_sources(daemon 
+target_sources(daemon
     PRIVATE
     ${COMMAND_SRCS}
     "command_executor.cc" "command_executor.h"

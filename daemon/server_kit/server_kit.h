@@ -11,54 +11,13 @@
 
 #include "common.h"
 #include "export.h"
+#include "model/response/user_detail_response.h"
 #include "model/response/client_information_response.h"
 
 #ifndef P2P_FILE_SYNC_SERVER_KIT_SERVER_KIT_H
 #define P2P_FILE_SYNC_SERVER_KIT_SERVER_KIT_H
 
 namespace P2PFileSync::Serverkit {
-/**
- * @brief The cpp class for server session per connection
- *
- */
-class UserContext {
- public:
-  EXPORT_FUNC explicit UserContext(bool strict_security = true);
-
-  /**
-   * @brief Destroy the Server Connection object
-   *  This function will destroy following things:
-   *    - Free the
-   */
-  EXPORT_FUNC ~UserContext();
-
-  // /**
-  //  * @brief Register new Client
-  //  *
-  //  */
-  // Status register_client();
-
-  // // TODO finish dnssec
-  // /**
-  //  * @brief Enable strict security
-  //  *  Enable strict security which means enable following feature:
-  //  *    - DNSSEC support [todo]
-  //  *    - Coneecting server only HTTPS ONLY
-  //  */
-  // void enable_strict_security();
-
-  // /**
-  //  * @brief Disbale strict security
-  //  *  Disbale strict security which means disable following feature:
-  //  *    - DNSSEC support [todo]
-  //  *    - Coneecting server over HTTPS ONLY
-  //  */
-  // void disbale_strict_security();
-
- private:
-  bool strict_security_ = true;
-  CURLSH* curl_handler = nullptr;
-};
 
 /**
  * @brief Check if client is registered or not by following rules:
@@ -84,9 +43,71 @@ EXPORT_FUNC std::pair<std::string, std::string> register_client(
     const std::string& server_address, const std::filesystem::path& configuration_path);
 
 /**
+ * @brief The cpp class for server session per connection
+ *
+ */
+class UserContext {
+ protected:
+  /**
+   * Blocker avoid call public constructor
+   */
+  struct this_is_private;
+
+
+ public:
+  /**
+   * @brief Destroy the Server Connection object
+   *  This function will destroy following things:
+   *    - Free the _share_handle
+   */
+  EXPORT_FUNC ~UserContext();
+
+  UserContext(const this_is_private&,std::string& _server_address);
+
+  EXPORT_FUNC void logout();
+
+  EXPORT_FUNC bool is_logged_in() const;
+
+  EXPORT_FUNC std::unique_ptr<UserDetailResponse> user_detail() const;
+
+  EXPORT_FUNC bool login(const std::string& email, const std::string& password);
+
+ protected:
+  friend class ServerContext;
+
+  friend class ServerContext;
+
+  /**
+   *
+   * @tparam Args
+   * @param args
+   * @return
+   */
+  template <typename... Args>
+  static ::std::shared_ptr<UserContext> create(Args&&... args) {
+    return ::std::make_shared<UserContext>(this_is_private{0},
+                                             ::std::forward<Args>(args)...);
+  }
+
+  /**
+   * Blocker avoid call public constructor
+   */
+  struct this_is_private {
+    explicit this_is_private(int) {}
+  };
+
+ private:
+  bool _login = false;
+  bool strict_security_ = true;
+  CURLSH* _share_handle;
+  std::string _username;
+  std::string& _server_address;
+};
+
+/**
  * @brief User to manage the peer device related requests
  */
-class EXPORT_FUNC DeviceContext{
+class EXPORT_FUNC DeviceContext {
  protected:
   /**
    * Blocker avoid call public constructor
@@ -98,6 +119,10 @@ class EXPORT_FUNC DeviceContext{
    * @brief make sure this object only construct and get by init_dev_ctx()
    */
   DeviceContext() = delete;
+  DeviceContext(DeviceContext&) = delete;
+  DeviceContext(DeviceContext&&) = delete;
+  DeviceContext& operator=(DeviceContext&) = delete;
+  DeviceContext& operator=(DeviceContext&&) = delete;
 
   /**
    * @brief Construct a new Device Context by following steps:
@@ -106,32 +131,8 @@ class EXPORT_FUNC DeviceContext{
    *  1. JWT renew in not implentmented, currently server are setting expire
    *     date as 1 year after to avoid problem
    */
-  DeviceContext(const this_is_private &,std::string device_id, std::string client_token,
-                std::string server_address, std::filesystem::path conf);
-
-  /**
-   * @brief get instance of the DeviceContext
-   * @return
-   */
-  [[nodiscard]] EXPORT_FUNC static std::shared_ptr<DeviceContext> get_dev_ctx() noexcept;
-
-  /**
-   * @brief initialized instance of the DeviceContext by following steps:
-   *  1. check with _instance is nullptr or not if already initialized then will
-   *     return the initialized instance, if not do following step
-   *  2. call static method is_registered() to check if current device is
-   *     registered, if not register will goto step 3, otherwise read the client
-   *     config and get saved JWT Token
-   *  3. call protected static method register_client to register current device
-   *     and get JWT Login Token, then write all of client information and token
-   *     to client.cfg
-   * @param server_address
-   * @param client_conf
-   * @return true success initialized device context
-   * @return false failed to initialized device context
-   */
-  [[nodiscard]] EXPORT_FUNC static bool init_dev_ctx(
-      const std::string& server_address, const std::filesystem::path& client_conf) noexcept;
+  DeviceContext(const this_is_private&, std::string device_id, std::string client_token,
+                std::string& server_address, std::filesystem::path& conf);
 
   /**
    * @brief return the enabled status at remote management server, in this
@@ -175,6 +176,8 @@ class EXPORT_FUNC DeviceContext{
   [[nodiscard]] EXPORT_FUNC std::unique_ptr<DeviceInfoResponse> device_info() const;
 
  protected:
+  friend class ServerContext;
+
   /**
    *
    * @tparam Args
@@ -182,11 +185,10 @@ class EXPORT_FUNC DeviceContext{
    * @return
    */
   template <typename... Args>
-  static ::std::shared_ptr<DeviceContext> create(Args &&...args) {
-    return ::std::make_shared<DeviceContext>(this_is_private{0}, ::std::forward<Args>(args)...);
+  static ::std::shared_ptr<DeviceContext> create(Args&&... args) {
+    return ::std::make_shared<DeviceContext>(this_is_private{0},
+                                             ::std::forward<Args>(args)...);
   }
-
-
 
   /**
    * Blocker avoid call public constructor
@@ -196,9 +198,6 @@ class EXPORT_FUNC DeviceContext{
   };
 
  private:
-  // instance ptr
-  inline static std::shared_ptr<DeviceContext> _instance = nullptr;
-
   /**
    * Client information
    */
@@ -208,8 +207,78 @@ class EXPORT_FUNC DeviceContext{
   /**
    * Configuration
    */
-  const std::string _server_address;
-  const std::filesystem::path _server_configuration_path;
+  const std::string& _server_address;
+  const std::filesystem::path& _server_configuration_path;
+};
+
+class EXPORT_FUNC ServerContext {
+ protected:
+  /**
+   * Blocker avoid call public constructor
+   */
+  struct this_is_private;
+
+ public:
+  ServerContext(const this_is_private&, std::string  _sever_address,
+                std::filesystem::path  _configuration_path) noexcept;
+
+  EXPORT_FUNC static void init(const std::string& server_address, const std::filesystem::path& conf);
+
+  [[nodiscard]] EXPORT_FUNC static std:: shared_ptr<ServerContext> get_server_ctx();
+
+  // todo add documentation
+  [[nodiscard]] static EXPORT_FUNC std::shared_ptr<UserContext> get_usr_ctx() noexcept;
+
+  /**
+   * @brief initialized instance of the DeviceContext if not previous created by following
+   * steps:
+   *  1. check with _instance is nullptr or not if already initialized then will
+   *     return the initialized instance, if not do following step
+   *  2. call static method is_registered() to check if current device is
+   *     registered, if not register will goto step 3, otherwise read the client
+   *     config and get saved JWT Token
+   *  3. call protected static method register_client to register current device
+   *     and get JWT Login Token, then write all of client information and token
+   *     to client.cfg
+   * If DeviceContext is already created then will return the initialized instance
+   * @param server_address
+   * @param client_conf
+   * @return true success initialized device context
+   * @return false failed to initialized device context
+   */
+  [[nodiscard]] static EXPORT_FUNC std::shared_ptr<DeviceContext> get_dev_ctx() noexcept;
+
+ protected:
+  /**
+   *
+   * @tparam Args
+   * @param args
+   * @return
+   */
+  template <typename... Args>
+  static ::std::shared_ptr<ServerContext> create(Args&&... args) {
+    return ::std::make_shared<ServerContext>(this_is_private{0},
+                                             ::std::forward<Args>(args)...);
+  }
+
+  /**
+   * Blocker avoid call public constructor
+   */
+  struct this_is_private {
+    explicit this_is_private(int) {}
+  };
+
+ private:
+  /*
+   * ServerContext instance
+   */
+  inline static std::shared_ptr<ServerContext> _instance{nullptr};
+
+  std::string _server_address;
+  std::filesystem::path _configuration_path;
+
+  // instance ptr
+  std::shared_ptr<DeviceContext> _device_ctx_instance = nullptr;
 };
 }  // namespace P2PFileSync::Serverkit
 

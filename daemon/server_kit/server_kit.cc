@@ -39,7 +39,7 @@ std::pair<std::string, std::string> register_client(
 
   void *raw_json = POST_and_save_to_ptr(
       nullptr, std::string(server_address).append(SERVER_REGISTER_ENDPOINT_V1),
-      static_cast<const void *>(reques_model.get_json().c_str()), false);
+      static_cast<const void *>(reques_model.get_json().c_str()), true,false);
 
   if (raw_json == nullptr) {
     LOG(ERROR) << "empty response";

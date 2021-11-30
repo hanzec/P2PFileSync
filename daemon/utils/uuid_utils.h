@@ -9,15 +9,18 @@
 #include <string>
 
 namespace P2PFileSync::UUID {
-// TODO documents
-static bool is_valid(const std::string& uuid_string);
+// Generate a random UUID
+std::string_view new_uuid();
 
 // TODO documents
-static bool is_valid(const std::array<std::byte, 16>& uuid);
+bool is_valid(const std::string& uuid_string);
 
-static std::array<std::byte, 16> to_array(const std::string& uuid_string);
+// TODO documents
+bool is_valid(const std::array<std::byte, 16>& uuid);
 
-static bool compare(const std::array<std::byte, 16>& uuid, const std::string& uuid_string);
+std::array<std::byte, 16> to_array(const std::string& uuid_string);
+
+bool compare(const std::array<std::byte, 16>& uuid, const std::string& uuid_string);
 
 };
 #endif  // P2P_FILE_SYNC_UUID_UTILS_H

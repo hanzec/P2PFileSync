@@ -11,19 +11,34 @@ CommandExecuter::~CommandExecuter() {
 // print help message
 void CommandExecuter::get_help_msg(std::ostringstream& output) noexcept {
   for (const auto& pair : CommandExecuter::_constructor_map) {
-    output << std::setw(15) << pair.first << std::setw(0) << pair.second.first
-           << std::endl;
+    output << std::setw(15) << pair.first << std::setw(0) << pair.second.first << std::endl;
   }
 };
 
 // command factory producer
-void CommandExecuter::exec(std::ostringstream& output,
-                           const std::string& command, COMMAND_ARG& arguments) {
+void CommandExecuter::exec(std::ostringstream& output, const std::string& command,
+                           COMMAND_ARG& arguments) {
   // the only special case will handle_difficult by command factory
   if (command == "help") {
     CommandExecuter::get_help_msg(output);
   } else {
+    // todo memory leak here need to fix
     CommandBase* command_obj;
+
+    // print debug info
+    if (VLOG_IS_ON(3)) {
+      std::ostringstream oss;
+
+      if (!arguments.empty()) {
+        // Convert all but the last element to avoid a trailing ","
+        std::copy(arguments.begin(), arguments.end() - 1,
+                  std::ostream_iterator<std::string>(oss, ","));
+
+        // Now add the last element with no delimiter
+        oss << arguments.back();
+      }
+      VLOG(3) << "command: " << command << " arguments: [" << oss.str() << "]";
+    }
 
     // return failied when command not found
     auto command_index = CommandExecuter::_constructor_map.find(command);
@@ -54,8 +69,7 @@ void CommandExecuter::exec(std::ostringstream& output,
 }
 
 // register avaliable command
-bool CommandExecuter::reg_command(PTRC_OBJECT&& command_obj,
-                                  const std::string_view& command,
+bool CommandExecuter::reg_command(PTRC_OBJECT&& command_obj, const std::string_view& command,
                                   const std::string_view& description) {
   if (CommandExecuter::_constructor_map.find(command) !=
       CommandExecuter::_constructor_map.end()) {

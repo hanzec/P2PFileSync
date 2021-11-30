@@ -52,7 +52,7 @@ class CommandBase {
   virtual void exec(std::ostringstream& output, COMMAND_ARG& arguments) = 0;
 
  protected:
-  std::shared_ptr<ConnectionSession> get_demon_status() { return _daemon_status; }
+  std::shared_ptr<ConnectionSession>& session() { return _daemon_status; }
 
   // Prevent anyone from directly inhereting from CommandBase
   virtual void DoNotInheritFromThisClassButAutoRegCommandInstead() = 0;
@@ -70,7 +70,9 @@ class CommandExecuter {
    * connection since almost every conenction will keep long time. And for every
    * instance of command object, it will have its own Connection session.
    */
-  CommandExecuter() : _session(std::make_shared<ConnectionSession>()){};
+  CommandExecuter()
+      : _session(
+            std::make_shared<ConnectionSession>(Serverkit::ServerContext::get_usr_ctx())){};
 
   /**
    * @brief Destroy the CommandExecuter object, when destroy this object will do

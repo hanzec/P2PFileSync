@@ -11,7 +11,7 @@ class PeerCommand : public AutoRegCommand<PeerCommand> {
  public:
   void exec(std::ostringstream& out, const std::vector<std::string>& args) final {
     if (!args.empty()) {
-      out << "TIME command does not need any arguments!";
+      out << "PEER command does not need any arguments!";
     }
 
     auto p2p_server_ctx = P2PServerContext::get_instance();

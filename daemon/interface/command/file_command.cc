@@ -1,12 +1,11 @@
-#include <chrono>
-#include <ctime>
-#include <utility>
-
+//
+// Created by hanzech on 11/27/21.
+//
 #include "../command_executor.h"
 
 namespace P2PFileSync {
-class TimeCommand : public AutoRegCommand<TimeCommand> {
-  REGISTER_COMMAND(TimeCommand, TIME, DEFAULT);
+class FileCommand : public AutoRegCommand<FileCommand> {
+  REGISTER_COMMAND(FileCommand, TIME, DEFAULT);
 
  public:
   void exec(std::ostringstream& out, const std::vector<std::string>& args) final {

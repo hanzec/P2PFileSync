@@ -10,9 +10,10 @@ class InfoCommand : public AutoRegCommand<InfoCommand> {
   void exec(std::ostringstream& out, const std::vector<std::string>& args) final {
     if (!args.empty()) {
       out << "INFO command does not need any arguments!";
+      return;
     }
 
-    auto device_ctx = Serverkit::DeviceContext::get_dev_ctx();
+    auto device_ctx = Serverkit::ServerContext::get_dev_ctx();
     auto device_info = device_ctx->device_info();
 
     out << "Device info: " << std::endl;
