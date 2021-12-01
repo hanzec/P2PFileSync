@@ -58,6 +58,20 @@ target_link_libraries(daemon_test GTest::gmock GTest::gtest GTest::gmock_main GT
 ###############################################################################
 ## Compile Config #############################################################
 ###############################################################################
+# build type specific options
+if (CMAKE_BUILD_TYPE)
+    if ((CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANGCC) AND (CMAKE_BUILD_TYPE) STREQUAL "Debug")
+        target_compile_definitions(daemon PRIVATE -O0 -g -Wall)
+        target_compile_definitions(daemon PRIVATE -O0 -g -Wall)
+    elseif((CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANGCC) AND (CMAKE_BUILD_TYPE) STREQUAL "Release")
+        target_compile_definitions(daemon PRIVATE -O3 -fPIC -fast-math -Wall)
+        target_compile_definitions(daemon PRIVATE -O3 -fPIC -fast-math -Wall)
+    endif ()
+endif ()
+
+# compile options
+add_compile_options(-Wall -Wextra -Bsymbolic)
+
 # compile under cxx 17 since need std::byte support
 target_compile_features(daemon PRIVATE cxx_std_17)
 target_compile_features(daemon_test PRIVATE cxx_std_17)

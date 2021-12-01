@@ -16,13 +16,23 @@ set_target_properties(server_connection PROPERTIES PUBLIC_HEADER "${RESPONSE_MOD
 ###############################################################################
 ## Compile Options ############################################################
 ###############################################################################
+# build type specific options
+if (CMAKE_BUILD_TYPE)
+    if ((CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANGCC) AND (CMAKE_BUILD_TYPE) STREQUAL "Debug")
+        target_compile_definitions(server_connection PRIVATE -O0 -g)
+        target_compile_definitions(server_connection PRIVATE -O0 -g)
+    elseif((CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANGCC) AND (CMAKE_BUILD_TYPE) STREQUAL "Release")
+        target_compile_definitions(server_connection PRIVATE -O3 -fPIC -fast-math)
+        target_compile_definitions(server_connection PRIVATE -O3 -fPIC -fast-math)
+    endif ()
+endif ()
+
 # compile options
-add_compile_options(-Wall -Wextra -Bsymbolic -fPIC)
+add_compile_options(-Wall -Wextra -Bsymbolic)
 
 # compile as c++ 17
 target_compile_features(server_connection PRIVATE cxx_std_17)
 target_compile_features(server_connection_test PRIVATE cxx_std_17)
-
 
 # set by default will not export symbols
 set_target_properties(server_connection PROPERTIES CXX_VISIBILITY_PRESET hidden)
