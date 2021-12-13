@@ -11,7 +11,7 @@
 #include <string>
 
 namespace P2PFileSync {
-class FileDatabaseContext {
+class StorageContext {
  protected:
   /**
    * Blocker avoid call public constructor
@@ -22,9 +22,10 @@ class FileDatabaseContext {
  static bool init(std::filesystem::path  data_storage_path,
                    std::shared_ptr<ThreadPool>  thread_pool);
  protected:
-  FileDatabaseContext(std::filesystem::path  data_storage_path,
+  StorageContext(std::filesystem::path  data_storage_path,
                       std::shared_ptr<ThreadPool>  thread_pool);
 
+  std::future<bool> add_file();
   /**
    * Blocker avoid call public constructor
    */
@@ -39,8 +40,8 @@ class FileDatabaseContext {
    * @return
    */
   template <typename... Args>
-  static ::std::shared_ptr<FileDatabaseContext> create(Args&&... args) {
-    return ::std::make_shared<FileDatabaseContext>(this_is_private{0},
+  static ::std::shared_ptr<StorageContext> create(Args&&... args) {
+    return ::std::make_shared<StorageContext>(this_is_private{0},
                                                    ::std::forward<Args>(args)...);
   }
 
@@ -48,7 +49,7 @@ class FileDatabaseContext {
   /**
    * instance of this class
    */
-  static std::shared_ptr<FileDatabaseContext> _instance;
+  static std::shared_ptr<StorageContext> _instance;
 
   std::string _current_head_commit_id;
   std::filesystem::path _data_storage_path;

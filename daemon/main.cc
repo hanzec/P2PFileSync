@@ -95,7 +95,7 @@ int main(int argc, char *argv[], [[maybe_unused]] const char *envp[]) {
 
   // staring server handler
   std::string server_sock = config->get_manage_sock_file_();
-  std::thread handler(manage_interface_thread, std::ref(server_sock), AF_UNIX);
+  auto manage_ctx = ManagementInterface::init(server_sock, AF_UNIX);
 
   // starring server pll
   // starting server handler
@@ -105,7 +105,6 @@ int main(int argc, char *argv[], [[maybe_unused]] const char *envp[]) {
     LOG(FATAL) << "p2p server handler is filed to start";
   }
   // waiting server handler to stop
-  handler.join();
   P2PServerContext::get_instance()->block_util_server_stop();
   return 0;
 }

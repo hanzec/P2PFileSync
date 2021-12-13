@@ -61,7 +61,7 @@ class Config {
 
   const std::filesystem::path _mount_point;
   const std::filesystem::path _config_folder = "/tmp/sync_data";
-  const std::filesystem::path _manage_sock_file = _config_folder /"manage.sock";
+  const std::filesystem::path _manage_sock_file = _config_folder /"sync.sock";
   const std::filesystem::path _client_conf_path = _config_folder /"client.cfg";
   const std::filesystem::path _client_cert_path = _config_folder /"client.p12";
   const std::filesystem::path _server_cert_path = _config_folder /"client_sign_root.crt";

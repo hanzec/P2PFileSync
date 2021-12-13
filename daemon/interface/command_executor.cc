@@ -1,13 +1,6 @@
 #include "command_executor.h"
 
 namespace P2PFileSync {
-CommandExecutor::~CommandExecutor() {
-  for (const auto& pair : _instance_map) {
-    free(pair.second);
-    VLOG(3) << "destroy [" << pair.first << "] object";
-  }
-};
-
 // print help message
 void CommandExecutor::get_help_msg(std::ostringstream& output) noexcept {
   for (const auto& pair : CommandExecutor::_constructor_map) {
@@ -22,9 +15,6 @@ void CommandExecutor::exec(std::ostringstream& output, const std::string& comman
   if (command == "help") {
     CommandExecutor::get_help_msg(output);
   } else {
-    // todo memory leak here need to fix
-    CommandBase* command_obj;
-
     // print debug info
     if (VLOG_IS_ON(3)) {
       std::ostringstream oss;
@@ -48,20 +38,21 @@ void CommandExecutor::exec(std::ostringstream& output, const std::string& comman
     }
 
     // looking for the command_obj
+    std::unique_ptr<CommandBase> command_obj{nullptr};
     auto command_obj_index = _instance_map.find(command);
     if (command_obj_index == _instance_map.end()) {
       // construct command object
-      command_obj = command_index->second.second(
-          std::forward<std::shared_ptr<ConnectionSession>>(_session));
+      command_obj = std::move(command_index->second.second(
+          std::forward<std::shared_ptr<ConnectionSession>>(_session)));
+
+      // execute the obj
+      command_obj->exec(output, arguments);
 
       // add to managed interface map
-      CommandExecutor::_instance_map.emplace(command, command_obj);
+      CommandExecutor::_instance_map.emplace(command, std::move(command_obj));
     } else {
-      command_obj = command_obj_index->second;
+      command_obj_index->second->exec(output, arguments);
     }
-
-    // execute the obj
-    command_obj->exec(output, arguments);
 
     // add new line;
     output << std::endl;

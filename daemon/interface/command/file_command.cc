@@ -5,7 +5,7 @@
 
 namespace P2PFileSync {
 class FileCommand : public AutoRegCommand<FileCommand> {
-  REGISTER_COMMAND(FileCommand, TIME, DEFAULT);
+  REGISTER_COMMAND(FileCommand, FILE, DEFAULT);
 
  public:
   void exec(std::ostringstream& out, const std::vector<std::string>& args) final {

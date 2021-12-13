@@ -10,7 +10,7 @@
 
 namespace P2PFileSync {
 
-FileDatabaseContext::FileDatabaseContext(std::filesystem::path  data_storage_path,
+StorageContext::StorageContext(std::filesystem::path  data_storage_path,
                                          std::shared_ptr<ThreadPool>  thread_pool)
     : _thread_pool(std::move(thread_pool)),
       _data_storage_path(std::move(data_storage_path)) {

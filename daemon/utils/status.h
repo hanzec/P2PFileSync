@@ -54,7 +54,7 @@ class Status {
   }
 
   [[nodiscard]] StatusCode Code() const { return status_code_; }
-  [[nodiscard]] std::string Message() const { return this->msg_; }
+  [[nodiscard]] std::string message() const { return this->msg_; }
   [[nodiscard]] bool ok() const { return status_code_ == StatusCode::OK; }
 
   static Status OK() {

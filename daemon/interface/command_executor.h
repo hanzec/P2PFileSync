@@ -34,6 +34,8 @@ using COMMAND_ARG = const std::vector<std::string>;
  */
 class CommandBase {
  public:
+  virtual ~CommandBase() = default; // fix compiler warning
+
   /**
    * @brief Construct a new Command Base object
    *
@@ -61,18 +63,12 @@ class CommandBase {
   std::shared_ptr<ConnectionSession> _daemon_status;
 };
 
-using PTRC_OBJECT = std::function<CommandBase*(std::shared_ptr<ConnectionSession>)>;
+using PTRC_OBJECT =
+    std::function<std::unique_ptr<CommandBase>(std::shared_ptr<ConnectionSession>)>;
 
 class CommandExecutor {
  public:
   CommandExecutor();
-
-  /**
-   * @brief Destroy the CommandExecutor object, when destroy this object will do
-   * following thins:
-   *  1. Clean all created existed command interface in _instance_map
-   */
-  ~CommandExecutor();
 
   /**
    * @brief pprint the help message
@@ -98,7 +94,7 @@ class CommandExecutor {
   class RegisterHelper {
    protected:
     static bool reg_command_wrapper(const std::string_view& cmd, const std::string_view& desc,
-                                   PTRC_OBJECT&& obj) noexcept {
+                                    PTRC_OBJECT&& obj) noexcept {
       return reg_command(std::forward<PTRC_OBJECT>(obj), cmd, desc);
     };
   };
@@ -107,13 +103,14 @@ class CommandExecutor {
   // TODO command requirement need to be implemented
   /**
    * @brief Connection session for every CommandExecutor object
+   * @note each command executor object will have its own unique connection session
    */
   std::shared_ptr<ConnectionSession> _session;
 
   /**
    * @brief Per connection fd handler for command instance
    */
-  std::unordered_map<std::string_view, CommandBase*> _instance_map{};
+  std::unordered_map<std::string_view, std::unique_ptr<CommandBase>> _instance_map{};
 
   /**
    * @brief static map storage command handler construct function and its
@@ -163,7 +160,7 @@ class AutoRegCommand : public CommandBase, private CommandExecutor::RegisterHelp
 
 template <typename T>
 const bool AutoRegCommand<T>::_reg_status = AutoRegCommand<T>::reg_command_wrapper(
-    T::COMMAND_NAME, T::COMMAND_DESCRIPTION, [](auto a) { return new T(a); });
+    T::COMMAND_NAME, T::COMMAND_DESCRIPTION, [](auto a) { return std::make_unique<T>(a); });
 }  // namespace P2PFileSync
 
 #define REGISTER_COMMAND(class, name, description)                    \

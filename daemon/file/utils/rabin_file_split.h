@@ -5,6 +5,8 @@
 #ifndef P2P_FILE_SYNC_RABIN_FILE_SPLIT_H
 #define P2P_FILE_SYNC_RABIN_FILE_SPLIT_H
 
-class RabinFileSplit {};
+namespace P2PFileSync {
+
+}
 
 #endif  // P2P_FILE_SYNC_RABIN_FILE_SPLIT_H
