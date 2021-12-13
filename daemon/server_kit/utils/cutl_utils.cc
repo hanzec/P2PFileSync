@@ -94,6 +94,7 @@ void* POST_and_save_to_ptr(CURLSH* curl_handler, const std::string& request_url,
                            write_to_ptr, force_ssl)) {
     VLOG(3) << "total of [" << data->head << "] bytes downloaded!";
     auto ret = data->data;
+    ((char*)ret)[data->head] = '\0';
     free(data);
     return ret;
   } else {

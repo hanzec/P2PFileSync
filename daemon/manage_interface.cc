@@ -170,7 +170,7 @@ void ManagementInterface::executor_container(int new_fd, int timeout) {
     if(!command_buf.str().empty()){
       // parsing command
       COMMAND command;
-      auto parse_ret = P2PFileSync::parsing_command(command_buf.str().c_str(), command);
+      auto parse_ret = P2PFileSync::parsing_command(command_buf.str(), command);
 
       // check if parsing is failed
       if (!parse_ret.ok()) {

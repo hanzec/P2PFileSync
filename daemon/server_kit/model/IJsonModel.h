@@ -48,8 +48,9 @@ class IJsonModel {
     rapidjson::ParseResult ret = root.Parse(json);
 
     if (!ret) {
-      LOG(FATAL) << "parse json error: " << rapidjson::GetParseError_En(ret.Code()) << ":" << ret.Offset() << ":"
+      LOG(ERROR) << "parse json error: " << rapidjson::GetParseError_En(ret.Code()) << ":" << ret.Offset() << ":"
                  << json;
+      throw std::runtime_error("parse json error");
     }
 
     // check if is response model or not

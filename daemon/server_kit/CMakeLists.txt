@@ -18,17 +18,16 @@ set_target_properties(server_connection PROPERTIES PUBLIC_HEADER "${RESPONSE_MOD
 ###############################################################################
 # build type specific options
 if (CMAKE_BUILD_TYPE)
-    if ((CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANGCC) AND (CMAKE_BUILD_TYPE) STREQUAL "Debug")
-        target_compile_definitions(server_connection PRIVATE -O0 -g)
-        target_compile_definitions(server_connection PRIVATE -O0 -g)
-    elseif((CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANGCC) AND (CMAKE_BUILD_TYPE) STREQUAL "Release")
-        target_compile_definitions(server_connection PRIVATE -O3 -fPIC -fast-math)
-        target_compile_definitions(server_connection PRIVATE -O3 -fPIC -fast-math)
+    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+        target_link_options(daemon PRIVATE -o0 -g -fsanitize=address -fno-omit-frame-pointer)
+        target_compile_options(daemon PRIVATE -O0 -g -fsanitize=address -fno-omit-frame-pointer)
+    elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
+        target_compile_options(daemon PRIVATE -O3 -fPIC -fast-math -Wextra -Bsymbolic)
     endif ()
 endif ()
 
 # compile options
-add_compile_options(-Wall -Wextra -Bsymbolic)
+add_compile_options(-Wall -Wunused-function -Wunused-parameter)
 
 # compile as c++ 17
 target_compile_features(server_connection PRIVATE cxx_std_17)

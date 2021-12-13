@@ -51,6 +51,7 @@ bool P2PServerContext::start(int fd) {
     ProtoHelloMessage hello_message = new_hello_payload(nullptr);
 
     for (const auto &ip : _device_context->peer_list()) {
+      VLOG(3) << "send hello message to " << ip.first << ":" << ip.second;
       auto ip_addr = std::make_shared<IPAddr>(ip.second);
       send_pkg(package_pkg<ProtoHelloMessage>(hello_message, ip.first), ip_addr);
     }
@@ -145,6 +146,7 @@ bool P2PServerContext::init(const std::shared_ptr<Config> &config,
   _instance =
       create(config->get_packet_cache_size(), thread_pool, client_cert, client_priv_key, sign_chain);
 
+  VLOG(3) << "P2PServerContext init success";
   return _instance->start(socket_fd);
 };
 
@@ -323,6 +325,7 @@ std::future<bool> P2PServerContext::send_pkg(const ProtoMessage &data,
   signed_msg.set_sign_algorithm("SHA256");
   signed_msg.set_signed_payload(raw_packer, raw_packet_size);
 
+  VLOG(3) << "send packet with id [" << data.packet_id() << "] to [" << peer << "]";
   return _thread_pool->submit(Task::send_packet_tcp, signed_msg, peer);
 }
 

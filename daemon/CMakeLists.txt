@@ -61,7 +61,8 @@ target_link_libraries(daemon_test GTest::gmock GTest::gtest GTest::gmock_main GT
 # build type specific options
 if (CMAKE_BUILD_TYPE)
     if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-        target_compile_options(daemon PRIVATE -O0 -g)
+        target_link_options(daemon PRIVATE -o0 -g -fsanitize=address -fno-omit-frame-pointer)
+        target_compile_options(daemon PRIVATE -O0 -g -fsanitize=address -fno-omit-frame-pointer)
     elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
         target_compile_options(daemon PRIVATE -O3 -fPIC -fast-math -Wextra -Bsymbolic)
     endif ()
