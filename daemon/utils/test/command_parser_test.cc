@@ -36,8 +36,22 @@ GTEST_TEST(COMMAND_PARSER_TEST, test_normal_case_with_multiple_argument_DISABLED
   ASSERT_EQ(command.first, "command");
   ASSERT_EQ(command.second.size(), 3);
   ASSERT_EQ(command.second[0], "argument1");
-  ASSERT_EQ(command.second[2], "argument2");
-  ASSERT_EQ(command.second[3], "argument3");
+  ASSERT_EQ(command.second[1], "argument2");
+  ASSERT_EQ(command.second[2], "argument3");
+}
+
+GTEST_TEST(COMMAND_PARSER_TEST, test_normal_case_with_login_command){
+
+  P2PFileSync::COMMAND command;
+
+  auto ret = P2PFileSync::parsing_command("USER LOGIN admin@example.com admin", command);
+
+  ASSERT_TRUE(ret.ok());
+  ASSERT_EQ(command.first, "USER");
+  ASSERT_EQ(command.second.size(), 3);
+  ASSERT_EQ(command.second[0], "LOGIN");
+  ASSERT_EQ(command.second[1], "admin@example.com");
+  ASSERT_EQ(command.second[2], "admin");
 }
 
 // todo bug here need fix

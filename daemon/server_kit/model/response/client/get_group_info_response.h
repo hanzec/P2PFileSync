@@ -3,9 +3,9 @@
 
 #include <string>
 
-#include "../IJsonModel.h"
+#include "model/IJsonModel.h"
 
-namespace P2PFileSync::Serverkit {
+namespace P2PFileSync::ServerKit {
 
 class GroupInfoResponse : public IJsonModel {
  public:
@@ -13,7 +13,7 @@ class GroupInfoResponse : public IJsonModel {
   GroupInfoResponse() = delete;
 
 
-  GroupInfoResponse(char* json);
+  explicit GroupInfoResponse(char* json);
 
   EXPORT_FUNC int get_group_id();
 
@@ -22,6 +22,6 @@ class GroupInfoResponse : public IJsonModel {
   EXPORT_FUNC std::string get_group_desc();
 
 };
-}  // namespace P2PFileSync::Serverkit
+}  // namespace P2PFileSync::ServerKit
 
 #endif  // P2P_FILE_SYNC_Serverkit_MODEL_REQUEST_GET_GROUP_INFO_RESPONSE_H

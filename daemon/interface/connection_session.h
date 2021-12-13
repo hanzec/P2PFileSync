@@ -4,6 +4,7 @@
 #include <any>
 #include <filesystem>
 #include <string>
+#include <memory>
 #include <unordered_map>
 #include <utility>
 
@@ -14,7 +15,7 @@
 namespace P2PFileSync {
 class ConnectionSession {
  public:
-  ConnectionSession();
+  ConnectionSession(std::shared_ptr<ServerKit::UserContext> user_ctx);
 
   template <typename T>
   T get_option(const char * key);
@@ -25,10 +26,14 @@ class ConnectionSession {
 
   void store_option(const std::string& key, std::any value);
 
-  void set_register_status(bool status);
+  static void set_register_status(bool status);
 
   static bool get_register_status() {
     return P2PFileSync::ConnectionSession::register_status;
+  }
+
+  std::shared_ptr<ServerKit::UserContext>& get_usr_ctx() {
+    return _user_session;
   }
 
  private:
@@ -38,7 +43,7 @@ class ConnectionSession {
   /**
    *  Following variables are genearted per session
    */
-  Serverkit::UserContext* _management;
+  std::shared_ptr<ServerKit::UserContext> _user_session;
 
   std::unordered_map<std::string, std::any> _session_storage;
 };

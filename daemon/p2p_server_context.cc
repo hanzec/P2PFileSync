@@ -6,7 +6,6 @@
 #include <protocol.pb.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#include <utils/uuid_utils.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -64,7 +63,8 @@ bool P2PServerContext::start(int fd) {
 
 // initlized protol instance
 bool P2PServerContext::init(const std::shared_ptr<Config> &config,
-                            const std::shared_ptr<Serverkit::DeviceContext> &device_context) {
+                            std::shared_ptr<ThreadPool> thread_pool,
+                            const std::shared_ptr<ServerKit::DeviceContext> &device_context) {
   // prevent init twice
   if (_instance != nullptr) return false;
 
@@ -142,18 +142,18 @@ bool P2PServerContext::init(const std::shared_ptr<Config> &config,
 
   // creating instance
   _device_context = device_context;
-  _instance = create(config->get_workder_thread_num(), config->get_packet_cache_size(),
-                     client_cert, client_priv_key, sign_chain);
+  _instance =
+      create(config->get_packet_cache_size(), thread_pool, client_cert, client_priv_key, sign_chain);
 
   return _instance->start(socket_fd);
 };
 
-P2PServerContext::P2PServerContext(const this_is_private &, uint8_t number_worker,
-                                   uint32_t packet_cache_size, X509 *cert,
+P2PServerContext::P2PServerContext(const this_is_private &, uint32_t packet_cache_size,
+                                   std::shared_ptr<ThreadPool>& thread_pool, X509 *cert,
                                    EVP_PKEY *private_key,
                                    STACK_OF(X509) * ca)
     : FIFOCache(packet_cache_size),  // initial packet cache
-      ThreadPool(number_worker),     // initial thread pool
+      _thread_pool(thread_pool),
       _x509_store(X509_STORE_new()),
       _client_priv_key(private_key),
       _x509_store_ctx(X509_STORE_CTX_new()) {
@@ -238,7 +238,7 @@ void P2PServerContext::read_callback(struct bufferevent *bev, void *sin) {
   if (proto_server->_device_context->device_id() == receiver) {
     // redirect packet if ttl > 1 and have avaliable path
     if (signed_msg.ttl() > 1 && proto_server->can_delivered(receiver)) {
-      proto_server->submit(Task::send_packet_tcp, signed_msg,
+      proto_server->_thread_pool->submit(Task::send_packet_tcp, signed_msg,
                            proto_server->get_next_peer(receiver));
     } else {
       VLOG(3) << "cannot found desnation for receiver [" << proto_msg.receiver_id() << "]";
@@ -252,10 +252,11 @@ void P2PServerContext::read_callback(struct bufferevent *bev, void *sin) {
       // only hello message won't include signature in outside since handshake
       ProtoHelloMessage msg;
       proto_msg.payload().UnpackTo(&msg);
-      proto_server->submit(IMessageHandler<ProtoHelloMessage>::handle_complicated,
+      proto_server->_thread_pool->submit(IMessageHandler<ProtoHelloMessage>::handle_complicated,
                            get_instance(), msg, incoming_connection, signed_msg.ttl());
     } break;
     case ProtoPayloadType::PING:
+
       break;
     case ProtoPayloadType::PONG:
       break;
@@ -322,7 +323,7 @@ std::future<bool> P2PServerContext::send_pkg(const ProtoMessage &data,
   signed_msg.set_sign_algorithm("SHA256");
   signed_msg.set_signed_payload(raw_packer, raw_packet_size);
 
-  return submit(Task::send_packet_tcp, signed_msg, peer);
+  return _thread_pool->submit(Task::send_packet_tcp, signed_msg, peer);
 }
 
 template <typename T>

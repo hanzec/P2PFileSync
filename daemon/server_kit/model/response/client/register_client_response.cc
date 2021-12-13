@@ -7,7 +7,7 @@
 #include <string_view>
 
 #include "utils/uuid_utils.h"
-namespace P2PFileSync::Serverkit {
+namespace P2PFileSync::ServerKit {
 
 RegisterClientResponse::RegisterClientResponse(char* json) : IJsonModel(json){};
 
@@ -26,4 +26,4 @@ std::string RegisterClientResponse::get_enable_url() const {
 std::string RegisterClientResponse::jwt_key() const {
   return get_value<std::string>("login_token");
 }
-}  // namespace P2PFileSync::Serverkit
+}  // namespace P2PFileSync::ServerKit

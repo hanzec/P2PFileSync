@@ -13,10 +13,9 @@
 #include "manage_interface.h"
 #include "p2p_interface.h"
 #include "server_kit/server_kit.h"
-#include "utils/config_reader.h"
+#include "utils/data_struct/thread_pool.h"
 #include "utils/ip_addr.h"
 #include "utils/log.h"
-#include "utils/status.h"
 
 DEFINE_string(host, "", "the known host with comma-separated list");
 DEFINE_string(config_dir, "", "the location of config file");
@@ -25,7 +24,7 @@ DEFINE_string(server, "", "the host name of managed server");
 using namespace P2PFileSync;
 namespace fs = std::filesystem;
 
-int main(int argc, char *argv[], const char *envp[]) {
+int main(int argc, char *argv[], [[maybe_unused]] const char *envp[]) {
   // init logging system
   google::InitGoogleLogging(argv[0]);
   gflags::ParseCommandLineFlags(&argc, &argv, true);
@@ -88,24 +87,24 @@ int main(int argc, char *argv[], const char *envp[]) {
     VLOG(VERBOSE) << "find exist folder in [" << config->config_folder() << "]";
   }
 
+  // start threadl pool
+  std::shared_ptr<ThreadPool> thread_pool = std::make_shared<ThreadPool>(config->get_worker_thread_num());
+
+  // init server context
+  ServerKit::ServerContext::init(config->get_management_server_url(),config->config_folder());
+
   // staring server handler
   std::string server_sock = config->get_manage_sock_file_();
-  std::thread handler(&manage_interface_thread, std::ref(server_sock), AF_UNIX);
+  auto manage_ctx = ManagementInterface::init(server_sock, AF_UNIX);
 
-  // initliing server kit
-  if (!Serverkit::DeviceContext::init_dev_ctx(config->get_management_server_url(),
-                                              config->config_folder())) {
-    LOG(FATAL) << "failed to init device context!";
-  }
-
+  // starring server pll
   // starting server handler
-  if (P2PServerContext::init(config, Serverkit::DeviceContext::get_dev_ctx())) {
+  if (P2PServerContext::init(config, thread_pool, ServerKit::ServerContext::get_dev_ctx())){
     LOG(INFO) << "p2p server listener is started!";
   } else {
     LOG(FATAL) << "p2p server handler is filed to start";
   }
   // waiting server handler to stop
-  handler.join();
   P2PServerContext::get_instance()->block_util_server_stop();
   return 0;
 }

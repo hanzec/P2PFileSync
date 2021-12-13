@@ -1,11 +1,11 @@
-#ifndef P2P_FILE_SYNC_Serverkit_MODEL_REQUEST_REQUEST_CLIENT_INFORMATION_RESPONSE_H
-#define P2P_FILE_SYNC_Serverkit_MODEL_REQUEST_REQUEST_CLIENT_INFORMATION_RESPONSE_H
+#ifndef P2P_FILE_SYNC_CLIENT_INFORMATION_RESPONSE_H
+#define P2P_FILE_SYNC_CLIENT_INFORMATION_RESPONSE_H
 
 #include <string>
 
-#include "../IJsonModel.h"
+#include "../../IJsonModel.h"
 
-namespace P2PFileSync::Serverkit {
+namespace P2PFileSync::ServerKit {
 /**
  * @brief Construct a new Register Client Request object
  * @note for any giving pointer as argument, this object will take over the
@@ -65,6 +65,6 @@ class DeviceInfoResponse : public IJsonModel {
    */
   EXPORT_FUNC std::string register_user();
 };
-}  // namespace P2PFileSync::Serverkit
+}  // namespace P2PFileSync::ServerKit
 
-#endif  // P2P_FILE_SYNC_Serverkit_MODEL_REQUEST_REQUEST_CLIENT_INFORMATION_RESPONSE_H
+#endif  // P2P_FILE_SYNC_CLIENT_INFORMATION_RESPONSE_H

@@ -5,7 +5,7 @@
 
 #include "../IJsonModel.h"
 
-namespace P2PFileSync::Serverkit {
+namespace P2PFileSync::ServerKit {
 
 /**
  * @brief Request Model of Client Register
@@ -41,6 +41,6 @@ class RegisterClientRequest : public IJsonModel {
    */
   void setGroupName(const std::string& groupname);
 };
-}  // namespace P2PFileSync::Serverkit
+}  // namespace P2PFileSync::ServerKit
 
 #endif  // P2P_FILE_SYNC_Serverkit_MODEL_REQUEST_REGISTER_CLIENT_REQUEST_H

@@ -3,7 +3,7 @@
 #include <string_view>
 
 #include "client_information_response.h"
-namespace P2PFileSync::Serverkit {
+namespace P2PFileSync::ServerKit {
 
 DeviceInfoResponse::DeviceInfoResponse(char* json) : IJsonModel(json){};
 
@@ -20,4 +20,4 @@ std::string DeviceInfoResponse::device_ip() {
 std::string DeviceInfoResponse::register_user() {
   return get_value<std::string>("register_by");
 }
-}  // namespace P2PFileSync::Serverkit
+}  // namespace P2PFileSync::ServerKit

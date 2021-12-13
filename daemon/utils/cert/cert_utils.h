@@ -15,9 +15,9 @@ namespace P2PFileSync {
 /**
  * @brief generate ECDSA key pair to disk in PEM
  *
- * @param pub_key_location public PEM key loocation
- * @param priv_key_location private PEM key loocation
- * @return std::shared_ptr<EC_KEY> raw key struct, will be null if geneateing
+ * @param pub_key_location public PEM key location
+ * @param priv_key_location private PEM key location
+ * @return std::shared_ptr<EC_KEY> raw key struct, will be null if generating
  * failed
  */
 template <typename Algorithm>
@@ -29,13 +29,13 @@ template <typename Algorithm>
  * 
  * @param data_ the raw data pointer which need to singed
  * @param data_size the size of data pointer
- * @param signed_certific the certific for generated signed function
+ * @param signed_certific the certificate for generated signed function
  * @return std::array<std::byte, 32> 
  */
 template <typename Algorithm>
 std::array<std::byte, 32> generate_sha256_hash(const char* data_,
                                                const size_t& data_size,
-                                               const std::shared_ptr<Algorithm> signed_certificat);
+                                               std::shared_ptr<Algorithm> signed_certificat);
 }  // namespace P2PFileSync
 
 #endif

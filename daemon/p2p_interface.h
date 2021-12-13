@@ -26,11 +26,10 @@
 
 namespace P2PFileSync {
 
-using DeviceContextPtr = std::shared_ptr<Serverkit::DeviceContext>;
+using DeviceContextPtr = std::shared_ptr<ServerKit::DeviceContext>;
 
-class P2PServerContext : private ThreadPool,
-                       private RoutingTable<std::string>,
-                       private FIFOCache<std::basic_string<char>> {
+class P2PServerContext : private RoutingTable<std::string>,
+                         private FIFOCache<std::basic_string<char>> {
  protected:
   /**
    * Blocker avoid call public constructor
@@ -54,8 +53,9 @@ class P2PServerContext : private ThreadPool,
    * @param cert_sign
    * @param packet_cache_size
    */
-  P2PServerContext(const this_is_private&, uint8_t number_worker, uint32_t packet_cache_size,
-                 X509* cert, EVP_PKEY* private_key, STACK_OF(X509) * ca);
+  P2PServerContext(const this_is_private&, uint32_t packet_cache_size,
+                   std::shared_ptr<ThreadPool>& thread_pool, X509* cert, EVP_PKEY* private_key,
+                   STACK_OF(X509) * ca);
 
   /**
    * @brief Get the instance of P2PServerContext, nullptr if init() not called
@@ -92,6 +92,7 @@ class P2PServerContext : private ThreadPool,
    * @return false the P2PServerContext init failed
    */
   static bool init(const std::shared_ptr<Config>& config,
+                   std::shared_ptr<ThreadPool> thread_pool,
                    const DeviceContextPtr& device_context);
 
   // TODO need document
@@ -108,7 +109,8 @@ class P2PServerContext : private ThreadPool,
   void block_util_server_stop();
 
   // TODO need document
-  const std::unordered_map<std::string, std::pair<std::shared_ptr<IPAddr>, uint32_t>>&get_online_peers();
+  const std::unordered_map<std::string, std::pair<std::shared_ptr<IPAddr>, uint32_t>>&
+  get_online_peers();
 
  protected:
   /**
@@ -130,7 +132,7 @@ class P2PServerContext : private ThreadPool,
   template <typename... Args>
   static ::std::shared_ptr<P2PServerContext> create(Args&&... args) {
     return ::std::make_shared<P2PServerContext>(this_is_private{0},
-                                              ::std::forward<Args>(args)...);
+                                                ::std::forward<Args>(args)...);
   }
 
   /**
@@ -202,8 +204,9 @@ class P2PServerContext : private ThreadPool,
       return false;
     }
 
-    static bool handle_complicated(const std::shared_ptr<P2PServerContext>& server, const T message,
-                                   struct sockaddr_in* incoming_connection, uint32_t ttl) {
+    static bool handle_complicated(const std::shared_ptr<P2PServerContext>& server,
+                                   const T message, struct sockaddr_in* incoming_connection,
+                                   uint32_t ttl) {
       LOG(ERROR) << "complicated package handler for message [" << typeid(T).name()
                  << "] not implemented!";
       return false;
@@ -214,7 +217,7 @@ class P2PServerContext : private ThreadPool,
    * Private instance
    */
   inline static std::shared_ptr<P2PServerContext> _instance = nullptr;
-  inline static std::shared_ptr<Serverkit::DeviceContext> _device_context = nullptr;
+  inline static std::shared_ptr<ServerKit::DeviceContext> _device_context = nullptr;
 
   /**
    * Client Certificate //TODO delete those when deconstruct avoid leaking
@@ -231,6 +234,7 @@ class P2PServerContext : private ThreadPool,
   struct event_base* _event_base;
   std::unique_ptr<std::thread> _thread_ref{nullptr};
   InstancePool<std::string, PeerSession> _peer_pool;
+  std::shared_ptr<ThreadPool> _thread_pool;
 
   /**
    * @brief Get the event base of libevent

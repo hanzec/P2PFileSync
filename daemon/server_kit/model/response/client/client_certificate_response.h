@@ -3,14 +3,14 @@
 
 #include <string>
 
-#include "../IJsonModel.h"
+#include "model/IJsonModel.h"
 
-namespace P2PFileSync::Serverkit {
+namespace P2PFileSync::ServerKit {
 /**
  * @brief Construct a new Register Client Request object
  * @note for any giving pointer as argument, this object will take over the
  * management
- * @note for any object as returned value, the caller need to take responsable
+ * @note for any object as returned value, the caller need to take responsible
  * for free
  */
 class ClientCertResponse : public IJsonModel {
@@ -31,14 +31,14 @@ class ClientCertResponse : public IJsonModel {
    * @param json the json string wants to parse as request client certificate
    * Object
    */
-  ClientCertResponse(char* json);
+  explicit ClientCertResponse(char* json);
 
   /**
    * @brief Get the client id in RequestClientCertResponse request
    *
    * @return std::string the client id registered in server
    */
-  EXPORT_FUNC std::string get_client_id();
+  EXPORT_FUNC std::string device_id();
 
   /**
    * @brief Get the PSCK12 certificate encoded in base64 in
@@ -47,8 +47,8 @@ class ClientCertResponse : public IJsonModel {
    * @return std::string the raw jwt login token certificate encoded by
    * BASE64
    */
-  EXPORT_FUNC std::string get_client_PSCK12_certificate();
+  EXPORT_FUNC std::string PSCK12_certificate();
 };
-}  // namespace P2PFileSync::Serverkit
+}  // namespace P2PFileSync::ServerKit
 
 #endif  // P2P_FILE_SYNC_Serverkit_MODEL_REQUEST_REQUEST_CLIENT_CERTIFICATE_RESPONSE_H

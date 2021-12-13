@@ -1,52 +1,58 @@
 #include "command_executor.h"
 
 namespace P2PFileSync {
-CommandExecuter::~CommandExecuter() {
-  for (const auto& pair : _instance_map) {
-    free(pair.second);
-    VLOG(3) << "destroy [" << pair.first << "] object";
-  }
-};
-
 // print help message
-void CommandExecuter::get_help_msg(std::ostringstream& output) noexcept {
-  for (const auto& pair : CommandExecuter::_constructor_map) {
-    output << std::setw(15) << pair.first << std::setw(0) << pair.second.first
-           << std::endl;
+void CommandExecutor::get_help_msg(std::ostringstream& output) noexcept {
+  for (const auto& pair : CommandExecutor::_constructor_map) {
+    output << std::setw(15) << pair.first << std::setw(0) << pair.second.first << std::endl;
   }
 };
 
 // command factory producer
-void CommandExecuter::exec(std::ostringstream& output,
-                           const std::string& command, COMMAND_ARG& arguments) {
+void CommandExecutor::exec(std::ostringstream& output, const std::string& command,
+                           COMMAND_ARG& arguments) {
   // the only special case will handle_difficult by command factory
   if (command == "help") {
-    CommandExecuter::get_help_msg(output);
+    CommandExecutor::get_help_msg(output);
   } else {
-    CommandBase* command_obj;
+    // print debug info
+    if (VLOG_IS_ON(3)) {
+      std::ostringstream oss;
+
+      if (!arguments.empty()) {
+        // Convert all but the last element to avoid a trailing ","
+        std::copy(arguments.begin(), arguments.end() - 1,
+                  std::ostream_iterator<std::string>(oss, ","));
+
+        // Now add the last element with no delimiter
+        oss << arguments.back();
+      }
+      VLOG(3) << "command: " << command << " arguments: [" << oss.str() << "]";
+    }
 
     // return failied when command not found
-    auto command_index = CommandExecuter::_constructor_map.find(command);
-    if (command_index == CommandExecuter::_constructor_map.end()) {
+    auto command_index = CommandExecutor::_constructor_map.find(command);
+    if (command_index == CommandExecutor::_constructor_map.end()) {
       output << "command [" << command << "] not found!" << std::endl;
       return;
     }
 
     // looking for the command_obj
+    std::unique_ptr<CommandBase> command_obj{nullptr};
     auto command_obj_index = _instance_map.find(command);
     if (command_obj_index == _instance_map.end()) {
       // construct command object
-      command_obj = command_index->second.second(
-          std::forward<std::shared_ptr<ConnectionSession>>(_session));
+      command_obj = std::move(command_index->second.second(
+          std::forward<std::shared_ptr<ConnectionSession>>(_session)));
+
+      // execute the obj
+      command_obj->exec(output, arguments);
 
       // add to managed interface map
-      CommandExecuter::_instance_map.emplace(command, command_obj);
+      CommandExecutor::_instance_map.emplace(command, std::move(command_obj));
     } else {
-      command_obj = command_obj_index->second;
+      command_obj_index->second->exec(output, arguments);
     }
-
-    // execute the obj
-    command_obj->exec(output, arguments);
 
     // add new line;
     output << std::endl;
@@ -54,16 +60,16 @@ void CommandExecuter::exec(std::ostringstream& output,
 }
 
 // register avaliable command
-bool CommandExecuter::reg_command(PTRC_OBJECT&& command_obj,
-                                  const std::string_view& command,
+bool CommandExecutor::reg_command(PTRC_OBJECT&& command_obj, const std::string_view& command,
                                   const std::string_view& description) {
-  if (CommandExecuter::_constructor_map.find(command) !=
-      CommandExecuter::_constructor_map.end()) {
+  if (CommandExecutor::_constructor_map.find(command) !=
+      CommandExecutor::_constructor_map.end()) {
     return false;
   }
-  CommandExecuter::_constructor_map.emplace(
+  CommandExecutor::_constructor_map.emplace(
       command, std::make_pair(description, std::move(command_obj)));
   return true;
 }
+CommandExecutor::CommandExecutor():_session(std::make_shared<ConnectionSession>(ServerKit::ServerContext::get_usr_ctx())) {}
 
 }  // namespace P2PFileSync

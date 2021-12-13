@@ -3,9 +3,9 @@
 
 #include <string>
 
-#include "../IJsonModel.h"
+#include "model/IJsonModel.h"
 
-namespace P2PFileSync::Serverkit {
+namespace P2PFileSync::ServerKit {
 /**
  * @brief Construct a new Register Client Request object
  * @note for any giving pointer as argument, this object will take over the
@@ -30,7 +30,7 @@ class RegisterClientResponse : public IJsonModel {
    * @param json the json string wants to parse as Register Client Response
    * Object
    */
-  RegisterClientResponse(char* json);
+  explicit RegisterClientResponse(char* json);
 
   /**
    * @brief Get the register code section in RegisterClientResponse request
@@ -44,14 +44,14 @@ class RegisterClientResponse : public IJsonModel {
    *
    * @return std::array<std::byte,16> the client id registered in server
    */
-  EXPORT_FUNC std::string device_id() const;
+  [[nodiscard]] EXPORT_FUNC std::string device_id() const;
 
   /**
    * @brief Get the enable url ection in RegisterClientResponse request
    *
    * @return std::string the url for enabling this client
    */
-  EXPORT_FUNC std::string get_enable_url() const;
+  [[nodiscard]] EXPORT_FUNC std::string get_enable_url() const;
 
   /**
    * @brief Get the jwt login token section in RegisterClientResponse
@@ -60,8 +60,8 @@ class RegisterClientResponse : public IJsonModel {
    * @return std::string the raw jwt login token certificate encoded by
    * BASE64
    */
-  EXPORT_FUNC std::string jwt_key() const;
+  [[nodiscard]] EXPORT_FUNC std::string jwt_key() const;
 };
-}  // namespace P2PFileSync::Serverkit
+}  // namespace P2PFileSync::ServerKit
 
 #endif  // P2P_FILE_SYNC_Serverkit_MODEL_REQUEST_REGISTER_CLIENT_RESPONSE_H

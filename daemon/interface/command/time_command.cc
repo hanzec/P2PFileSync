@@ -11,7 +11,7 @@ class TimeCommand : public AutoRegCommand<TimeCommand> {
  public:
   void exec(std::ostringstream& out, const std::vector<std::string>& args) final {
     if (!args.empty()) {
-      out << "TIME command does not need any arguments!";
+      out << "na command does not need any arguments!";
     }
 
     auto end = std::chrono::system_clock::now();

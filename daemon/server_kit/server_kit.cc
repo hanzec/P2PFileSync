@@ -3,7 +3,7 @@
 //
 #include <model/data/device_conf.h>
 #include <model/request/register_client_request.h>
-#include <model/response/register_client_response.h>
+#include <model/response/client/register_client_response.h>
 #include <utils/machine_id.h>
 
 #include <filesystem>
@@ -11,7 +11,7 @@
 #include "server_endpoint.h"
 #include "utils/curl_utils.h"
 
-namespace P2PFileSync::Serverkit {
+namespace P2PFileSync::ServerKit {
 bool is_registered(const std::filesystem::path &configuration_path) {
   // check client cfg
   std::filesystem::path client_cfg(configuration_path / CLIENT_CONFIGURE_FILE_NAME);
@@ -35,11 +35,11 @@ std::pair<std::string, std::string> register_client(
   // TODO: replace moke data to actual data
   srand(time(nullptr));
   reques_model.setIPAddress("127.0.0." + std::to_string(rand() % 255));
-  reques_model.setMachineID(P2PFileSync::Serverkit::get_device_id());
+  reques_model.setMachineID(P2PFileSync::ServerKit::get_device_id());
 
   void *raw_json = POST_and_save_to_ptr(
       nullptr, std::string(server_address).append(SERVER_REGISTER_ENDPOINT_V1),
-      static_cast<const void *>(reques_model.get_json().c_str()), false);
+      static_cast<const void *>(reques_model.get_json().c_str()), true,false);
 
   if (raw_json == nullptr) {
     LOG(ERROR) << "empty response";
@@ -65,4 +65,4 @@ std::pair<std::string, std::string> register_client(
   }
 }
 
-}  // namespace P2PFileSync::Serverkit
+}  // namespace P2PFileSync::ServerKit

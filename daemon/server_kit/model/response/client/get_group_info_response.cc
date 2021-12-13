@@ -4,7 +4,7 @@
 
 #include "get_group_info_response.h"
 
-namespace P2PFileSync::Serverkit {
+namespace P2PFileSync::ServerKit {
 
 GroupInfoResponse::GroupInfoResponse(char* json) : IJsonModel(json){};
 
@@ -20,4 +20,4 @@ std::string GroupInfoResponse::get_group_desc() {
   return get_value<std::string>("\\group\\description");
 }
 
-}  // namespace P2PFileSync::Serverkit
+}  // namespace P2PFileSync::ServerKit

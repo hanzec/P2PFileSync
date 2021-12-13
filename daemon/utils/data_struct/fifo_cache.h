@@ -46,7 +46,7 @@ class FIFOCache {
  private:
   const size_t _max_cache_size;
   std::list<T> _cache;
-  std::unordered_set<T> _cache_map;
+  std::unordered_set<T> _cache_map{};
 };
 }  // namespace P2PFileSync::Protocol
 

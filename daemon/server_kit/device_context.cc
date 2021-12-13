@@ -1,7 +1,7 @@
 #include <model/data/device_conf.h>
-#include <model/response/client_certificate_response.h>
-#include <model/response/client_information_response.h>
-#include <model/response/get_peer_list_response.h>
+#include <model/response/client/client_certificate_response.h>
+#include <model/response/client/client_information_response.h>
+#include <model/response/client/get_peer_list_response.h>
 
 #include <filesystem>
 #include <memory>
@@ -14,47 +14,15 @@
 #include "utils/base64_utils.h"
 #include "utils/curl_utils.h"
 
-namespace P2PFileSync::Serverkit {
+namespace P2PFileSync::ServerKit {
 
 DeviceContext::DeviceContext(const this_is_private &, std::string device_id,
-                             std::string client_token, std::string server_address,
-                             std::filesystem::path conf)
+                             std::string client_token, std::string& server_address,
+                             std::filesystem::path& conf)
     : _device_id(std::move(device_id)),
       _login_token(std::move(client_token)),
       _server_address(std::move(server_address)),
       _server_configuration_path(std::move(conf)){};
-
-std::shared_ptr<DeviceContext> DeviceContext::get_dev_ctx() noexcept {
-  if (_instance == nullptr) {
-    return nullptr;
-  }
-  return _instance;
-}
-
-bool DeviceContext::init_dev_ctx(const std::string &server_address,
-                                 const std::filesystem::path &client_conf) noexcept {
-  if (_instance == nullptr) {
-    if (std::filesystem::exists(client_conf/CLIENT_CONFIGURE_FILE_NAME)) {
-      LOG(INFO) << "Device is registered, loading configuration...";
-      DeviceConfiguration conf_file(client_conf/CLIENT_CONFIGURE_FILE_NAME);
-      _instance =
-          create(conf_file.device_id(), conf_file.jwt_key(), server_address, client_conf);
-      return _instance != nullptr;
-    } else {
-      LOG(INFO) << "Device is not registered, generating configuration...";
-      auto param = register_client(server_address, client_conf);
-      if (param.first.empty() && param.second.empty()) {
-        LOG(ERROR) << "Failed to register device";
-        return false;
-      } else {
-        _instance = create(param.second, param.first, server_address, client_conf);
-        return _instance != nullptr;
-      }
-    }
-  } else {
-    return true;
-  }
-}
 
 bool DeviceContext::is_enabled() const { return device_info() != nullptr; }
 
@@ -90,7 +58,7 @@ std::filesystem::path DeviceContext::client_certificate() const {
           nullptr, std::string(_server_address).append(GET_CLIENT_CERTIFICATE_ENDPOINT_V1),
           {"Authorization:" + _login_token}, false);
       ClientCertResponse resp(static_cast<char *>(raw_json));
-      auto cert = Base64::decode(resp.get_client_PSCK12_certificate());
+      auto cert = Base64::decode(resp.PSCK12_certificate());
 
       // first write to file
       std::ofstream file_stream(cert_file, std::ios::out | std::ios::binary);
@@ -113,4 +81,4 @@ std::map<std::string, std::string> DeviceContext::peer_list() const {
   return resp.get_peer_list();
 }
 
-}  // namespace P2PFileSync::Serverkit
+}  // namespace P2PFileSync::ServerKit

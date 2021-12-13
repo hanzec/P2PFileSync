@@ -46,6 +46,7 @@ target_include_directories(daemon PRIVATE ${Libevent_CORE_INCLUDE_DIRS})
 find_path(LIBUUID_INCLUDE_DIR uuid.h PATH_SUFFIXES uuid)
 find_library(LIBUUID_LIBRARY libuuid.a)
 target_link_libraries(daemon ${LIBUUID_LIBRARY})
+target_link_libraries(daemon_test ${LIBUUID_LIBRARY})
 target_include_directories(daemon PRIVATE ${LIBUUID_INCLUDE_DIR})
 
 # google test deps(require pthread)
@@ -57,14 +58,26 @@ target_link_libraries(daemon_test GTest::gmock GTest::gtest GTest::gmock_main GT
 ###############################################################################
 ## Compile Config #############################################################
 ###############################################################################
+# build type specific options
+if (CMAKE_BUILD_TYPE)
+    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+        target_compile_options(daemon PRIVATE -O0 -g)
+    elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
+        target_compile_options(daemon PRIVATE -O3 -fPIC -fast-math -Wextra -Bsymbolic)
+    endif ()
+endif ()
+
+# general  compile options
+add_compile_options(-Wall -Wunused-function -Wunused-parameter)
+
 # compile under cxx 17 since need std::byte support
 target_compile_features(daemon PRIVATE cxx_std_17)
 target_compile_features(daemon_test PRIVATE cxx_std_17)
 
 ###############################################################################
-## Commands ###################################################################
+## File #######################################################################
 ###############################################################################
-add_subdirectory(interface)
+#add_subdirectory(file)
 
 ###############################################################################
 ## Project Utils ##############################################################
@@ -75,6 +88,11 @@ add_subdirectory(utils)
 ## Message Packet ##############################################################
 ###############################################################################
 add_subdirectory(packet)
+
+###############################################################################
+## Commands ###################################################################
+###############################################################################
+add_subdirectory(interface)
 
 ###############################################################################
 ## Server Protocol Kit ########################################################
@@ -89,6 +107,7 @@ target_include_directories(daemon PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/server_kit
 ###############################################################################
 target_sources(daemon
         PRIVATE
+        "file_database.cc" "file_database.h"
         "common.h" "main.cc" "server_kit/export.h"
         "manage_interface.cc" "manage_interface.h"
         "peer_session.cc" "p2p_server_context.cc" "p2p_interface.h")
