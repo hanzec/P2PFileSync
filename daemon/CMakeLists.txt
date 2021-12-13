@@ -64,12 +64,12 @@ if (CMAKE_BUILD_TYPE)
         target_link_options(daemon PRIVATE -o0 -g -fsanitize=address -fno-omit-frame-pointer)
         target_compile_options(daemon PRIVATE -O0 -g -fsanitize=address -fno-omit-frame-pointer)
     elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
-        target_compile_options(daemon PRIVATE -O3 -fPIC -fast-math -Wextra -Bsymbolic)
+        target_compile_options(daemon PRIVATE -O3 -fPIC -fast-math -Bsymbolic -Werror)
     endif ()
 endif ()
 
 # general  compile options
-add_compile_options(-Wall -Wunused-function -Wunused-parameter)
+add_compile_options(-Wall -Wextra)
 
 # compile under cxx 17 since need std::byte support
 target_compile_features(daemon PRIVATE cxx_std_17)

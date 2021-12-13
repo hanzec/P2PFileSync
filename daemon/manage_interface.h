@@ -54,7 +54,7 @@ class ManagementInterface{
 
 
  private:
-  void manage_interface_thread();
+  void manage_interface_thread() const;
   int _listen_socket = -1;
   const int _timeout;
   inline static std::shared_ptr<ManagementInterface> _instance{nullptr};

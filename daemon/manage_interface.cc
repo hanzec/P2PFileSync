@@ -84,7 +84,7 @@ ManagementInterface::ManagementInterface(const ManagementInterface::this_is_priv
   // connect
   _manage_interface_thread = std::thread(&ManagementInterface::manage_interface_thread, this);
 }
-void ManagementInterface::manage_interface_thread() {
+void ManagementInterface::manage_interface_thread() const {
   // connect
   if (listen(_listen_socket, 10) < 0) { /* tell kernel we're a server */
     LOG(FATAL) << "cannot set socket [" << _listen_socket << "] status to listen";
