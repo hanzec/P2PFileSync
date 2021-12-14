@@ -26,15 +26,16 @@ bool send_packet_tcp(SignedProtoMessage& msg, const std::shared_ptr<IPAddr>& ip_
   }
 
   if (connect(server_sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
-    LOG(ERROR) << "Connection Failed : Can't establish a connection over this socket !";
+    LOG(ERROR) << "Connection Failed :" << strerror(errno);
     return false;
   }
 
   msg.set_ttl(msg.ttl() - 1); // decrease 1 to ttl
 
-  size_t proto_size = msg.ByteSizeLong();
+  uint32_t proto_size = msg.ByteSizeLong();
   auto raw_proto = malloc(proto_size);
   msg.SerializeToArray(raw_proto,proto_size);
+  send(server_sock, &proto_size, sizeof(uint32_t), 0);
   send(server_sock, raw_proto, proto_size, 0);
   free(raw_proto);
   return true;

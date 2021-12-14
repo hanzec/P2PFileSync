@@ -155,7 +155,7 @@ inline bool get_data_from_server(const std::string& http_method, const void* inp
         // by default all post_data are type of json in server kit
         list = curl_slist_append(list, "Content-Type:application/json");
         if ((ret = curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list)) != CURLE_OK) goto error;
-      } else{
+      } else {
         if ((ret = curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list)) != CURLE_OK) goto error;
       }
 

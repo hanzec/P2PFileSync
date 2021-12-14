@@ -16,10 +16,10 @@
 #include "utils/data_struct/thread_pool.h"
 #include "utils/ip_addr.h"
 #include "utils/log.h"
+#include "utils/config_reader.h"
 
 DEFINE_string(host, "", "the known host with comma-separated list");
-DEFINE_string(config_dir, "", "the location of config file");
-DEFINE_string(server, "", "the host name of managed server");
+DEFINE_string(config, "", "the location of config file");
 
 using namespace P2PFileSync;
 namespace fs = std::filesystem;
@@ -54,7 +54,22 @@ int main(int argc, char *argv[], [[maybe_unused]] const char *envp[]) {
     }
   }
 
-  auto config = std::make_shared<Config>();
+  std::shared_ptr<Config> config{nullptr};
+  if(fs::exists(FLAGS_config)) {
+    LOG(INFO) << "load config from " << FLAGS_config;
+    config = load_config(FLAGS_config);
+    if(!config) {
+      LOG(FATAL) << "failed to load config from " << FLAGS_config;
+    }
+  } else {
+    LOG(WARNING) << "config file [" << FLAGS_config << "] not found, will create instead";
+    config = std::make_shared<Config>();
+    if(save_config(config, FLAGS_config)) {
+      LOG(INFO) << "config file [" << FLAGS_config << "] created";
+    } else {
+      LOG(FATAL) << "failed to create config file [" << FLAGS_config << "]";
+    }
+  }
 
   // testing config folder
   if (!fs::exists(config->config_folder())) {
@@ -63,38 +78,15 @@ int main(int argc, char *argv[], [[maybe_unused]] const char *envp[]) {
       LOG(FATAL) << "failed to create config folder [" << config->config_folder() << "]";
   }
 
-  // todo fix configuration file later
-  //  // testing config file
-  //  auto config_file = data_folder / CONFIG_FILE_NAME;
-  //  if (!fs::exists(config_file)) {
-  //    if (!generate_default_config(config_file))
-  //      LOG(FATAL) << "failed to create default config at [" << config_file.string() << "]";
-  //  }
-  //
-  //  // loading the config file
-  //  auto config = parse_comfig_file(config_file);
-  //  if(config == nullptr){
-  //    LOG(FATAL) << "failed to parse config file at [" << config_file.string() << "]";
-  //  }
-
-  // check data folder
-  fs::path data_dir_path(config->config_folder());
-  if (!fs::exists(data_dir_path)) {
-    if (!fs::create_directories(data_dir_path)) {
-      LOG(FATAL) << "Failed creating directory in [" << config->config_folder() << "]";
-    }
-  } else {
-    VLOG(VERBOSE) << "find exist folder in [" << config->config_folder() << "]";
-  }
 
   // start threadl pool
-  std::shared_ptr<ThreadPool> thread_pool = std::make_shared<ThreadPool>(config->get_worker_thread_num());
+  std::shared_ptr<ThreadPool> thread_pool = std::make_shared<ThreadPool>(config->worker_thread_num());
 
   // init server context
-  ServerKit::ServerContext::init(config->get_management_server_url(),config->config_folder());
+  ServerKit::ServerContext::init(config);
 
   // staring server handler
-  std::string server_sock = config->get_manage_sock_file_();
+  std::filesystem::path server_sock = config->manage_sock();
   auto manage_ctx = ManagementInterface::init(server_sock, AF_UNIX);
 
   // starring server pll

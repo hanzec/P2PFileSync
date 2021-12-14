@@ -11,21 +11,10 @@
 
 namespace P2PFileSync::ServerKit {
   /**
-   * Server-kit Configuration file Name
-   */
-  const constexpr static std::string_view CLIENT_CONFIGURE_FILE_NAME = "client.cfg";
-  const constexpr static std::string_view CLIENT_CERTIFICATE_FILE_NAME = "client.p12";
-
-  /**
-   * Management server related API
-   */
-  const constexpr static std::string_view SERVER_CERT_ENDPOINT_V1 = "/client_sign_root.crt";
-  
-  /**
    * Authenticate related API
    */
-  const constexpr static std::string_view SERVER_PASSWORD_LOGOUT_V1 = "/logout";
   const constexpr static std::string_view SERVER_PASSWORD_LOGIN_V1 = "/api/v1/login";
+  const constexpr static std::string_view SERVER_PASSWORD_LOGOUT_V1 = "/logout";
   const constexpr static std::string_view SERVER_REGISTER_ENDPOINT_V1 = "/api/v1/register_client";
 
   /**

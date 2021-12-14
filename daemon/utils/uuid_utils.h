@@ -10,7 +10,7 @@
 
 namespace P2PFileSync::UUID {
 // Generate a random UUID
-std::string_view new_uuid();
+const char* new_uuid();
 
 // TODO documents
 bool is_valid(const std::string& uuid_string);

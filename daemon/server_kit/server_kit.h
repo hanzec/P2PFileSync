@@ -11,37 +11,15 @@
 
 #include "common.h"
 #include "export.h"
+#include "model/data/device_conf.h"
 #include "model/response/client/client_information_response.h"
+#include "model/response/client/get_peer_list_response.h"
 #include "model/response/user/user_detail_response.h"
 
 #ifndef P2P_FILE_SYNC_SERVER_KIT_SERVER_KIT_H
 #define P2P_FILE_SYNC_SERVER_KIT_SERVER_KIT_H
 
 namespace P2PFileSync::ServerKit {
-
-/**
- * @brief Check if client is registered or not by following rules:
- *  1. check if there exist a file under config folder called client.cfg
- *  2. check if there exist a file under config folder called client.pem
- *  3. //TODO check with server to validate the validation of the client
- * certificate
- *  4. //TODO verify the client machine id is matching the cfg file and
- * certificate
- * @return true the client is registed with server
- * @return false ther client is not registed with server
- */
-EXPORT_FUNC bool is_registered(const std::filesystem::path& conf);
-
-/**
- * @brief Regist current device to remote management server
- * // TODO need to write code handle_difficult jwt renew
- * @return std::pair<std::string,std::string> will return the JWT Token
- * authorized by management server after register and the register id by
- * formate of <JWT Token, Peer ID>
- */
-EXPORT_FUNC std::pair<std::string, std::string> register_client(
-    const std::string& server_address, const std::filesystem::path& configuration_path);
-
 /**
  * @brief The cpp class for server session per connection
  *
@@ -53,7 +31,6 @@ class UserContext {
    */
   struct this_is_private;
 
-
  public:
   /**
    * @brief Destroy the Server Connection object
@@ -62,7 +39,7 @@ class UserContext {
    */
   EXPORT_FUNC ~UserContext();
 
-  UserContext(const this_is_private&,std::string& _server_address);
+  UserContext(const this_is_private&, std::string& _server_address);
 
   EXPORT_FUNC void logout();
 
@@ -85,8 +62,7 @@ class UserContext {
    */
   template <typename... Args>
   static ::std::shared_ptr<UserContext> create(Args&&... args) {
-    return ::std::make_shared<UserContext>(this_is_private{0},
-                                             ::std::forward<Args>(args)...);
+    return ::std::make_shared<UserContext>(this_is_private{0}, ::std::forward<Args>(args)...);
   }
 
   /**
@@ -132,7 +108,8 @@ class EXPORT_FUNC DeviceContext {
    *     date as 1 year after to avoid problem
    */
   DeviceContext(const this_is_private&, std::string device_id, std::string client_token,
-                std::string& server_address, std::filesystem::path& conf);
+                std::string& server_address, std::filesystem::path& conf,
+                std::filesystem::path& client_cert_path);
 
   /**
    * @brief return the enabled status at remote management server, in this
@@ -157,7 +134,7 @@ class EXPORT_FUNC DeviceContext {
    * @return std::unordered_map<std::string,std::string> list of peer
    * cancidate's ip id and its ip address
    */
-  [[nodiscard]] EXPORT_FUNC std::map<std::string, std::string> peer_list() const;
+  [[nodiscard]] EXPORT_FUNC std::unique_ptr<PeerListResponse> peer_list() const;
 
   /**
    * @brief Request PKCS12 certificate of current client, this function will
@@ -208,6 +185,7 @@ class EXPORT_FUNC DeviceContext {
    * Configuration
    */
   const std::string& _server_address;
+  const std::filesystem::path& _client_certificate_path;
   const std::filesystem::path& _server_configuration_path;
 };
 
@@ -219,12 +197,11 @@ class EXPORT_FUNC ServerContext {
   struct this_is_private;
 
  public:
-  ServerContext(const this_is_private&, std::string  _sever_address,
-                std::filesystem::path  _configuration_path) noexcept;
+  ServerContext(const this_is_private&, const std::shared_ptr<Config>& config) noexcept;
 
-  EXPORT_FUNC static void init(const std::string& server_address, const std::filesystem::path& conf);
+  EXPORT_FUNC static void init(const std::shared_ptr<Config>& config);
 
-  [[nodiscard]] EXPORT_FUNC static std:: shared_ptr<ServerContext> get_server_ctx();
+  [[nodiscard]] EXPORT_FUNC static std::shared_ptr<ServerContext> get_server_ctx();
 
   // todo add documentation
   [[nodiscard]] static EXPORT_FUNC std::shared_ptr<UserContext> get_usr_ctx() noexcept;
@@ -262,6 +239,15 @@ class EXPORT_FUNC ServerContext {
   }
 
   /**
+   * @brief Regist current device to remote management server
+   * // TODO need to write code handle_difficult jwt renew
+   * @return std::pair<std::string,std::string> will return the JWT Token
+   * authorized by management server after register and the register id by
+   * formate of <JWT Token, Peer ID>
+   */
+  [[nodiscard]] static std::shared_ptr<DeviceConfiguration> register_client();
+
+  /**
    * Blocker avoid call public constructor
    */
   struct this_is_private {
@@ -274,8 +260,12 @@ class EXPORT_FUNC ServerContext {
    */
   inline static std::shared_ptr<ServerContext> _instance{nullptr};
 
+  uint16_t _p2p_listen_port;
   std::string _server_address;
+  std::string _p2p_listen_interface;
   std::filesystem::path _configuration_path;
+  std::filesystem::path _client_certificate_path;
+  std::filesystem::path _client_configuration_path;
 
   // instance ptr
   std::shared_ptr<DeviceContext> _device_ctx_instance = nullptr;

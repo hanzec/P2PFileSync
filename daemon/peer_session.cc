@@ -85,20 +85,20 @@ const constexpr char* get_validation_errstr(long e) {
 }
 
 std::shared_ptr<P2PServerContext::PeerSession> P2PServerContext::PeerSession::new_session(
-    const std::string& raw_cert, STACK_OF(X509) * ca) noexcept {
+    const std::string& raw_cert) noexcept {
   X509* cert;
   std::shared_ptr<P2PServerContext::PeerSession> ret = nullptr;
   const auto* data = reinterpret_cast<const unsigned char*>(raw_cert.c_str());
 
   // construct X509 Certificate from raw
-  if ((cert = d2i_X509(nullptr, &data, raw_cert.size())) == nullptr) {
+  if (nullptr == (cert = d2i_X509(nullptr, &data, raw_cert.size()))) {
+    LOG(ERROR) << "failed to unpack the client's X509 certificate";
     return nullptr;
   }
 
   // verify certificate
-  X509_STORE* x509_store = X509_STORE_new();
   X509_STORE_CTX* x509_store_ctx = X509_STORE_CTX_new();
-  X509_STORE_CTX_init(x509_store_ctx, x509_store, cert, ca);
+  X509_STORE_CTX_init(x509_store_ctx, get_instance()->_x509_store, cert, nullptr);
 
   if (X509_verify_cert(x509_store_ctx) == 1) {
     ret = std::shared_ptr<P2PServerContext::PeerSession>(
@@ -108,9 +108,7 @@ std::shared_ptr<P2PServerContext::PeerSession> P2PServerContext::PeerSession::ne
   }
 
   X509_free(cert);
-  X509_STORE_free(x509_store);
   X509_STORE_CTX_free(x509_store_ctx);
-
   return ret;
 }
 

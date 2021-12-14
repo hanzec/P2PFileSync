@@ -7,12 +7,12 @@
 #include <glog/logging.h>
 
 namespace P2PFileSync::UUID {
-std::string_view new_uuid(){
+const char* new_uuid(){
   uuid_t uuid;
   uuid_generate(uuid);
-  char uuid_str[37];
-  uuid_unparse(uuid, uuid_str);
-  return {uuid_str};
+  char* uuid_str = static_cast<char*>(malloc(37));
+  uuid_unparse(uuid, reinterpret_cast<char*>(uuid_str));
+  return uuid_str;
 }
 
 

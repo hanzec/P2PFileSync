@@ -103,7 +103,10 @@ class P2PServerContext : private RoutingTable<std::string>,
   ProtoMessage package_pkg(const T& data, const std::string& receiver);
 
   // TODO need document
-  ProtoHelloMessage new_hello_payload(X509* cert);
+  template <typename T,typename... Args>
+  T construct_payload(Args &&...args){
+    return construct_payload_internal<T>(std::forward<Args>(args)...);
+  }
 
   // TODO need document
   void block_util_server_stop();
@@ -119,6 +122,10 @@ class P2PServerContext : private RoutingTable<std::string>,
   struct this_is_private {
     explicit this_is_private(int) {}
   };
+
+  // todo need document
+  template <typename T>
+  T construct_payload_internal();
 
   // TODO need document
   bool start(int fd);
@@ -160,8 +167,7 @@ class P2PServerContext : private RoutingTable<std::string>,
      * @param ca the stack of ca certificate used to verity the peer certificate
      * @return if cert valid then return std::shared_ptr<PeerSession> else return nullptr
      */
-    static std::shared_ptr<PeerSession> new_session(const std::string& raw_cert,
-                                                    STACK_OF(X509) * ca) noexcept;
+    static std::shared_ptr<PeerSession> new_session(const std::string& raw_cert) noexcept;
 
     /**
      * @brief verify the signature with specific data
@@ -193,25 +199,21 @@ class P2PServerContext : private RoutingTable<std::string>,
   };
 
  private:
-  // TODO need finished document
-  // !! For overload functional object, compiler could not infer the return type of the method
   template <typename T>
-  class IMessageHandler {
-   public:
-    static bool handle_simple(std::shared_ptr<P2PServerContext>& server, const T message) {
-      LOG(ERROR) << "simple package handler for message [" << typeid(T).name()
-                 << "] not implemented!";
-      return false;
-    }
+  static bool handle_simple(std::shared_ptr<P2PServerContext>& server, const T& message) {
+    LOG(ERROR) << "simple package handler for message [" << typeid(T).name()
+               << "] not implemented!";
+    return false;
+  }
 
-    static bool handle_complicated(const std::shared_ptr<P2PServerContext>& server,
-                                   const T message, struct sockaddr_in* incoming_connection,
-                                   uint32_t ttl) {
-      LOG(ERROR) << "complicated package handler for message [" << typeid(T).name()
-                 << "] not implemented!";
-      return false;
-    }
-  };
+  template <typename T>
+  static bool handle_complicated(const std::shared_ptr<P2PServerContext>& server,
+                                 const T& message, struct sockaddr_in* incoming_connection,
+                                 uint32_t ttl) {
+    LOG(ERROR) << "complicated package handler for message [" << typeid(T).name()
+               << "] not implemented!";
+    return false;
+  }
 
   /**
    * Private instance
@@ -222,8 +224,8 @@ class P2PServerContext : private RoutingTable<std::string>,
   /**
    * Client Certificate //TODO delete those when deconstruct avoid leaking
    */
+  X509* _client_cert; // todo need free
   X509_STORE* _x509_store;
-  X509_STORE_CTX* _x509_store_ctx;
   EVP_MD_CTX* _evp_md_ctx = EVP_MD_CTX_new();
   EVP_PKEY* _client_priv_key = nullptr;
 

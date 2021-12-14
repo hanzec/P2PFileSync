@@ -36,7 +36,7 @@ class RoutingTable {
   bool can_delivered(const T& dest){
     std::shared_lock<std::shared_mutex> sharedLock(_lock_mutex);
 
-    return _routing_map.find(dest) == _routing_map.end();
+    return _routing_map.find(dest) != _routing_map.end();
   }
 
   //TODO add document

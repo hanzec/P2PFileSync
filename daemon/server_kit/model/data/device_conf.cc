@@ -5,7 +5,6 @@
 #include <fstream>
 
 namespace P2PFileSync::ServerKit {
-
 DeviceConfiguration::DeviceConfiguration(const std::filesystem::path& device_cfg_file)
     : IJsonModel() {
   // load json file from disk
@@ -45,5 +44,4 @@ std::string DeviceConfiguration::jwt_key() const {
 std::string DeviceConfiguration::device_id() const {
   return get_value<std::string>("device_id");
 }
-
 }  // namespace P2PFileSync::ServerKit

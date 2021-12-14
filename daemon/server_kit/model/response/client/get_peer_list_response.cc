@@ -6,10 +6,10 @@
 
 namespace P2PFileSync::ServerKit {
 
-GetPeerListResponse::GetPeerListResponse(char* json) : IJsonModel(json){};
+PeerListResponse::PeerListResponse(char* json) : IJsonModel(json){};
 
-std::map<std::string,std::string> GetPeerListResponse::get_peer_list() {
-  return get_map<std::string>("\\peer");
+std::map<std::string,std::string> PeerListResponse::peer_list() {
+  return get_map<std::string>("peers");
 }
 
 }  // namespace P2PFileSync::ServerKit

@@ -10,7 +10,7 @@ namespace fs = std::filesystem;
 namespace P2PFileSync::ServerKit {
 
 UserContext::UserContext(const this_is_private&, std::string& server_address)
-    : _server_address(server_address), _share_handle(curl_share_init()) {
+    : _share_handle(curl_share_init()), _server_address(server_address) {
   curl_share_setopt(_share_handle, CURLSHOPT_SHARE, CURL_LOCK_DATA_DNS);
   curl_share_setopt(_share_handle, CURLSHOPT_SHARE, CURL_LOCK_DATA_COOKIE);
 }
@@ -35,9 +35,9 @@ bool UserContext::login(const std::string& email, const std::string& password) {
 
   auto ret = POST_and_save_to_ptr(
       _share_handle, std::string(_server_address).append(SERVER_PASSWORD_LOGIN_V1),
-      ("email=" + email + "&password=" + password).c_str(), false,false);
+      ("email=" + email + "&password=" + password).c_str(), false, false);
 
-  if (strlen(static_cast<char *>(ret)) == 0) {
+  if (strlen(static_cast<char*>(ret)) == 0) {
     LOG(ERROR) << "empty response";
     return false;
   }
@@ -62,7 +62,7 @@ std::unique_ptr<UserDetailResponse> UserContext::user_detail() const {
   auto ret = GET_and_save_to_ptr(
       _share_handle, std::string(_server_address).append(SERVER_USER_DETAIL_V1), {}, false);
 
-  if (strlen(static_cast<char *>(ret)) == 0) {
+  if (strlen(static_cast<char*>(ret)) == 0) {
     LOG(ERROR) << "empty response";
     return nullptr;
   }

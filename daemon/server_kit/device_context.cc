@@ -18,10 +18,11 @@ namespace P2PFileSync::ServerKit {
 
 DeviceContext::DeviceContext(const this_is_private &, std::string device_id,
                              std::string client_token, std::string &server_address,
-                             std::filesystem::path &conf)
+                             std::filesystem::path &conf, std::filesystem::path &client_cert_path)
     : _device_id(std::move(device_id)),
       _login_token(std::move(client_token)),
       _server_address(std::move(server_address)),
+      _client_certificate_path(std::move(client_cert_path)),
       _server_configuration_path(std::move(conf)){};
 
 bool DeviceContext::is_enabled() const { return device_info() != nullptr; }
@@ -51,24 +52,22 @@ std::unique_ptr<DeviceInfoResponse> DeviceContext::device_info() const {
 }
 
 std::filesystem::path DeviceContext::client_certificate() const {
-  auto cert_file = _server_configuration_path / CLIENT_CERTIFICATE_FILE_NAME;
-
   for (int retries = 0; retries < MAX_DOWNLOAD_RETIRES; retries++) {
-    if (std::filesystem::exists(cert_file)) {
+    if (std::filesystem::exists(_client_certificate_path)) {
       PKCS12 *cert;
-      FILE *file = fopen(cert_file.c_str(), "rb");
+      FILE *file = fopen(_client_certificate_path.c_str(), "rb");
       if ((cert = d2i_PKCS12_fp(file, nullptr)) == nullptr) {
-        LOG(ERROR) << "unable to loading [" << cert_file << "] will try to re-download in "
+        LOG(ERROR) << "unable to loading [" << _client_certificate_path << "] will try to re-download in "
                    << DOWNLOAD_RETRY_SECOND << "s";
         sleep(DOWNLOAD_RETRY_SECOND);
-        std::filesystem::remove(cert_file);
+        std::filesystem::remove(_client_certificate_path);
       } else {
         PKCS12_free(cert);
         LOG(INFO) << "success loading client certificate to memory!";
-        return cert_file;
+        return _client_certificate_path;
       }
     } else {
-      LOG(INFO) << "client certificate [" << cert_file << "] not found, will try to download";
+      LOG(INFO) << "client certificate [" << _client_certificate_path << "] not found, will try to download";
     }
 
     void *raw_json = GET_and_save_to_ptr(
@@ -78,7 +77,7 @@ std::filesystem::path DeviceContext::client_certificate() const {
     auto cert = Base64::decode(resp.PSCK12_certificate());
 
     // first write to file
-    std::ofstream file_stream(cert_file, std::ios::out | std::ios::binary);
+    std::ofstream file_stream(_client_certificate_path, std::ios::out | std::ios::binary);
     file_stream.write(cert.c_str(), cert.size());
     file_stream.close();
   }
@@ -87,12 +86,12 @@ std::filesystem::path DeviceContext::client_certificate() const {
              << " retries";
 };
 
-std::map<std::string, std::string> DeviceContext::peer_list() const {
+std::unique_ptr<PeerListResponse> DeviceContext::peer_list() const {
+  VLOG(3) << "getting peer list";
   void *raw_json = GET_and_save_to_ptr(
       nullptr, std::string(_server_address).append(GET_CLIENT_PEER_INFO_ENDPOINT_V1),
       {"Authorization:" + _login_token}, false);
-  GetPeerListResponse resp(static_cast<char *>(raw_json));
-  return resp.get_peer_list();
+  return std::make_unique<PeerListResponse>(static_cast<char *>(raw_json));
 }
 
 }  // namespace P2PFileSync::ServerKit

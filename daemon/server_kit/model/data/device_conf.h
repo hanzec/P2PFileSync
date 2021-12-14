@@ -5,7 +5,7 @@
 #include <string>
 
 #include "../IJsonModel.h"
-#include "model/response/client/register_client_response.h"
+#include "../response/client/register_client_response.h"
 
 namespace P2PFileSync::ServerKit {
 /**
@@ -13,7 +13,6 @@ namespace P2PFileSync::ServerKit {
  */
 class DeviceConfiguration : public IJsonModel {
  public:
-
    /**
    * @brief Construct a new Device configuration file
    */
@@ -29,7 +28,7 @@ class DeviceConfiguration : public IJsonModel {
    */
   explicit DeviceConfiguration(const RegisterClientResponse& register_device_response);
 
- /**
+  /**
    * @brief Set the IP address section of RegisterClientRequest
    *
    * @param ipaddress the ip address without port as string

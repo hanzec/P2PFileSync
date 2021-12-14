@@ -42,14 +42,26 @@ class IJsonModel {
   /**
    * @brief Construct a new IJsonModel object
    *
+   */
+  IJsonModel(const IJsonModel& new_models) {
+    if (new_models.json_buf) {
+      auto json_buf_size = strlen(new_models.json_buf);
+      memcpy(json_buf, new_models.json_buf, json_buf_size);
+    }
+    root.CopyFrom(new_models.root, root.GetAllocator());
+  };
+
+  /**
+   * @brief Construct a new IJsonModel object
+   *
    * @param json
    */
   explicit IJsonModel(char* json) : json_buf(json) {
     rapidjson::ParseResult ret = root.Parse(json);
 
     if (!ret) {
-      LOG(ERROR) << "parse json error: " << rapidjson::GetParseError_En(ret.Code()) << ":" << ret.Offset() << ":"
-                 << json;
+      LOG(ERROR) << "parse json error: " << rapidjson::GetParseError_En(ret.Code()) << ":"
+                 << ret.Offset() << ":" << json;
       throw std::runtime_error("parse json error");
     }
 
@@ -97,6 +109,10 @@ class IJsonModel {
    * @param file the path of the file
    */
   void save_to_disk(const std::filesystem::path& file) {
+    if (std::filesystem::exists(file)) {
+      std::filesystem::remove(file);
+      LOG(WARNING) << "configuration file " << file << " already exists, remove it";
+    }
     std::ofstream ofs(file);
     ofs << get_json();
   }
@@ -137,7 +153,7 @@ class IJsonModel {
     }
   }
 
-      /**
+  /**
    * @brief Get the value object
    * @note by defult if key is not exist then this fuction will return nullptr
    * for object and 0/0.0 or nurmical values. And fot string variables, this
@@ -184,22 +200,26 @@ class IJsonModel {
   std::map<std::string, T> get_map(const char* key) {
     auto new_key = std::string(key);
     std::map<std::string, T> ret;
-    if (_response_flag ? root.HasMember(key) : root["responseBody"].HasMember(key)) {
-      for (auto const& in :
-           _response_flag ? root[key].GetArray() : root["responseBody"][key].GetArray()) {
+    if (_response_flag ? root["responseBody"].HasMember(key) : root.HasMember(key)) {
+      auto& node = _response_flag ? root["responseBody"][key] : root[key];
+      for (auto itr = node.MemberBegin(); itr != node.MemberEnd(); ++itr) {
         // skip if current node is a list
-        if (in.IsArray()) break;
+        if (itr->value.IsArray() || itr->value.IsObject()) {
+          VLOG(3) << "skip array node: " << itr->name.GetString() << " with type: "
+                  << itr->value.GetType();
+          break;
+        };
 
-        // add string and values to return
-        auto string = in.MemberBegin()->name.GetString();
         if constexpr (std::is_arithmetic<T>::value) {
-          ret.insert(std::make_pair(string, in.Get<T>()));
+          ret.insert(std::make_pair(itr->name.GetString(), itr->value.Get<T>()));
         } else {
-          ret.insert(std::make_pair(string, in.GetString()));
+          ret.insert(std::make_pair(itr->name.GetString(), itr->value.GetString()));
         }
       }
-      return {};
+      VLOG(3) << "get_map, size: " << ret.size();
+      return ret;
     } else {
+      LOG(WARNING) << "key [" << key << "] not found!";
       return {};
     }
   }

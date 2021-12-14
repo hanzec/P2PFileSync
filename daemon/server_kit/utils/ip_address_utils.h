@@ -8,6 +8,7 @@
 #include <vector>
 
 namespace P2PFileSync::ServerKit::IPAddressUtils {
-  std::vector<std::string> getIPAddresses();
+  //todo: add mode documentation
+  std::vector<std::pair<std::string,std::string>> getIPAddresses();
 }
 #endif  // P2P_FILE_SYNC_IP_ADDRESS_UTILS_H

@@ -3,19 +3,18 @@
 
 #include <string>
 
-#include "model/IJsonModel.h"
+#include "../../IJsonModel.h"
 
 namespace P2PFileSync::ServerKit {
 
-class GetPeerListResponse : public IJsonModel {
+class PeerListResponse : public IJsonModel {
  public:
+  PeerListResponse() = delete;
 
-  GetPeerListResponse() = delete;
 
+  explicit PeerListResponse(char* json);
 
-  explicit GetPeerListResponse(char* json);
-
-  EXPORT_FUNC std::map<std::string,std::string> get_peer_list();
+  EXPORT_FUNC std::map<std::string,std::string> peer_list();
 
 };
 }  // namespace P2PFileSync::ServerKit

@@ -24,7 +24,7 @@ message ProtoMessage {
   bytes receiver_id = 6;
 
   // packet information
-  bytes packet_id = 4;
+  string packet_id = 4;
   ProtoPayloadType packet_type = 1;
   google.protobuf.Timestamp timestamp = 3;
 
@@ -37,12 +37,12 @@ message SignedProtoMessage{
   uint32 ttl = 8;
   bytes signature = 7;
   string sign_algorithm = 3;
-
   bytes signed_payload = 2;
 }
 
 message ProtoHelloMessage {
   uint32 port = 3;
   bytes sender_id = 5;
+  bytes verified_msg = 6;
   bytes x509_certificate = 2;
 }
