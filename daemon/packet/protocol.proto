@@ -38,6 +38,7 @@ message SignedProtoMessage{
   bytes signature = 7;
   string sign_algorithm = 3;
   bytes signed_payload = 2;
+  uint32 prev_jump_port = 4;
 }
 
 message ProtoHelloMessage {

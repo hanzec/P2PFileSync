@@ -11,7 +11,7 @@
 #include "../ip_addr.h"
 
 namespace P2PFileSync {
-template<typename T>
+template <typename T>
 class RoutingTable {
  public:
   /**
@@ -33,45 +33,59 @@ class RoutingTable {
    * @return true found the destination peer’s address in routing table
    * @return false destination peer not found in routing table
    */
-  bool can_delivered(const T& dest){
+  bool can_delivered(const T& dest) {
     std::shared_lock<std::shared_mutex> sharedLock(_lock_mutex);
 
     return _routing_map.find(dest) != _routing_map.end();
   }
 
-  //TODO add document
-  bool add_new_route(const T& dest, const IPAddr& new_ip, int new_ttl){
+  // TODO add document
+  bool add_new_route(const T& dest, std::shared_ptr<IPAddr> new_ip, int new_ttl) {
     std::shared_lock<std::shared_mutex> sharedLock(_lock_mutex);
 
+    if(_routing_map.find(dest) == _routing_map.end()) {
+      _routing_map.insert(std::make_pair(dest, std::make_pair(new_ip, new_ttl)));
+      VLOG(3) << "Add new route: " << dest << " " << *new_ip << " " << new_ttl;
+      return true;
+    } else {
+      VLOG(3) << "Route already exists: " << dest << " " << new_ip << " " << new_ttl;
+      return false;
+    }
     return true;
   }
 
-  //TODO add document
-  bool try_update_table(const T& dest, IPAddr& new_ip, int new_ttl){
+  // TODO add document
+  bool try_update_table(const T& dest, std::shared_ptr<IPAddr> new_ip, int new_ttl) {
     std::shared_lock<std::shared_mutex> sharedLock(_lock_mutex);
     auto ret = _routing_map.find(dest);
-    if(ret == _routing_map.end()){
+    if (ret == _routing_map.end()) {
+      LOG(WARNING) << "try_update_table: destination peer not found in routing table";
       return false;
     } else {
-      if(ret->second.second > new_ttl){
+      if (ret->second.second > new_ttl) {
         // if current routing item is upgradeable, then update the lock level
         sharedLock.unlock();
         std::unique_lock<std::shared_mutex> uniqueLock(_lock_mutex);
-        if(ret->second.second > new_ttl){
+        if (ret->second.second > new_ttl) { // check again after lock upgrade
+          ret->second.first = new_ip;
           ret->second.second = new_ttl;
-          ret->second.first = std::make_shared<IPAddr>(std::move(new_ip));
           return true;
-        } else{
+        } else {
+          VLOG(3) << "try_update_table: destination peer's lock level is not upgradeable: OLD["
+                  << ret->second.second << "] Vs NEW[" << new_ttl << "]";
           return false;
         }
       } else {
+        VLOG(3) << "try_update_table: destination peer's lock level is not upgradeable: OLD["
+                << ret->second.second << "] Vs NEW[" << new_ttl << "]";
         return false;
       }
     }
   }
 
-  //TODO add document
-  const std::unordered_map<std::string, std::pair<std::shared_ptr<IPAddr>, uint32_t>>& get_routing_table() const{
+  // TODO add document
+  const std::unordered_map<std::string, std::pair<std::shared_ptr<IPAddr>, uint32_t>>&
+  get_routing_table() const {
     return _routing_map;
   }
 
@@ -80,5 +94,5 @@ class RoutingTable {
   std::unordered_map<std::string, std::pair<std::shared_ptr<IPAddr>, uint32_t>> _routing_map;
 };
 
-}  // namespace P2PFileSync::Protocol
+}  // namespace P2PFileSync
 #endif  // P2P_FILE_SYNC_ROUTING_TABLE_H

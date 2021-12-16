@@ -53,6 +53,9 @@ class RegisterClientResponse : public IJsonModel {
    */
   [[nodiscard]] EXPORT_FUNC std::string get_enable_url() const;
 
+
+  [[nodiscard]] EXPORT_FUNC std::vector<std::string> ip_address() const;
+
   /**
    * @brief Get the jwt login token section in RegisterClientResponse
    * request

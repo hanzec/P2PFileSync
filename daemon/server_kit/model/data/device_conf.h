@@ -6,6 +6,7 @@
 
 #include "../IJsonModel.h"
 #include "../response/client/register_client_response.h"
+#include "../../../utils/ip_addr.h"
 
 namespace P2PFileSync::ServerKit {
 /**
@@ -17,11 +18,6 @@ class DeviceConfiguration : public IJsonModel {
    * @brief Construct a new Device configuration file
    */
   explicit DeviceConfiguration(const std::filesystem::path& device_cfg_file);
-
-  /**
-   * @brief Construct a new Device configuration file
-   */
-  DeviceConfiguration(std::string&& device_id, std::string&& jwt_key);
 
   /**
    * @brief Construct a new Device configuration file
@@ -42,6 +38,21 @@ class DeviceConfiguration : public IJsonModel {
    */
   [[nodiscard]] std::string device_id() const;
 
+
+  /**
+   * @brief Set the Machine ID section of RegisterClientRequest
+   *
+   * @param machine_id the machine id as string
+   */
+  [[nodiscard]] std::vector<IPAddr> device_ip() const;
+
+
+  /**
+   * @brief Set the IP address section of RegisterClientRequest
+   *
+   * @param ipaddress the ip address without port as string
+   */
+  void set_device_ip(const std::string& jwt_key);
 
   /**
    * @brief Set the IP address section of RegisterClientRequest

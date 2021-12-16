@@ -9,7 +9,7 @@
 #include <glog/logging.h>
 
 namespace P2PFileSync::Task {
-bool send_packet_tcp(SignedProtoMessage& msg, const std::shared_ptr<IPAddr>& ip_addr) {
+bool send_packet_tcp(const uint16_t machine_port,SignedProtoMessage& msg, const std::shared_ptr<IPAddr>& ip_addr) {
   int server_sock = 0;
   struct sockaddr_in serv_addr{};
   if ((server_sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
@@ -31,7 +31,7 @@ bool send_packet_tcp(SignedProtoMessage& msg, const std::shared_ptr<IPAddr>& ip_
   }
 
   msg.set_ttl(msg.ttl() - 1); // decrease 1 to ttl
-
+  msg.set_prev_jump_port(machine_port);
   uint32_t proto_size = msg.ByteSizeLong();
   auto raw_proto = malloc(proto_size);
   msg.SerializeToArray(raw_proto,proto_size);

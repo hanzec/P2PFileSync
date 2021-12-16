@@ -9,7 +9,7 @@
 
 namespace P2PFileSync::Task {
 //TODO need document
-bool send_packet_tcp(SignedProtoMessage& msg, const std::shared_ptr<IPAddr>& ip_addr);
+bool send_packet_tcp(uint16_t machine_port,SignedProtoMessage& msg, const std::shared_ptr<IPAddr>& ip_addr);
 }
 
 #endif  // P2P_FILE_SYNC_TASKS_H

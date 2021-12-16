@@ -117,6 +117,7 @@ void ManagementInterface::accept_handler(evutil_socket_t fd, short event, void *
     VLOG(3) << "Handle incoming local management connection for fd:[" << fd << "]";
   }
 
+  // todo bug here, mutiple connection will segment fault
   // dispatch task to new thread
   get()->_executor_container_running_flag[new_fd] = true;
   get()->_thread_management_container.emplace(

@@ -107,7 +107,7 @@ class EXPORT_FUNC DeviceContext {
    *  1. JWT renew in not implentmented, currently server are setting expire
    *     date as 1 year after to avoid problem
    */
-  DeviceContext(const this_is_private&, std::string device_id, std::string client_token,
+  DeviceContext(const this_is_private&, const std::shared_ptr<DeviceConfiguration>& dev_conf,
                 std::string& server_address, std::filesystem::path& conf,
                 std::filesystem::path& client_cert_path);
 

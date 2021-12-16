@@ -94,9 +94,26 @@ std::shared_ptr<DeviceContext> ServerContext::get_dev_ctx() noexcept {
       LOG(INFO) << "Device is not registered, generating configuration...";
       conf = register_client();
     }
-    _instance->_device_ctx_instance = DeviceContext::create(
-        conf->device_id(), conf->jwt_key(), _instance->_server_address,
-        _instance->_configuration_path, _instance->_client_certificate_path);
+
+    // todo update remote ip address changed if needed
+//    // check if ip address is valid
+//    bool is_valid = false;
+//    std::vector<std::string> changed_ip;
+//    auto conf_ip = conf->device_ip();
+//    for (auto &ip : IPAddressUtils::getIPAddresses()) {
+//      if (ip.first == _instance->_p2p_listen_interface) {
+//        bool match = false;
+//        for(auto &ip_addr : conf_ip) {
+//          if(ip_addr.ip_address() == ip.second) {
+//            match = true;
+//          }
+//        }
+//      }
+//    }
+
+    _instance->_device_ctx_instance =
+        DeviceContext::create(conf, _instance->_server_address, _instance->_configuration_path,
+                              _instance->_client_certificate_path);
     return _instance->_device_ctx_instance;
   } else {
     VLOG(3) << "DeviceContext already initialized, returning...";

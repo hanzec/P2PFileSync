@@ -23,7 +23,6 @@
 #include <vector>
 
 #include "../export.h"
-
 namespace P2PFileSync::ServerKit {
 /**
  * @brief base model of request/response model which used in server
@@ -84,10 +83,6 @@ class IJsonModel {
     rapidjson::FileReadStream is(fp, readBuffer.begin(), readBuffer.size());
 
     root.ParseStream(is);
-  }
-
-  ~IJsonModel() {
-    if (json_buf) free(json_buf);
   }
 
   /**
@@ -153,6 +148,8 @@ class IJsonModel {
     }
   }
 
+  // todo, an generate get method for any type
+
   /**
    * @brief Get the value object
    * @note by defult if key is not exist then this fuction will return nullptr
@@ -165,24 +162,40 @@ class IJsonModel {
   template <typename T>
   T get_value(const char* key) const {
     if (_response_flag ? root["responseBody"].HasMember(key) : root.HasMember(key)) {
+      auto& node = _response_flag ? root["responseBody"][key] : root[key];
+
       if constexpr (std::is_arithmetic<T>::value) {
-        if (!_response_flag) {
-          return root[key].Get<T>();
-        } else {
-          return root["responseBody"][key].Get<T>();
+        return node.Get<T>();
+      } else if constexpr (std::is_same<T, std::string>::value) {
+        return std::string(node.GetString());
+      } else if constexpr (std::is_same<T, std::vector<T>>::value) {
+        T ret;
+        for (auto const& in : node.GetArray()) {
+          // skip if current node is a list
+          if (in.IsArray()) break;
+
+          // add key and values to return
+          if constexpr (std::is_arithmetic<T>::value) {
+            ret.emplace_back(in.Get<T>());
+          } else {
+            ret.emplace_back(in.GetString());
+          }
         }
-      } else {
-        if (!_response_flag) {
-          return root[key].GetString();
-        } else {
-          return std::string(root["responseBody"][key].GetString());
-        }
+        return ret;
+      } else{
+        LOG(ERROR) << "unsupported type";
+        throw std::exception();
       }
     } else {
       if constexpr (std::is_arithmetic<T>::value) {
         return 0;
+      } else if constexpr (std::is_same<T, std::vector<T>>::value) {
+        return {};
+      } else if constexpr (std::is_same<T, std::string>::value) {
+        return std::string();
       } else {
-        return std::string("");
+        LOG(ERROR) << "unsupported type";
+        throw std::exception();
       }
     }
   }
@@ -198,15 +211,14 @@ class IJsonModel {
    */
   template <typename T>
   std::map<std::string, T> get_map(const char* key) {
-    auto new_key = std::string(key);
     std::map<std::string, T> ret;
     if (_response_flag ? root["responseBody"].HasMember(key) : root.HasMember(key)) {
       auto& node = _response_flag ? root["responseBody"][key] : root[key];
       for (auto itr = node.MemberBegin(); itr != node.MemberEnd(); ++itr) {
         // skip if current node is a list
         if (itr->value.IsArray() || itr->value.IsObject()) {
-          VLOG(3) << "skip array node: " << itr->name.GetString() << " with type: "
-                  << itr->value.GetType();
+          VLOG(3) << "skip array node: " << itr->name.GetString()
+                  << " with type: " << itr->value.GetType();
           break;
         };
 
@@ -220,41 +232,6 @@ class IJsonModel {
       return ret;
     } else {
       LOG(WARNING) << "key [" << key << "] not found!";
-      return {};
-    }
-  }
-
-  /**
-   * @brief Get the list of value
-   * @note by default if the key is not exist then will return an empty vector
-   * contains nothing
-   * @note this function will skip any sub-nodes with array-like type(map or array)
-   * @tparam T the datatype of vector
-   * @param key key of the array
-   * @return std::vector<T> vector of list value
-   */
-  template <typename T>
-  std::vector<T> get_array(const char* key) {
-    std::vector<T> ret;
-    auto& root_node = root["responseBody"];
-
-    if (!_response_flag) {
-      auto& rootNode = root;
-    }
-
-    if (root_node.HasMember(key)) {
-      for (auto const& in : root_node[key].GetArray()) {
-        // skip if current node is a list
-        if (in.IsArray()) break;
-
-        // add key and values to return
-        if (!std::is_same_v<T, std::string>) {
-          ret.emplace_back(in.Get<T>());
-        } else {
-          ret.emplace_back(in.GetString());
-        }
-      }
-    } else {
       return {};
     }
   }
@@ -286,7 +263,16 @@ class IJsonModel {
 
     // adding variables to json
     for (auto item : array) {
-      json_array.PushBack(item, root.GetAllocator());
+      if constexpr (std::is_arithmetic<T>::value) {
+        json_array.PushBack(item, root.GetAllocator());
+      } else {
+        // handle_difficult c++ std::string
+        auto new_value = std::string(item);
+        rapidjson::Value string_value(rapidjson::kStringType);
+        json_array.PushBack(
+            string_value.SetString(new_value.c_str(), new_value.size(), root.GetAllocator()),
+            root.GetAllocator());
+      }
     }
 
     // add array to document

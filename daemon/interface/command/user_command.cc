@@ -56,7 +56,7 @@ class UserCommand : public AutoRegCommand<UserCommand> {
             << group.second.first << std::setw(20) << group.second.second << std::endl;
       }
 
-    } else if (args[0] == "LOGOUT") {
+    } else if (args[0] == "LOGOUT") { // todo bug here, the logout will hang the program
       if (args.size() != 1) {
         out << "Usage: USER LOGOUT";
         return;

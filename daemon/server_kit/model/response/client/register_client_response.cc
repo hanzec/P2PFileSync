@@ -23,6 +23,12 @@ std::string RegisterClientResponse::get_enable_url() const {
   return get_value<std::string>("enable_url");
 }
 
+
+std::vector<std::string> RegisterClientResponse::ip_address() const {
+  return get_value<std::vector<std::string>>("ip_address");
+}
+
+
 std::string RegisterClientResponse::jwt_key() const {
   return get_value<std::string>("login_token");
 }

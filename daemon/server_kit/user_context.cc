@@ -43,6 +43,7 @@ bool UserContext::login(const std::string& email, const std::string& password) {
   }
 
   try {
+    // todo detailed error handling here
     UserLoginResponse response(static_cast<char*>(ret));
     if (response.success() && response.user_email() == email) {
       _login = true;

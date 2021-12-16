@@ -16,13 +16,13 @@ class PeerCommand : public AutoRegCommand<PeerCommand> {
 
     auto p2p_server_ctx = P2PServerContext::get_instance();
 
-    out << std::setw(15) << std::left << "Peer ID" << " "
-        << std::setw(15) << std::left << "Next Jump Node" << " "
+    out << std::setw(37) << std::left << "Peer ID" << " "
+        << std::setw(20) << std::left << "Next Jump Node" << " "
         << std::setw(15) << std::left << "TTL" << std::endl;
 
     for (auto& peer : p2p_server_ctx->get_online_peers()){
-      out << std::setw(15) << std::left << peer.first << " "
-          << std::setw(15) << std::left << peer.second.first << " "
+      out << std::setw(37) << std::left << peer.first << " "
+          << std::setw(20) << std::left << *peer.second.first << " "
           << std::setw(15) << std::left << peer.second.second << std::endl;
     }
   };

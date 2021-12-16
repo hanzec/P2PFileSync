@@ -20,8 +20,8 @@ ProtoHelloMessage P2PServerContext::construct_payload_internal() {
 
 template <>
 bool P2PServerContext::handle_complicated(const std::shared_ptr<P2PServerContext>& server,
-                                          const ProtoHelloMessage& message,
-                                          struct sockaddr_in* incoming_connection,
+                                          const ProtoHelloMessage& message, uint16_t prev_port,
+                                          const sockaddr_in * client_address,
                                           uint32_t ttl) {
   auto session_ret = server->_peer_pool.get_instance(message.sender_id());
 
@@ -51,13 +51,17 @@ bool P2PServerContext::handle_complicated(const std::shared_ptr<P2PServerContext
   }
 
   // update routing table if possible
-  IPAddr dest = IPAddr(incoming_connection, message.port());
+  auto new_ip = std::make_shared<IPAddr>(client_address, prev_port);
+  auto dest = server->_peer_pool.get_instance(message.sender_id());
   if (server->can_delivered(message.sender_id())) {
-    if (server->try_update_table(message.sender_id(), dest, ttl)) {
+    if (server->try_update_table(message.sender_id(), new_ip, ttl)) {
       LOG(INFO) << "route to peer [" << message.sender_id() << "] is update! ";
     }
+
+    // if fist time received from this peer, send hello message to it
+    server->send_pkg(server->package_pkg<ProtoHelloMessage>(server->construct_payload<ProtoHelloMessage>(), message.sender_id()), new_ip);
   } else {
-    server->add_new_route(message.sender_id(), dest, ttl);
+    server->add_new_route(message.sender_id(), new_ip, ttl);
     LOG(INFO) << "adding new route of peer [" << message.sender_id() << "] to routing table! ";
   }
   return true;

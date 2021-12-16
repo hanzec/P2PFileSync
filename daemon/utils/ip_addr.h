@@ -55,8 +55,8 @@ class IPAddr {
   IPAddr(const IPAddr &src)
       : _valid(src.valid()),
         _port_number(src.port()),
-        _ip_addr(src._ip_addr),
-        _ip_addr_str(src._ip_addr_str) {};
+        _ip_addr_str(src._ip_addr_str),
+        _ip_addr(src._ip_addr) {};
 
   // TODO move constructor here
 

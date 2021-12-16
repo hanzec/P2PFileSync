@@ -89,7 +89,9 @@ bool P2PServerContext::init(const std::shared_ptr<Config> &config,
     }
 
     // bind the socket to address
-    struct sockaddr_in adr_s {0};
+    struct sockaddr_in adr_s {
+      0
+    };
     adr_s.sin_family = AF_INET;
     adr_s.sin_port = htons(config->p2p_port());
 
@@ -115,9 +117,10 @@ bool P2PServerContext::init(const std::shared_ptr<Config> &config,
     }
 
     // listen this address
-    if(0 > listen(socket_fd, 20)) {
+    if (0 > listen(socket_fd, 20)) {
 #ifdef UNDER_UNIX
-      LOG(ERROR) << "cannot listen on socket, errno:" << errno << "(" << strerror(errno) << ")";
+      LOG(ERROR) << "cannot listen on socket, errno:" << errno << "(" << strerror(errno)
+                 << ")";
 #else
       LOG(ERROR) << "cannot listen on socket";
 #endif
@@ -151,7 +154,7 @@ bool P2PServerContext::init(const std::shared_ptr<Config> &config,
   // creating instance
   _device_context = device_context;
   _instance = create(config->packet_cache_size(), thread_pool, client_cert, client_priv_key,
-                     sign_chain);
+                     config->p2p_port(), sign_chain);
 
   VLOG(3) << "P2PServerContext init success";
   return _instance->start(socket_fd);
@@ -159,13 +162,14 @@ bool P2PServerContext::init(const std::shared_ptr<Config> &config,
 
 P2PServerContext::P2PServerContext(const this_is_private &, uint32_t packet_cache_size,
                                    std::shared_ptr<ThreadPool> &thread_pool, X509 *cert,
-                                   EVP_PKEY *private_key,
+                                   EVP_PKEY *private_key, uint16_t port,
                                    STACK_OF(X509) * ca)
     : FIFOCache(packet_cache_size),  // initial packet cache
+      _port(port),
       _client_cert(cert),
       _thread_pool(thread_pool),
       _x509_store(X509_STORE_new()),
-      _client_priv_key(private_key){
+      _client_priv_key(private_key) {
   LOG(INFO) << "Initialized instance of packet server";
 
   if (nullptr == (_event_base = event_base_new())) {
@@ -173,7 +177,7 @@ P2PServerContext::P2PServerContext(const this_is_private &, uint32_t packet_cach
   }
 
   // loading CA certificate
-  for(int i = 0; i < sk_X509_num(ca); i++) {
+  for (int i = 0; i < sk_X509_num(ca); i++) {
     X509 *x509 = sk_X509_value(ca, i);
     X509_STORE_add_cert(_x509_store, x509);
   }
@@ -185,11 +189,11 @@ P2PServerContext::P2PServerContext(const this_is_private &, uint32_t packet_cach
 
   // openssl related structure
   X509_STORE_set_flags(_x509_store, 0);
-  if(X509_STORE_CTX_init(_x509_store_ctx, _x509_store, cert, ca) != 1) {
+  if (X509_STORE_CTX_init(_x509_store_ctx, _x509_store, cert, ca) != 1) {
     LOG(FATAL) << "cannot initialize x509 store context";
   }
 
-  if(X509_verify_cert(_x509_store_ctx) != 1) {
+  if (X509_verify_cert(_x509_store_ctx) != 1) {
     X509_STORE_CTX_free(_x509_store_ctx);
     LOG(FATAL) << "cannot verify client certificate";
   } else {
@@ -213,7 +217,9 @@ void P2PServerContext::listening_thread(int fd) {
 
 void P2PServerContext::libev_callback(evutil_socket_t fd, short event, void *arg) {
   int new_fd = 0;
-  struct sockaddr_in sin {0};
+  struct sockaddr_in sin {
+    0
+  };
   socklen_t size = sizeof(sin);
   if ((new_fd = accept(fd, (struct sockaddr *)&sin, (socklen_t *)&size)) < 0) {
     LOG(ERROR) << "Error when handling incoming connection";
@@ -257,6 +263,7 @@ void P2PServerContext::read_callback(struct bufferevent *bev, void *sin) {
   // abandon all packet with ttl == 0
   if (signed_msg.ttl() == 0) return;
 
+  // todo update rounting table if hello message
   // avoid the handle_difficult one packet twice
   proto_msg.ParseFromString(signed_msg.signed_payload());
   if (proto_server->is_cached(proto_msg.packet_id())) {
@@ -264,12 +271,13 @@ void P2PServerContext::read_callback(struct bufferevent *bev, void *sin) {
     return;
   }
 
+  // todo need to rewrite the packet redirect part
   // check if the package's final deliver is current peer or not
   auto receiver = proto_msg.receiver_id();
   if (proto_server->_device_context->device_id() != receiver) {
     // redirect packet if ttl > 1 and have avaliable path
     if (signed_msg.ttl() > 1 && proto_server->can_delivered(receiver)) {
-      proto_server->_thread_pool->submit(Task::send_packet_tcp, signed_msg,
+      proto_server->_thread_pool->submit(Task::send_packet_tcp, _instance->_port, signed_msg,
                                          proto_server->get_next_peer(receiver));
     } else {
       VLOG(3) << "cannot found desnation for receiver [" << proto_msg.receiver_id() << "]";
@@ -283,9 +291,8 @@ void P2PServerContext::read_callback(struct bufferevent *bev, void *sin) {
       // only hello message won't include signature in outside since handshake
       ProtoHelloMessage msg;
       proto_msg.payload().UnpackTo(&msg);
-      proto_server->_thread_pool->submit(
-          handle_complicated<ProtoHelloMessage>, get_instance(), msg,
-          incoming_connection, signed_msg.ttl());
+      proto_server->_thread_pool->submit(handle_complicated<ProtoHelloMessage>, get_instance(),msg,signed_msg.prev_jump_port(),
+                                         incoming_connection, signed_msg.ttl());
     } break;
     case ProtoPayloadType::PING:
 
@@ -352,11 +359,10 @@ std::future<bool> P2PServerContext::send_pkg(const ProtoMessage &data,
     return std::async(std::launch::deferred, []() { return false; });
   }
 
-
-//  if (0 >= EVP_DigestSign(_evp_md_ctx, digest, &digest_len, (unsigned char *)raw_packet,
-//                          raw_packet_size)) {
-//    LOG(ERROR) << "sign failed";
-//  }
+  //  if (0 >= EVP_DigestSign(_evp_md_ctx, digest, &digest_len, (unsigned char *)raw_packet,
+  //                          raw_packet_size)) {
+  //    LOG(ERROR) << "sign failed";
+  //  }
 
   // prepare final message
   SignedProtoMessage signed_msg;
@@ -369,7 +375,7 @@ std::future<bool> P2PServerContext::send_pkg(const ProtoMessage &data,
 
   free(raw_packet);
   VLOG(3) << "send packet with id [" << data.packet_id() << "] to [" << *peer << "]";
-  return _thread_pool->submit(Task::send_packet_tcp, signed_msg, peer);
+  return _thread_pool->submit(Task::send_packet_tcp, _port, signed_msg, peer);
 }
 
 template <typename T>
@@ -387,7 +393,7 @@ ProtoMessage P2PServerContext::package_pkg(const T &data, const std::string &rec
     ret.set_packet_type(ProtoPayloadType::HELLO);
   }
 
-  auto packet_id= UUID::new_uuid();
+  auto packet_id = UUID::new_uuid();
   ret.set_packet_id(packet_id);
   ret.mutable_payload()->PackFrom(data);
   ret.set_allocated_timestamp(timestamp);  // set allocated wil take pointer's ownership

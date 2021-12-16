@@ -55,7 +55,7 @@ class P2PServerContext : private RoutingTable<std::string>,
    */
   P2PServerContext(const this_is_private&, uint32_t packet_cache_size,
                    std::shared_ptr<ThreadPool>& thread_pool, X509* cert, EVP_PKEY* private_key,
-                   STACK_OF(X509) * ca);
+                   uint16_t port, STACK_OF(X509) * ca);
 
   /**
    * @brief Get the instance of P2PServerContext, nullptr if init() not called
@@ -103,8 +103,8 @@ class P2PServerContext : private RoutingTable<std::string>,
   ProtoMessage package_pkg(const T& data, const std::string& receiver);
 
   // TODO need document
-  template <typename T,typename... Args>
-  T construct_payload(Args &&...args){
+  template <typename T, typename... Args>
+  T construct_payload(Args&&... args) {
     return construct_payload_internal<T>(std::forward<Args>(args)...);
   }
 
@@ -199,6 +199,7 @@ class P2PServerContext : private RoutingTable<std::string>,
   };
 
  private:
+//todo use interal call to warp the expose method
   template <typename T>
   static bool handle_simple(std::shared_ptr<P2PServerContext>& server, const T& message) {
     LOG(ERROR) << "simple package handler for message [" << typeid(T).name()
@@ -208,8 +209,8 @@ class P2PServerContext : private RoutingTable<std::string>,
 
   template <typename T>
   static bool handle_complicated(const std::shared_ptr<P2PServerContext>& server,
-                                 const T& message, struct sockaddr_in* incoming_connection,
-                                 uint32_t ttl) {
+                                 const T& message,uint16_t prev_port,
+                                 const sockaddr_in * client_address, uint32_t ttl) {
     LOG(ERROR) << "complicated package handler for message [" << typeid(T).name()
                << "] not implemented!";
     return false;
@@ -224,7 +225,7 @@ class P2PServerContext : private RoutingTable<std::string>,
   /**
    * Client Certificate //TODO delete those when deconstruct avoid leaking
    */
-  X509* _client_cert; // todo need free
+  X509* _client_cert;  // todo need free
   X509_STORE* _x509_store;
   EVP_MD_CTX* _evp_md_ctx = EVP_MD_CTX_new();
   EVP_PKEY* _client_priv_key = nullptr;
@@ -233,6 +234,7 @@ class P2PServerContext : private RoutingTable<std::string>,
    * Instance private variables
    */
   const PKCS12* _certificate{};
+  const uint16_t _port;
   struct event_base* _event_base;
   std::unique_ptr<std::thread> _thread_ref{nullptr};
   InstancePool<std::string, PeerSession> _peer_pool;
