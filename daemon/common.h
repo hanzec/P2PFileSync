@@ -27,16 +27,16 @@ class Config {
         _mount_point("/mnt/p2pfs"),
         _config_folder("/tmp/p2p_sync"),
         _manage_sock_url((_config_folder / "sync.sock").string()),
-        _client_conf_path(_config_folder / "client.cfg"),
-        _client_cert_path(_config_folder / "client.p12"),
-        _server_cert_path(_config_folder / "client_sign_root.crt"){};
+        _client_configuration_path(_config_folder / "client.cfg"),
+        _client_certificate_path(_config_folder / "client.p12"),
+        _server_certificate_path(_config_folder / "client_sign_root.crt"){};
 
   Config(uint8_t worker_thread_num, uint32_t packet_cached_size,
          std::string management_server_url, uint16_t p2p_port, std::string p2p_listen_address,
          std::string p2p_listen_interface, const std::string& mount_point,
          const std::string& config_folder, std::string  manage_sock_file,
-         const std::string& client_conf_path, const std::string& client_cert_path,
-         const std::string& server_cert_path)
+         const std::string& client_configuration_path, const std::string& client_certificate_path,
+         const std::string& server_certificate_path)
       : _worker_thread_num(worker_thread_num),
         _packet_cached_size(packet_cached_size),
         _management_server_url(std::move(management_server_url)),
@@ -46,9 +46,9 @@ class Config {
         _mount_point(mount_point),
         _config_folder(config_folder),
         _manage_sock_url(std::move(manage_sock_file)),
-        _client_conf_path(client_conf_path),
-        _client_cert_path(client_cert_path),
-        _server_cert_path(server_cert_path){};
+        _client_configuration_path(client_configuration_path),
+        _client_certificate_path(client_certificate_path),
+        _server_certificate_path(server_certificate_path){};
 
   [[nodiscard]] uint16_t p2p_port() const { return _p2p_port; }
 
@@ -63,15 +63,15 @@ class Config {
   [[nodiscard]] std::string manage_sock() const { return _manage_sock_url; }
 
   [[nodiscard]] std::filesystem::path client_certificate_path() const {
-    return _client_cert_path;
+    return _client_certificate_path;
   }
 
   [[nodiscard]] std::filesystem::path server_certificate_path() const {
-    return _server_cert_path;
+    return _server_certificate_path;
   }
 
   [[nodiscard]] std::filesystem::path client_configuration_path() const {
-    return _client_conf_path;
+    return _client_configuration_path;
   }
 
   [[nodiscard]] uint16_t worker_thread_num() const { return _worker_thread_num; }
@@ -101,9 +101,9 @@ class Config {
   const std::filesystem::path _mount_point;
   const std::filesystem::path _config_folder;
   const std::string _manage_sock_url;
-  const std::filesystem::path _client_conf_path;
-  const std::filesystem::path _client_cert_path;
-  const std::filesystem::path _server_cert_path;
+  const std::filesystem::path _client_certificate_path;
+  const std::filesystem::path _server_certificate_path;
+  const std::filesystem::path _client_configuration_path;
 };
 }  // namespace P2PFileSync
 

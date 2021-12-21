@@ -14,7 +14,8 @@
 #include <string>
 
 #include "p2p_interface.h"
-#include "packet/tasks.h"
+#include "packet/packet_tasks.h"
+#include "packet/packet_utils.h"
 #include "utils/data_struct/fifo_cache.h"
 #include "utils/data_struct/thread_pool.h"
 #include "utils/ip_addr.h"
@@ -31,15 +32,6 @@ void P2PServerContext::block_util_server_stop() {
   }
 }
 
-// get instance of P2PServerContext object
-std::shared_ptr<P2PServerContext> P2PServerContext::get_instance() {
-  if (_instance == nullptr) {
-    return nullptr;
-  } else {
-    return _instance;
-  }
-};
-
 const std::unordered_map<std::string, std::pair<std::shared_ptr<IPAddr>, uint32_t>>
     &P2PServerContext::get_online_peers() {
   return get_routing_table();
@@ -47,7 +39,7 @@ const std::unordered_map<std::string, std::pair<std::shared_ptr<IPAddr>, uint32_
 
 bool P2PServerContext::start(int fd) {
   if (_thread_ref == nullptr) {
-    auto hello_message = construct_payload<ProtoHelloMessage>();
+    auto hello_message = PacketUtils<ProtoHelloMessage>::construct(_client_cert);
     _thread_ref = std::make_unique<std::thread>(listening_thread, fd);
     auto peer_list_resp = _device_context->peer_list();
     for (const auto &ip : peer_list_resp->peer_list()) {
@@ -66,12 +58,12 @@ bool P2PServerContext::init(const std::shared_ptr<Config> &config,
                             std::shared_ptr<ThreadPool> thread_pool,
                             const std::shared_ptr<ServerKit::DeviceContext> &device_context) {
   // prevent init twice
-  if (_instance != nullptr) return false;
+  if (get() != nullptr) return false;
 
   // will constantly block until client is activated
   while (!device_context->is_enabled()) {
-    LOG(ERROR) << "current device is not enabled, will check activate status in 1 minutes "
-                  "later";
+    LOG(INFO) << "current device is not enabled, will check activate status in 1 minutes "
+                 "later";
     sleep(60);  // wait for 1 minutes and check activation status again
   }
 
@@ -153,11 +145,11 @@ bool P2PServerContext::init(const std::shared_ptr<Config> &config,
 
   // creating instance
   _device_context = device_context;
-  _instance = create(config->packet_cache_size(), thread_pool, client_cert, client_priv_key,
-                     config->p2p_port(), sign_chain);
+  auto construct_obj = create(config->packet_cache_size(), thread_pool, client_cert,
+                              client_priv_key, config->p2p_port(), sign_chain);
 
   VLOG(3) << "P2PServerContext init success";
-  return _instance->start(socket_fd);
+  return construct_obj->start(socket_fd);
 };
 
 P2PServerContext::P2PServerContext(const this_is_private &, uint32_t packet_cache_size,
@@ -203,10 +195,14 @@ P2PServerContext::P2PServerContext(const this_is_private &, uint32_t packet_cach
 };
 
 void P2PServerContext::listening_thread(int fd) {
-  auto proto = get_instance();
+  auto proto = get();
 
   // initialized base_event
-  if (nullptr == proto->_event_base) LOG(FATAL) << "libevent base event create failed!";
+  if (nullptr == proto->_event_base) {
+    close(fd);
+    LOG(ERROR) << "libevent base event create failed! Listening thread will exit";
+    return;
+  }
 
   auto *ev = event_new(proto->event_base(), fd, EV_READ | EV_PERSIST, libev_callback, nullptr);
   event_add(ev, nullptr);
@@ -228,14 +224,13 @@ void P2PServerContext::libev_callback(evutil_socket_t fd, short event, void *arg
     VLOG(3) << "Handle incoming connection for fd:[" << fd << "]";
   }
 
-  auto *bev =
-      bufferevent_socket_new(get_instance()->event_base(), new_fd, BEV_OPT_CLOSE_ON_FREE);
+  auto *bev = bufferevent_socket_new(get()->event_base(), new_fd, BEV_OPT_CLOSE_ON_FREE);
   bufferevent_setcb(bev, read_callback, nullptr, event_callback, &sin);
   bufferevent_enable(bev, EV_READ | EV_WRITE | EV_PERSIST);
 }
 
 void P2PServerContext::read_callback(struct bufferevent *bev, void *sin) {
-  auto proto_server = get_instance();
+  auto proto_server = get();
   struct evbuffer *buf = bufferevent_get_input(bev);
   auto incoming_connection = static_cast<struct sockaddr_in *>(sin);
 
@@ -277,7 +272,7 @@ void P2PServerContext::read_callback(struct bufferevent *bev, void *sin) {
   if (proto_server->_device_context->device_id() != receiver) {
     // redirect packet if ttl > 1 and have avaliable path
     if (signed_msg.ttl() > 1 && proto_server->can_delivered(receiver)) {
-      proto_server->_thread_pool->submit(Task::send_packet_tcp, _instance->_port, signed_msg,
+      proto_server->_thread_pool->submit(Task::send_packet_tcp, get()->_port, signed_msg,
                                          proto_server->get_next_peer(receiver));
     } else {
       VLOG(3) << "cannot found desnation for receiver [" << proto_msg.receiver_id() << "]";
@@ -285,14 +280,18 @@ void P2PServerContext::read_callback(struct bufferevent *bev, void *sin) {
     }
   }
 
-  // handle packet by packet type
+  // hello message will be special treat since will need hello message to construct          
   switch (proto_msg.packet_type()) {
     case ProtoPayloadType::HELLO: {
       // only hello message won't include signature in outside since handshake
       ProtoHelloMessage msg;
       proto_msg.payload().UnpackTo(&msg);
-      proto_server->_thread_pool->submit(handle_complicated<ProtoHelloMessage>, get_instance(),msg,signed_msg.prev_jump_port(),
-                                         incoming_connection, signed_msg.ttl());
+      auto task = std::make_shared<std::packaged_task<void()>>(
+          [proto_server, msg, signed_msg, incoming_connection]() {
+            PacketUtils<ProtoHelloMessage>::handle(msg, signed_msg.prev_jump_port(),
+                                                   incoming_connection, signed_msg.ttl());
+          });
+      proto_server->_thread_pool->submit(task);
     } break;
     case ProtoPayloadType::PING:
 

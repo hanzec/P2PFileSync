@@ -17,35 +17,27 @@
 #include <unordered_map>
 #include <utility>
 
-#include "interface/command_executor.h"
+#include "interface/command_factory.h"
+#include "interface/connection_container.h"
+#include "interface/utils/command_parser.h"
 #include "utils/log.h"
-#include "utils/parsing.h"
 
 namespace P2PFileSync {
-::std::shared_ptr<ManagementInterface> ManagementInterface::init(const std::string &socket,
-                                                                 int listen_type) {
-  if (_instance == nullptr) {
-    return _instance = create(socket, listen_type);
-  } else {
-    return _instance;
-  }
-}
-
 ManagementInterface::ManagementInterface(const ManagementInterface::this_is_private &,
                                          const std::string &socket_addr, int listen_type,
-                                         int timeout)
-    : _timeout(timeout) {
+                                         int timeout) {
   VLOG(INFO) << "starting manage thread listen on [" << socket_addr << "]";
 
   if (socket_addr.length() > 108) {
     LOG(FATAL) << "socket file path cannot be longer than 108 character";
   }
 
+  int socket_fd = -1;
   // set up file descriptor
-  if ((_listen_socket = socket(listen_type, SOCK_STREAM, 0)) == -1) {
+  if ((socket_fd = socket(listen_type, SOCK_STREAM, 0)) == -1) {
     LOG(FATAL) << "can not create socket: " << strerror(errno);
   } else {
-    VLOG(3) << "create socket success, socket fd: " << _listen_socket;
+    VLOG(3) << "create socket success, socket fd: " << socket_fd;
   }
 
   /*
@@ -75,33 +67,44 @@ ManagementInterface::ManagementInterface(const ManagementInterface::this_is_priv
   }
 
   // bind socket between socket and file descriptor
-  if (bind(_listen_socket, (struct sockaddr *)&addr, actual_size) == -1) {
+  if (bind(socket_fd, (struct sockaddr *)&addr, actual_size) == -1) {
     LOG(FATAL) << "cannot bind open socket to [" << socket_addr << "]: " << strerror(errno);
   } else {
     VLOG(3) << "bind socket to [" << socket_addr << "] success";
   }
 
   // connect
-  _manage_interface_thread = std::thread(&ManagementInterface::manage_interface_thread, this);
+  _manage_interface_thread =
+      std::thread(&ManagementInterface::manage_interface_thread, socket_fd);
 }
-void ManagementInterface::manage_interface_thread() const {
+
+void ManagementInterface::join() { _manage_interface_thread.join(); }
+
+void ManagementInterface::manage_interface_thread(int listen_fd) {
   // connect
-  if (listen(_listen_socket, 10) < 0) { /* tell kernel we're a server */
-    LOG(FATAL) << "cannot set socket [" << _listen_socket << "] status to listen";
+  if (listen(listen_fd, 10) < 0) { /* tell kernel we're a server */
+    LOG(FATAL) << "cannot set socket [" << listen_fd << "] status to listen";
   }
 
   // libevent
-  auto *base = event_base_new();
+  get()->_event_base = event_base_new();
 
-  if (base == nullptr) LOG(FATAL) << "libevent base event create failed!";
+  if (get()->_event_base == nullptr) LOG(FATAL) << "libevent base event create failed!";
 
-  auto *listen_ev =
-      event_new(base, _listen_socket, EV_READ | EV_PERSIST, accept_handler, (void *)base);
+  auto *listen_ev = event_new(get()->_event_base, listen_fd, EV_READ | EV_PERSIST,
+                              accept_handler, (void *)get()->_event_base);
 
   event_add(listen_ev, nullptr);
-  event_base_dispatch(base);
+  event_base_dispatch(get()->_event_base);  // should be blocked here until exit
+
+  // clean up
   event_del(listen_ev);
-  event_base_free(base);
+  close(listen_fd);
+}
+
+void ManagementInterface::schedule_destroy(int fd) {
+  std::unique_lock<std::shared_mutex> lock(_mutex);
+  _destroy_list.push_back(fd);
 }
 
 void ManagementInterface::accept_handler(evutil_socket_t fd, short event, void *arg) {
@@ -117,84 +120,33 @@ void ManagementInterface::accept_handler(evutil_socket_t fd, short event, void *
     VLOG(3) << "Handle incoming local management connection for fd:[" << fd << "]";
   }
 
-  // todo bug here, mutiple connection will segment fault
   // dispatch task to new thread
-  get()->_executor_container_running_flag[new_fd] = true;
-  get()->_thread_management_container.emplace(
-      new_fd, std::move(std::thread(&ManagementInterface::executor_container, new_fd,
-                                    get()->_timeout)));
+  auto new_container = std::make_unique<ConnectionContainer>(
+      new_fd, [new_fd]() { get()->schedule_destroy(new_fd); });
 
-  VLOG(3) << "new thread for fd:[" << new_fd << "] is created";
+  // clean up old connection (since fd will not be reused)
+  auto old_container = get()->_thread_management_container.find(new_fd);
+  if (old_container != get()->_thread_management_container.end()) {
+    get()->_thread_management_container.erase(old_container);
+    VLOG(3) << "clean up old connection for fd:[" << new_fd << "]";
+  }
+
+  get()->_thread_management_container.emplace(new_fd, std::move(new_container));
+
+  VLOG(3) << "new thread for fd:[" << new_fd << "] is created from [" << sin.sun_path << "]";
 }
-void ManagementInterface::executor_container(int new_fd, int timeout) {
-  CommandExecutor ce;
-  std::ostringstream command_buf;
-  auto &flag = get()->_executor_container_running_flag[new_fd];
+ManagementInterface::~ManagementInterface() {
+  struct timeval delay = {10, 0};
+  event_base_dispatch(_event_base);
+  event_base_loopexit(_event_base, &delay);
+  event_base_free(get()->_event_base);
+  LOG(INFO) << "event base loop exit, with delay: " << delay.tv_sec << "s " << delay.tv_usec
+            << "us";
 
-  // setup timeout
-#if defined(__linux__)
-  struct timeval tv {};
-  tv.tv_sec = timeout;
-  tv.tv_usec = 0;
-  if (setsockopt(new_fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0) {
-    LOG(ERROR) << "setsockopt failed";
+  // clean up old connection
+  for (auto &it : _thread_management_container) {
+    LOG(INFO) << "clean up old connection for fd:[" << it.first << "]";
+    _thread_management_container.erase(it.first);
   }
-#else
-  DWORD timeout = timeout_in_seconds * 1000;
-  if (setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, (const char *)&timeout, sizeof timeout) <
-      0) {
-    LOG(ERROR) << "setsockopt failed";
-  }
-#endif
-
-  // main loop
-  while (flag) {
-    write(new_fd, ">",1);
-
-    // reading command from socket
-    char buf;
-    size_t nread;
-    while ((nread = read(new_fd, &buf, 1)) > 0) {
-      command_buf << buf;
-      if (buf == '\n') break;
-    }
-
-    // error detection
-    if (nread == 0) {
-      LOG(INFO) << "connection closed by peer";
-      break;
-    } else if (nread == -1) {
-      LOG(ERROR) << "Error when reading from socket";
-      break;
-    }
-
-    if(!command_buf.str().empty()){
-      // parsing command
-      COMMAND command;
-      auto parse_ret = P2PFileSync::parsing_command(command_buf.str(), command);
-
-      // check if parsing is failed
-      if (!parse_ret.ok()) {
-        auto err_msg = parse_ret.message();
-        write(new_fd, err_msg.c_str(), err_msg.length());
-        VLOG(3) << "parsing command failed";
-      } else {
-        std::ostringstream os;
-        ce.exec(os, command.first, command.second);
-        write(new_fd, os.str().c_str(), os.str().length());
-        VLOG(3) << "executing command " << command.first << " success";
-      }
-    }
-    command_buf.str("");
-    command_buf.clear();
-  }
-
-  // close socket
-  close(new_fd);
-
-  // remove thread from container
-  // todo need to clean up thread
-  //  get()->_thread_management_container.erase(new_fd);
 }
-
 }  // namespace P2PFileSync

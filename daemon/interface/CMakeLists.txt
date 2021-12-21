@@ -2,16 +2,22 @@
 ## Commands ###################################################################
 ###############################################################################
 # commans sources
-file(GLOB COMMAND_SRCS command/*.cc)
+file(GLOB COMMAND_SRCS command/*_command.cc)
 target_sources(daemon PRIVATE ${COMMAND_SRCS})
+
+###############################################################################
+## Utils ###################################################################
+###############################################################################
+add_subdirectory(utils)
 
 ###############################################################################
 ## Sources ####################################################################
 ###############################################################################
+file(GLOB INTERFACE_HDRS ${CMAKE_CURRENT_LIST_DIR}/*.h)
+file(GLOB INTERFACE_SRCS ${CMAKE_CURRENT_LIST_DIR}/*.cc)
+
 # project sources
 target_sources(daemon
-    PRIVATE
-    ${COMMAND_SRCS}
-    "command_executor.cc" "command_executor.h"
-    "connection_session.cc" "connection_session.h"
-)
+        PRIVATE
+        ${COMMAND_SRCS}
+        ${INTERFACE_SRCS} ${INTERFACE_HDRS})

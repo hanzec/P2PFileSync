@@ -23,19 +23,15 @@
 #include "utils/data_struct/instance_pool.h"
 #include "utils/data_struct/routing_table.h"
 #include "utils/data_struct/thread_pool.h"
+#include "utils/singleton_helper.h"
 
 namespace P2PFileSync {
 
 using DeviceContextPtr = std::shared_ptr<ServerKit::DeviceContext>;
 
-class P2PServerContext : private RoutingTable<std::string>,
+class P2PServerContext : public Singleton<P2PServerContext>,
+                         private RoutingTable<std::string>,
                          private FIFOCache<std::basic_string<char>> {
- protected:
-  /**
-   * Blocker avoid call public constructor
-   */
-  struct this_is_private;
-
  public:
   /**
    * @brief Delete default constructor avoid construct without calling init()
@@ -56,16 +52,6 @@ class P2PServerContext : private RoutingTable<std::string>,
   P2PServerContext(const this_is_private&, uint32_t packet_cache_size,
                    std::shared_ptr<ThreadPool>& thread_pool, X509* cert, EVP_PKEY* private_key,
                    uint16_t port, STACK_OF(X509) * ca);
-
-  /**
-   * @brief Get the instance of P2PServerContext, nullptr if init() not called
-   *
-   * @note this function's return value is marked by nodiscard since suggest
-   * caller to check return instance reference is nullptr or not
-   * @return std::shared_ptr<P2PServerContext> reference of P2PServerContext,
-   * nullptr if init() not called
-   */
-  [[nodiscard]] static std::shared_ptr<P2PServerContext> get_instance();
 
   /**
    * @brief Initial function which will need to call only once, call mutiple
@@ -103,12 +89,6 @@ class P2PServerContext : private RoutingTable<std::string>,
   ProtoMessage package_pkg(const T& data, const std::string& receiver);
 
   // TODO need document
-  template <typename T, typename... Args>
-  T construct_payload(Args&&... args) {
-    return construct_payload_internal<T>(std::forward<Args>(args)...);
-  }
-
-  // TODO need document
   void block_util_server_stop();
 
   // TODO need document
@@ -116,31 +96,8 @@ class P2PServerContext : private RoutingTable<std::string>,
   get_online_peers();
 
  protected:
-  /**
-   * Blocker avoid call public constructor
-   */
-  struct this_is_private {
-    explicit this_is_private(int) {}
-  };
-
-  // todo need document
-  template <typename T>
-  T construct_payload_internal();
-
   // TODO need document
   bool start(int fd);
-
-  /**
-   *
-   * @tparam Args
-   * @param args
-   * @return
-   */
-  template <typename... Args>
-  static ::std::shared_ptr<P2PServerContext> create(Args&&... args) {
-    return ::std::make_shared<P2PServerContext>(this_is_private{0},
-                                                ::std::forward<Args>(args)...);
-  }
 
   /**
    * Peer session for storage all known peer with their public Key
@@ -198,28 +155,58 @@ class P2PServerContext : private RoutingTable<std::string>,
     EVP_MD_CTX* _evp_md_ctx = nullptr;
   };
 
- private:
-//todo use interal call to warp the expose method
-  template <typename T>
-  static bool handle_simple(std::shared_ptr<P2PServerContext>& server, const T& message) {
-    LOG(ERROR) << "simple package handler for message [" << typeid(T).name()
-               << "] not implemented!";
-    return false;
-  }
+  /*
+   * @brief Package utils to construct and handle the package
+   *
+   * @todo need change
+   */
+  template <class PacketType>
+  class PacketUtils {
+   public:
+    template <typename... Args>
+    static bool handle(Args&&... args) {
+      return handle_internal(std::forward<Args>(args)...);
+    }
 
-  template <typename T>
-  static bool handle_complicated(const std::shared_ptr<P2PServerContext>& server,
-                                 const T& message,uint16_t prev_port,
-                                 const sockaddr_in * client_address, uint32_t ttl) {
-    LOG(ERROR) << "complicated package handler for message [" << typeid(T).name()
-               << "] not implemented!";
-    return false;
+    template <typename... Args>
+    static PacketType construct(Args&&... args) {
+      return construct_internal(std::forward<Args>(args)...);
+    }
+
+   protected:
+    /**
+     * Proto Hello Message
+     */
+
+    /**
+     *
+     * @param cert
+     * @return
+     */
+    static PacketType construct_internal(X509* cert) noexcept;
+
+    /**
+     *
+     * @param message
+     * @param prev_port
+     * @param client_address
+     * @param ttl
+     * @return
+     */
+    static bool handle_internal(const ProtoHelloMessage& message, uint16_t prev_port,
+                                const sockaddr_in* client_address, uint32_t ttl) noexcept;
+  };
+
+ private:
+  // TODO need document
+  template <typename T, typename... Args>
+  static T construct_payload(Args&&... args) {
+    return PacketUtils<T>::construct(std::forward<Args>(args)...);
   }
 
   /**
    * Private instance
    */
-  inline static std::shared_ptr<P2PServerContext> _instance = nullptr;
   inline static std::shared_ptr<ServerKit::DeviceContext> _device_context = nullptr;
 
   /**

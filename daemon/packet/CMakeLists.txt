@@ -21,8 +21,7 @@ target_include_directories(daemon PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 ###############################################################################
 ## Message Handler ############################################################
 ###############################################################################
-file(GLOB MESSAGE_HANDLER_SRCS
-        ${CMAKE_CURRENT_LIST_DIR}/message/*.cc)
+file(GLOB MESSAGE_HANDLER_SRCS ${CMAKE_CURRENT_LIST_DIR}/message/*.cc)
 target_sources(daemon PRIVATE ${MESSAGE_HANDLER_SRCS})
 
 ###############################################################################
@@ -30,7 +29,8 @@ target_sources(daemon PRIVATE ${MESSAGE_HANDLER_SRCS})
 ###############################################################################
 target_sources(daemon
         PRIVATE
-        "tasks.cc" "tasks.h" )
+        "packet_utils.h"
+        "packet_tasks.cc" "packet_tasks.h" )
 
 ###############################################################################
 ## Testing Source #############################################################

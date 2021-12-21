@@ -98,7 +98,7 @@ std::shared_ptr<P2PServerContext::PeerSession> P2PServerContext::PeerSession::ne
 
   // verify certificate
   X509_STORE_CTX* x509_store_ctx = X509_STORE_CTX_new();
-  X509_STORE_CTX_init(x509_store_ctx, get_instance()->_x509_store, cert, nullptr);
+  X509_STORE_CTX_init(x509_store_ctx, get()->_x509_store, cert, nullptr);
 
   if (X509_verify_cert(x509_store_ctx) == 1) {
     ret = std::shared_ptr<P2PServerContext::PeerSession>(

@@ -1,7 +1,7 @@
 //
 // Created by hanzech on 11/29/21.
 //
-#include "../command_executor.h"
+#include "../command_factory.h"
 
 namespace P2PFileSync {
 class UserCommand : public AutoRegCommand<UserCommand> {
@@ -14,7 +14,7 @@ class UserCommand : public AutoRegCommand<UserCommand> {
       return;
     }
 
-    auto& user_ctx = session()->get_usr_ctx();
+    auto& user_ctx = session()->usr_ctx();
 
     // Handle login
     if (args[0] == "LOGIN") {
@@ -23,27 +23,29 @@ class UserCommand : public AutoRegCommand<UserCommand> {
         return;
       }
 
-      if (user_ctx->is_logged_in()) {
+      if (user_ctx.is_logged_in()) {
         out << "You are already logged in.";
         return;
       }
 
-      if (user_ctx->login(args[1], args[2])) {
+      auto login_result = user_ctx.login(args[1], args[2]);
+      if (login_result.first) {
         out << "Login successful.";
       } else {
-        out << "Login failed.";
+        out << "login failed: " << login_result.second;
       }
+
     } else if (args[0] == "INFO") {
       if (args.size() != 1) {
         out << "Usage: USER INFO";
         return;
       }
 
-      if (!user_ctx->is_logged_in()) {
+      if (!user_ctx.is_logged_in()) {
         out << "You are not logged in.";
         return;
       }
-      auto info = user_ctx->user_detail();
+      auto info = user_ctx.user_detail();
       out << "User info:" << std::endl;
       out << "  name: " << info->name() << std::endl;
       out << "  email: " << info->email() << std::endl;
@@ -56,18 +58,18 @@ class UserCommand : public AutoRegCommand<UserCommand> {
             << group.second.first << std::setw(20) << group.second.second << std::endl;
       }
 
-    } else if (args[0] == "LOGOUT") { // todo bug here, the logout will hang the program
+    } else if (args[0] == "LOGOUT") {  // todo bug here, the logout will hang the program
       if (args.size() != 1) {
         out << "Usage: USER LOGOUT";
         return;
       }
 
-      if (!user_ctx->is_logged_in()) {
+      if (!user_ctx.is_logged_in()) {
         out << "You are not logged in.";
         return;
       }
 
-      user_ctx->logout();
+      user_ctx.logout();
     } else {
       out << "Unknown command: " << args[0];
     }

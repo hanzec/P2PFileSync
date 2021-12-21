@@ -9,12 +9,13 @@
 #include <string>
 #include <vector>
 
+#include "../utils/macro.h"
 #include "common.h"
-#include "export.h"
 #include "model/data/device_conf.h"
 #include "model/response/client/client_information_response.h"
 #include "model/response/client/get_peer_list_response.h"
 #include "model/response/user/user_detail_response.h"
+#include "utils/singleton_helper.h"
 
 #ifndef P2P_FILE_SYNC_SERVER_KIT_SERVER_KIT_H
 #define P2P_FILE_SYNC_SERVER_KIT_SERVER_KIT_H
@@ -25,12 +26,6 @@ namespace P2PFileSync::ServerKit {
  *
  */
 class UserContext {
- protected:
-  /**
-   * Blocker avoid call public constructor
-   */
-  struct this_is_private;
-
  public:
   /**
    * @brief Destroy the Server Connection object
@@ -39,57 +34,60 @@ class UserContext {
    */
   EXPORT_FUNC ~UserContext();
 
-  UserContext(const this_is_private&, std::string& _server_address);
+  /**
+   * @brief Get the user Context object for the given server address, This method will create a
+   * new CULRSH and sett
+   *
+   * @note ServerContext::get_usr_ctx() will return a shared_ptr<UserContext> where
+   *       ServerContext will help to manage the life time of server_address.
+   * @note server_address need to have longer lifetime than the returned object
+   * @return const std::string& the address of the management server
+   */
+  EXPORT_FUNC explicit UserContext(const std::string& server_address);
 
+  /**
+   * @brief Logout the user from the server in current login session
+   *
+   * @note this method will do nothing if the user is not logged in
+   */
   EXPORT_FUNC void logout();
 
+  /**
+   * @brief LOCALLY check the user login status, will NOT send any request to management server
+   * @return true if the user is logged in
+   * @return false if the user is not logged in
+   */
   [[nodiscard]] EXPORT_FUNC bool is_logged_in() const;
 
-  [[nodiscard]] EXPORT_FUNC std::unique_ptr<UserDetailResponse> user_detail() const;
-
-  EXPORT_FUNC bool login(const std::string& email, const std::string& password);
-
- protected:
-  friend class ServerContext;
-
-  friend class ServerContext;
-
   /**
+   * @brief Send the login request to the management server
    *
-   * @tparam Args
-   * @param args
-   * @return
+   * @return std::pair<bool, std::string> the first element is true if the login is successful,
+   *         the second element is the message returned from server
    */
-  template <typename... Args>
-  static ::std::shared_ptr<UserContext> create(Args&&... args) {
-    return ::std::make_shared<UserContext>(this_is_private{0}, ::std::forward<Args>(args)...);
-  }
+  [[nodiscard]] EXPORT_FUNC std::pair<bool, std::string> login(const std::string& email,
+                                                               const std::string& password);
 
   /**
-   * Blocker avoid call public constructor
+   * @brief Get the user detail information from the management server
+   *
+   * @note this will not cached, so everytime this function is called, it will send a request
+   *       to the management server
+   * @return UserDetailResponse the user detail information
    */
-  struct this_is_private {
-    explicit this_is_private(int) {}
-  };
+  [[nodiscard]] EXPORT_FUNC std::unique_ptr<UserDetailResponse> user_detail() const;
 
  private:
   bool _login = false;
-  bool strict_security_ = true;
   CURLSH* _share_handle;
-  std::string _username;
-  std::string& _server_address;
+  bool strict_security_ = true;
+  const std::string& _server_address;
 };
 
 /**
- * @brief User to manage the peer device related requests
+ * @brief User to manage the peer device related requests, this class is a singleton class.
  */
-class EXPORT_FUNC DeviceContext {
- protected:
-  /**
-   * Blocker avoid call public constructor
-   */
-  struct this_is_private;
-
+class EXPORT_FUNC DeviceContext : std::enable_shared_from_this<DeviceContext> {
  public:
   /**
    * @brief make sure this object only construct and get by init_dev_ctx()
@@ -101,21 +99,10 @@ class EXPORT_FUNC DeviceContext {
   DeviceContext& operator=(DeviceContext&&) = delete;
 
   /**
-   * @brief Construct a new Device Context by following steps:
-   *
-   * Existing Problem:
-   *  1. JWT renew in not implentmented, currently server are setting expire
-   *     date as 1 year after to avoid problem
-   */
-  DeviceContext(const this_is_private&, const std::shared_ptr<DeviceConfiguration>& dev_conf,
-                std::string& server_address, std::filesystem::path& conf,
-                std::filesystem::path& client_cert_path);
-
-  /**
    * @brief return the enabled status at remote management server, in this
-   * function will call device_info() to test the response will return
-   * errors or not, if downloaded reponse is contains a valid json format with
-   * success and its value is true than we can say the client is enabled
+   *        function will call device_info() to test the response will return
+   *        errors or not, if downloaded reponse is contains a valid json format with
+   *        success and its value is true than we can say the client is enabled
    * @return true this client is enabled at management server
    * @return false this client is not enabled at management server
    */
@@ -123,7 +110,8 @@ class EXPORT_FUNC DeviceContext {
 
   /**
    * @brief Get the id of current peer
-   * // TODO need to update document here
+   * @note this will return the local cache of the id loaded from the Device configuration
+   *       file, since the device id will never change after the device is registered
    * @return const std::string& the client id as string of the object
    */
   [[nodiscard]] EXPORT_FUNC const std::string& device_id() const;
@@ -138,16 +126,22 @@ class EXPORT_FUNC DeviceContext {
 
   /**
    * @brief Request PKCS12 certificate of current client, this function will
-   * return the path pf current client certificate
+   *        return the path of current client certificate. If the certificate is already
+   *        downloaded and non-corrupt, this method will reutrn the path of the certificate
+   *        without request to management server
    *
-   * @return std::string return the path of PKCS12 Certificate
+   * @note if the certificate is failed to download, this method will retry
+   *       MAX_DOWNLOAD_RETIRES times, and wait DOWNLOAD_RETRY_SECOND second each filed
+   *       download. After MAX_DOWNLOAD_RETIRES is achieved, this method will throw an FATAL
+   *       exception which will cause the program to exit.
+   * @return std::filesystem::path the path of PKCS12 Certificate
    */
   [[nodiscard]] EXPORT_FUNC std::filesystem::path client_certificate() const;
 
   /**
    * @brief Returned current client register information from remote management
-   * server
-   *
+   *        server
+   * @note this method will always send request to server each time.
    * @return DeviceInfoResponse the response struct contains information
    */
   [[nodiscard]] EXPORT_FUNC std::unique_ptr<DeviceInfoResponse> device_info() const;
@@ -156,23 +150,15 @@ class EXPORT_FUNC DeviceContext {
   friend class ServerContext;
 
   /**
+   * @brief Construct a new Device Context by following steps:
    *
-   * @tparam Args
-   * @param args
-   * @return
+   * Existing Problem:
+   *  1. (todo) JWT renew in not implemented, currently server are setting expire
+   *     date as 1 year after to avoid problem
    */
-  template <typename... Args>
-  static ::std::shared_ptr<DeviceContext> create(Args&&... args) {
-    return ::std::make_shared<DeviceContext>(this_is_private{0},
-                                             ::std::forward<Args>(args)...);
-  }
-
-  /**
-   * Blocker avoid call public constructor
-   */
-  struct this_is_private {
-    explicit this_is_private(int) {}
-  };
+  DeviceContext(const std::shared_ptr<DeviceConfiguration>& dev_conf,
+                std::string& server_address, std::filesystem::path& client_configuration_path,
+                std::filesystem::path& client_certificate_path);
 
  private:
   /**
@@ -186,25 +172,40 @@ class EXPORT_FUNC DeviceContext {
    */
   const std::string& _server_address;
   const std::filesystem::path& _client_certificate_path;
-  const std::filesystem::path& _server_configuration_path;
+  const std::filesystem::path& _client_configuration_path;
 };
 
-class EXPORT_FUNC ServerContext {
- protected:
-  /**
-   * Blocker avoid call public constructor
-   */
-  struct this_is_private;
-
+/**
+ * @brief User to manage the server related requests, this class is a singleton. The
+ *        ServerContext will keep the management server address and help to get the UserContext
+ *        and DeviceContext.
+ */
+class EXPORT_FUNC ServerContext : public Singleton<ServerContext> {
  public:
+  /**
+   * @brief make sure this object only construct and get by init()
+   */
+  ServerContext() = delete;
+  ServerContext(ServerContext&) = delete;
+  ServerContext(ServerContext&&) = delete;
+  ServerContext& operator=(ServerContext&) = delete;
+  ServerContext& operator=(ServerContext&&) = delete;
+
+  /**
+   * @brief Construct a new Server Context object.
+   *
+   * @note this method will be only called by init()
+   * @param config config of the current program
+   * @param this_is_private protect the caller from calling this constructor
+   */
   ServerContext(const this_is_private&, const std::shared_ptr<Config>& config) noexcept;
 
-  EXPORT_FUNC static void init(const std::shared_ptr<Config>& config);
-
-  [[nodiscard]] EXPORT_FUNC static std::shared_ptr<ServerContext> get_server_ctx();
-
-  // todo add documentation
-  [[nodiscard]] static EXPORT_FUNC std::shared_ptr<UserContext> get_usr_ctx() noexcept;
+  /**
+   * @brief Get an new instance of UserContext
+   *
+   * @return UserContext the instance of UserContext
+   */
+  [[nodiscard]] static EXPORT_FUNC UserContext get_usr_ctx() noexcept;
 
   /**
    * @brief initialized instance of the DeviceContext if not previous created by following
@@ -227,18 +228,6 @@ class EXPORT_FUNC ServerContext {
 
  protected:
   /**
-   *
-   * @tparam Args
-   * @param args
-   * @return
-   */
-  template <typename... Args>
-  static ::std::shared_ptr<ServerContext> create(Args&&... args) {
-    return ::std::make_shared<ServerContext>(this_is_private{0},
-                                             ::std::forward<Args>(args)...);
-  }
-
-  /**
    * @brief Regist current device to remote management server
    * // TODO need to write code handle_difficult jwt renew
    * @return std::pair<std::string,std::string> will return the JWT Token
@@ -247,25 +236,13 @@ class EXPORT_FUNC ServerContext {
    */
   [[nodiscard]] static std::shared_ptr<DeviceConfiguration> register_client();
 
-  /**
-   * Blocker avoid call public constructor
-   */
-  struct this_is_private {
-    explicit this_is_private(int) {}
-  };
-
  private:
-  /*
-   * ServerContext instance
-   */
-  inline static std::shared_ptr<ServerContext> _instance{nullptr};
-
   uint16_t _p2p_listen_port;
   std::string _server_address;
   std::string _p2p_listen_interface;
-  std::filesystem::path _configuration_path;
-  std::filesystem::path _client_certificate_path;
   std::filesystem::path _client_configuration_path;
+  std::filesystem::path _client_certificate_path;
+  std::filesystem::path _server_certifiacte_path;
 
   // instance ptr
   std::shared_ptr<DeviceContext> _device_ctx_instance = nullptr;

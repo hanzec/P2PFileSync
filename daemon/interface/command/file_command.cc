@@ -1,7 +1,7 @@
 //
 // Created by hanzech on 11/27/21.
 //
-#include "../command_executor.h"
+#include "../command_factory.h"
 
 namespace P2PFileSync {
 class FileCommand : public AutoRegCommand<FileCommand> {
@@ -9,7 +9,7 @@ class FileCommand : public AutoRegCommand<FileCommand> {
 
  public:
   void exec(std::ostringstream& out, const std::vector<std::string>& args) final {
-    auto& user_ctx = session()->get_usr_ctx();
+    auto user_ctx = session()->usr_ctx();
 
     // check arguments
     if (args.empty()) {
@@ -17,7 +17,7 @@ class FileCommand : public AutoRegCommand<FileCommand> {
     }
 
     // check if the user is logged in
-    if(!user_ctx->is_logged_in()){
+    if(!user_ctx.is_logged_in()){
       out << "You are not logged in.\n";
       return;
     }

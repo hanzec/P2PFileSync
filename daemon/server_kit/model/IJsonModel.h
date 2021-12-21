@@ -22,7 +22,7 @@
 #include <type_traits>
 #include <vector>
 
-#include "../export.h"
+#include "../../utils/macro.h"
 namespace P2PFileSync::ServerKit {
 /**
  * @brief base model of request/response model which used in server
@@ -56,16 +56,23 @@ class IJsonModel {
    * @param json
    */
   explicit IJsonModel(char* json) : json_buf(json) {
-    rapidjson::ParseResult ret = root.Parse(json);
+    if (json_buf == nullptr) {
+      root.SetObject();
+      VLOG(1) << "failed to parse json because input char array is nullptr";
+    } else {
+      VLOG(3) << "parse json from: " << json_buf;
+      rapidjson::ParseResult ret = root.Parse(json);
 
-    if (!ret) {
-      LOG(ERROR) << "parse json error: " << rapidjson::GetParseError_En(ret.Code()) << ":"
-                 << ret.Offset() << ":" << json;
-      throw std::runtime_error("parse json error");
+      if (!ret) {
+        VLOG(1) << "parse json error: " << rapidjson::GetParseError_En(ret.Code()) << ":"
+                   << ret.Offset() << ":" << json;
+        root.SetObject();
+        return;
+      }
+
+      // check if is response model or not
+      _response_flag = root.HasMember("success") && root.HasMember("responseBody");
     }
-
-    // check if is response model or not
-    _response_flag = root.HasMember("success") && root.HasMember("responseBody");
   }
 
   /**
@@ -106,7 +113,7 @@ class IJsonModel {
   void save_to_disk(const std::filesystem::path& file) {
     if (std::filesystem::exists(file)) {
       std::filesystem::remove(file);
-      LOG(WARNING) << "configuration file " << file << " already exists, remove it";
+      LOG(WARNING) << "file [" << file << "] already exists, remove it";
     }
     std::ofstream ofs(file);
     ofs << get_json();
@@ -124,6 +131,15 @@ class IJsonModel {
       return root["success"].GetBool();
     } else {
       return false;
+    }
+  }
+
+  std::string message() {
+    auto& node = _response_flag ? root["responseBody"] : root;
+    if (node.HasMember("message")) {
+      return node["message"].GetString();
+    } else {
+      return "no message";
     }
   }
 
@@ -182,7 +198,7 @@ class IJsonModel {
           }
         }
         return ret;
-      } else{
+      } else {
         LOG(ERROR) << "unsupported type";
         throw std::exception();
       }

@@ -2,7 +2,7 @@
 // Created by hanzech on 11/27/21.
 //
 #include "p2p_interface.h"
-#include "../command_executor.h"
+#include "../command_factory.h"
 
 namespace P2PFileSync {
 class PeerCommand : public AutoRegCommand<PeerCommand> {
@@ -14,7 +14,7 @@ class PeerCommand : public AutoRegCommand<PeerCommand> {
       out << "PEER command does not need any arguments!";
     }
 
-    auto p2p_server_ctx = P2PServerContext::get_instance();
+    auto p2p_server_ctx = P2PServerContext::get();
 
     out << std::setw(37) << std::left << "Peer ID" << " "
         << std::setw(20) << std::left << "Next Jump Node" << " "

@@ -1,15 +1,9 @@
+//
+// Created by hanzech on 12/18/21.
+//
 
 #include "connection_session.h"
-
 namespace P2PFileSync {
-
-ConnectionSession::ConnectionSession(std::shared_ptr<ServerKit::UserContext> user_ctx)
-    : _user_session(std::move(user_ctx)) {
-  if (!get_register_status()) {
-    // set_register_status(ServerKit::get_register_status());
-  }
-};
-
 template <typename T>
 T ConnectionSession::get_option(const char* key) {
   return std::any_cast<T>(_session_storage[key]);
@@ -28,10 +22,6 @@ bool ConnectionSession::exist_option(const std::string& key) {
 
 void ConnectionSession::store_option(const std::string& key, std::any value) {
   _session_storage[key] = std::move(value);
-}
-
-void ConnectionSession::set_register_status(bool status) {
-  P2PFileSync::ConnectionSession::register_status = status;
 }
 
 }  // namespace P2PFileSync

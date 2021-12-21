@@ -4,7 +4,7 @@
  * @Last Modified by:   Hanze Chen
  * @Last Modified time: 2021-10-23 16:57:22
  */
-#include "parsing.h"
+#include "command_parser.h"
 
 #include <algorithm>
 #include <cstddef>
@@ -15,7 +15,7 @@
 #include <vector>
 
 namespace P2PFileSync {
-Status parsing_command(const std::string& input_command, COMMAND& parsed_command) {
+Status parse_command(const std::string& input_command, ParsedCommand& parsed_command) {
   std::string input(input_command);
 
   // fix the string format
@@ -45,8 +45,8 @@ Status parsing_command(const std::string& input_command, COMMAND& parsed_command
         auto quoter_start = current;
         if ((current = input.find('\"', quoter_start + 1)) == std::string::npos) {
           return {StatusCode::INVALID_ARGUMENT,
-                  generte_nice_error_msg("could not found pair of double quotes", quoter_start,
-                                         input)};
+                  generate_nice_error_msg("could not found pair of double quotes",
+                                          quoter_start, input)};
         } else {
           result.emplace_back(input.substr(quoter_start, current));
         }
@@ -64,9 +64,9 @@ Status parsing_command(const std::string& input_command, COMMAND& parsed_command
   return Status::OK();
 };
 
-std::string generte_nice_error_msg(const char* error_msg, const size_t& error_loc,
+std::string generate_nice_error_msg(const char* error_msg, const size_t& error_loc,
                                    const std::string& command) {
-  size_t final_error_loc;
+  size_t final_error_loc = 0;
   std::string final_command;
   std::ostringstream output;
 

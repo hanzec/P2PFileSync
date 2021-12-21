@@ -26,7 +26,7 @@ size_t write_to_ptr(char* ptr, size_t size, size_t nmemb, void* userdata) {
   if ((file_ptr = static_cast<ptr_data*>(userdata)) != nullptr) {
     // check if need to do relocate
     if (file_ptr->current_size < file_ptr->head + block_size) {
-      LOG(INFO) << "relocate ptr: [" << std::hex << file_ptr->data << "]";
+      VLOG(3) << "relocate ptr: [" << std::hex << file_ptr->data << "]";
       void* new_ptr = realloc(file_ptr->data, file_ptr->current_size * 2);
 
       // handled when malloc is failed
@@ -114,7 +114,7 @@ void* GET_and_save_to_ptr(CURLSH* curl_handler, const std::string& request_url,
 
   if (get_data_from_server("GET", data, nullptr, false, curl_handler, request_url, header,
                            write_to_ptr, force_ssl)) {
-    if (VLOG_IS_ON(3)) VLOG(3) << "total of [" << data->head << "] bytes downloaded!";
+    VLOG(3) << "total of [" << data->head << "] bytes downloaded!";
     auto ret = data->data;
     static_cast<char*>(ret)[data->head] = '\0';
     free(data);
@@ -131,8 +131,7 @@ inline bool get_data_from_server(const std::string& http_method, const void* inp
                                  const std::vector<std::string>& header,
                                  size_t (*write_function)(char*, size_t, size_t, void*),
                                  bool force_ssl) {
-  if (VLOG_IS_ON(3))
-    LOG(INFO) << "seeding request to [" << request_url << "] with " << http_method
+  VLOG(3) << "seeding request to [" << request_url << "] with " << http_method
               << " request";
 
   CURLcode ret;
@@ -194,7 +193,7 @@ inline bool get_data_from_server(const std::string& http_method, const void* inp
     if ((ret = curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L)) != CURLE_OK) goto error;
 
     /* Switch on full packet/debug output */
-    if (VLOG_IS_ON(3)) curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+    if (VLOG_IS_ON(4)) curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
 
     // SSL configuration
     if ((ret = curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, force_ssl)) != CURLE_OK)

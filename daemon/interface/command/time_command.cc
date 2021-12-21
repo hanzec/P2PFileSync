@@ -2,7 +2,7 @@
 #include <ctime>
 #include <utility>
 
-#include "../command_executor.h"
+#include "../command_factory.h"
 
 namespace P2PFileSync {
 class TimeCommand : public AutoRegCommand<TimeCommand> {

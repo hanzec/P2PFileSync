@@ -1,12 +1,12 @@
 #include <gtest/gtest.h>
-#include "../parsing.h"
+#include "../command_parser.h"
 #include <string>
 
 GTEST_TEST(COMMAND_PARSER_TEST, test_normal_case_no_argument){
   
-  P2PFileSync::COMMAND command;
+  P2PFileSync::ParsedCommand command;
 
-  auto ret = P2PFileSync::parsing_command("command", command);
+  auto ret = P2PFileSync::parse_command("command", command);
 
   ASSERT_TRUE(ret.ok());
   ASSERT_EQ(command.first, "command");
@@ -15,9 +15,9 @@ GTEST_TEST(COMMAND_PARSER_TEST, test_normal_case_no_argument){
 
 GTEST_TEST(COMMAND_PARSER_TEST, test_normal_case_with_single_argument){
   
-  P2PFileSync::COMMAND command;
+  P2PFileSync::ParsedCommand command;
 
-  auto ret = P2PFileSync::parsing_command("command argument", command);
+  auto ret = P2PFileSync::parse_command("command argument", command);
 
   ASSERT_TRUE(ret.ok());
   ASSERT_EQ(command.first, "command");
@@ -28,9 +28,9 @@ GTEST_TEST(COMMAND_PARSER_TEST, test_normal_case_with_single_argument){
 // todo bug here need fix
 GTEST_TEST(COMMAND_PARSER_TEST, test_normal_case_with_multiple_argument_DISABLED){
   
-  P2PFileSync::COMMAND command;
+  P2PFileSync::ParsedCommand command;
 
-  auto ret = P2PFileSync::parsing_command("command argument1 argument2 argument3", command);
+  auto ret = P2PFileSync::parse_command("command argument1 argument2 argument3", command);
 
   ASSERT_TRUE(ret.ok());
   ASSERT_EQ(command.first, "command");
@@ -42,9 +42,9 @@ GTEST_TEST(COMMAND_PARSER_TEST, test_normal_case_with_multiple_argument_DISABLED
 
 GTEST_TEST(COMMAND_PARSER_TEST, test_normal_case_with_login_command){
 
-  P2PFileSync::COMMAND command;
+  P2PFileSync::ParsedCommand command;
 
-  auto ret = P2PFileSync::parsing_command("USER LOGIN admin@example.com admin", command);
+  auto ret = P2PFileSync::parse_command("USER LOGIN admin@example.com admin", command);
 
   ASSERT_TRUE(ret.ok());
   ASSERT_EQ(command.first, "USER");
@@ -57,9 +57,9 @@ GTEST_TEST(COMMAND_PARSER_TEST, test_normal_case_with_login_command){
 // todo bug here need fix
 GTEST_TEST(COMMAND_PARSER_TEST, test_normal_case_with_single_quoter_argument_DISABLED){
   
-  P2PFileSync::COMMAND command;
+  P2PFileSync::ParsedCommand command;
 
-  auto ret = P2PFileSync::parsing_command("command \"quoter argument\"", command);
+  auto ret = P2PFileSync::parse_command("command \"quoter argument\"", command);
 
   ASSERT_TRUE(ret.ok());
   ASSERT_EQ(command.first, "command");
@@ -70,9 +70,10 @@ GTEST_TEST(COMMAND_PARSER_TEST, test_normal_case_with_single_quoter_argument_DIS
 // todo bug here need fix
 GTEST_TEST(COMMAND_PARSER_TEST, test_normal_case_with_multiple_quoter_argument_DISABLED){
   
-  P2PFileSync::COMMAND command;
+  P2PFileSync::ParsedCommand command;
 
-  auto ret = P2PFileSync::parsing_command(R"(command "quoter argument1" "quoter argument2")", command);
+  auto ret =
+      P2PFileSync::parse_command(R"(command "quoter argument1" "quoter argument2")", command);
 
   ASSERT_TRUE(ret.ok());
   ASSERT_EQ(command.first, "command");
@@ -84,9 +85,9 @@ GTEST_TEST(COMMAND_PARSER_TEST, test_normal_case_with_multiple_quoter_argument_D
 
 GTEST_TEST(COMMAND_PARSER_TEST, test_normal_case_with_single_argument_with_spaces_front){
   
-  P2PFileSync::COMMAND command;
+  P2PFileSync::ParsedCommand command;
 
-  auto ret = P2PFileSync::parsing_command("    command argument", command);
+  auto ret = P2PFileSync::parse_command("    command argument", command);
 
   ASSERT_TRUE(ret.ok());
   ASSERT_EQ(command.first, "command");
@@ -96,9 +97,9 @@ GTEST_TEST(COMMAND_PARSER_TEST, test_normal_case_with_single_argument_with_space
 
 GTEST_TEST(COMMAND_PARSER_TEST, test_normal_case_with_single_argument_spaces_front_and_end){
   
-  P2PFileSync::COMMAND command;
+  P2PFileSync::ParsedCommand command;
 
-  auto ret = P2PFileSync::parsing_command("    command argument    ", command);
+  auto ret = P2PFileSync::parse_command("    command argument    ", command);
 
   ASSERT_TRUE(ret.ok());
   ASSERT_EQ(command.first, "command");

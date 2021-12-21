@@ -1,7 +1,7 @@
 //
 // Created by hanzech on 11/27/21.
 //
-#include "../command_executor.h"
+#include "../command_factory.h"
 
 namespace P2PFileSync {
 class InfoCommand : public AutoRegCommand<InfoCommand> {

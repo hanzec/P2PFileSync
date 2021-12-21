@@ -97,6 +97,6 @@ int main(int argc, char *argv[], [[maybe_unused]] const char *envp[]) {
     LOG(FATAL) << "p2p server handler is filed to start";
   }
   // waiting server handler to stop
-  P2PServerContext::get_instance()->block_util_server_stop();
+  P2PServerContext::get()->block_util_server_stop();
   return 0;
 }

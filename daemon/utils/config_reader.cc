@@ -81,8 +81,8 @@ namespace P2PFileSync {
       config["sync"]["mount_point"].as<std::string>(),
       config["sync"]["config_folder"].as<std::string>(),
       config["sync"]["manage_sock"].as<std::string>(),
-      config["sync"]["client_certificate_path"].as<std::string>(),
       config["sync"]["client_configuration_path"].as<std::string>(),
+      config["sync"]["client_certificate_path"].as<std::string>(),
       config["sync"]["server_certificate_path"].as<std::string>());
 }
 }  // namespace P2PFileSync
