@@ -5,8 +5,7 @@
 
 #ifndef P2P_FILE_SYNC_USER_DETAIL_RESPONSE_H
 #define P2P_FILE_SYNC_USER_DETAIL_RESPONSE_H
-#include <unordered_set>
-
+#include <unordered_map>
 #include "../../IJsonModel.h"
 
 namespace P2PFileSync::ServerKit {
@@ -28,7 +27,7 @@ class UserDetailResponse : public IJsonModel {
    * @param json the json string wants to parse as Register Client Response
    * Object
    */
-  UserDetailResponse(char* json);
+  explicit UserDetailResponse(char* json);
 
   [[nodiscard]] std::string name() const;
 

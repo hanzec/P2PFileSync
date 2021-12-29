@@ -4,9 +4,9 @@
 #include <filesystem>
 #include <string>
 
+#include <utils/ip_addr.h>
 #include "../IJsonModel.h"
 #include "../response/client/register_client_response.h"
-#include "../../../utils/ip_addr.h"
 
 namespace P2PFileSync::ServerKit {
 /**

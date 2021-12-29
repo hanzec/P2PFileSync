@@ -67,11 +67,18 @@ include(GoogleTest)
 ###############################################################################
 ## Compile Config #############################################################
 ###############################################################################
+# detect is MACOS or not
+if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    set(MACOSX TRUE)
+endif()
+
 # compile defs for multi-platform compiling
 if(WIN32)
-  add_compile_definitions(UNDER_WINDOWS)
-elseif(UNIX)
-  add_compile_definitions(UNDER_UNIX)
+    add_compile_definitions(WIN32)
+elseif(UNIX AND NOT MACOSX)
+    add_compile_definitions(UNIX)
+elseif(MACOSX)
+    add_compile_definitions(MACOSX)
 endif()
 
 ###############################################################################

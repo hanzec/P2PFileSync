@@ -7,7 +7,7 @@
 #include <strings.h>
 
 #include <array>
-
+#include "macro.h"
 #include "bitpos.h"
 
 #define INT64(n) n##LL
@@ -18,12 +18,12 @@ namespace P2PFileSync::RabinChecksum {
  * Static generator of the polynomial.
  */
 constexpr uint64_t poly = 0xbfe6b8a5bf378d83LL;
-constexpr __always_inline uint64_t append8(uint64_t p, u_char m,
+constexpr ALWAYS_INLINE uint64_t append8(uint64_t p, unsigned char m,
                                            const std::array<uint64_t, 256> &T) {
   return ((p << 8) | m) ^ T.at((p >> int(bitops::fls64(poly) - 9)));
 }
 
-constexpr __always_inline u_int64_t polymod(uint64_t nh, uint64_t nl, uint64_t d) {
+constexpr ALWAYS_INLINE u_int64_t polymod(uint64_t nh, uint64_t nl, uint64_t d) {
   int i = 0;
   int k = bitops::fls64(d) - 1;
 
@@ -44,7 +44,7 @@ constexpr __always_inline u_int64_t polymod(uint64_t nh, uint64_t nl, uint64_t d
   return nl;
 }
 
-constexpr __always_inline u_int64_t polymmult(uint64_t x, uint64_t y, uint64_t d) {
+constexpr ALWAYS_INLINE u_int64_t polymmult(uint64_t x, uint64_t y, uint64_t d) {
   u_int64_t ph = 0, pl = 0;
   if (x & 1) pl = y;
   for (uint_fast8_t i = 1; i < 64; i++)
@@ -81,7 +81,7 @@ constexpr const static std::array<uint64_t, 256> T = calcT();
 constexpr const static std::array<uint64_t, 256> U = calcU(T);
 
 uint64_t rolling_checksum(uint64_t csum, std::byte c1, std::byte c2) {
-  return append8(csum ^ U[static_cast<uint8_t>(c1)], static_cast<u_char>(c2), T);
+  return append8(csum ^ U[static_cast<uint8_t>(c1)], static_cast<unsigned char>(c2), T);
 }
 
 /*

@@ -39,7 +39,7 @@ const std::unordered_map<std::string, std::pair<std::shared_ptr<IPAddr>, uint32_
 
 bool P2PServerContext::start(int fd) {
   if (_thread_ref == nullptr) {
-    auto hello_message = PacketUtils<ProtoHelloMessage>::construct(_client_cert);
+    auto hello_message = PacketHandler<ProtoHelloMessage>::construct(_client_cert);
     _thread_ref = std::make_unique<std::thread>(listening_thread, fd);
     auto peer_list_resp = _device_context->peer_list();
     for (const auto &ip : peer_list_resp->peer_list()) {
@@ -232,7 +232,6 @@ void P2PServerContext::libev_callback(evutil_socket_t fd, short event, void *arg
 void P2PServerContext::read_callback(struct bufferevent *bev, void *sin) {
   auto proto_server = get();
   struct evbuffer *buf = bufferevent_get_input(bev);
-  auto incoming_connection = static_cast<struct sockaddr_in *>(sin);
 
   // first 4 bytes of packet is defined as packet length
   size_t recv_size = evbuffer_get_length(buf);
@@ -248,7 +247,6 @@ void P2PServerContext::read_callback(struct bufferevent *bev, void *sin) {
   LOG(INFO) << "Received packet of size:[" << packet_len << "]";
 
   // parse data packet
-  ProtoMessage proto_msg;
   SignedProtoMessage signed_msg;
   void *data = evbuffer_pullup(buf, packet_len + sizeof(uint32_t));
   if (!signed_msg.ParseFromArray((char *)data + sizeof(uint32_t), packet_len)) {
@@ -260,54 +258,32 @@ void P2PServerContext::read_callback(struct bufferevent *bev, void *sin) {
 
   // todo update rounting table if hello message
   // avoid the handle_difficult one packet twice
-  proto_msg.ParseFromString(signed_msg.signed_payload());
-  if (proto_server->is_cached(proto_msg.packet_id())) {
-    VLOG(3) << "skip previous handled signed_msg with id [" << proto_msg.packet_id();
+  if (proto_server->is_cached(signed_msg.signature())) {
+    VLOG(3) << "skip previous handled signed_msg with id [" << signed_msg.signature() << "]";
     return;
   }
 
-  // todo need to rewrite the packet redirect part
-  // check if the package's final deliver is current peer or not
-  auto receiver = proto_msg.receiver_id();
+  // redirect packet if current node is not final destination
+  auto receiver = signed_msg.receiver();
   if (proto_server->_device_context->device_id() != receiver) {
-    // redirect packet if ttl > 1 and have avaliable path
+    // redirect packet if ttl > 1 and have available path
     if (signed_msg.ttl() > 1 && proto_server->can_delivered(receiver)) {
       proto_server->_thread_pool->submit(Task::send_packet_tcp, get()->_port, signed_msg,
                                          proto_server->get_next_peer(receiver));
     } else {
-      VLOG(3) << "cannot found desnation for receiver [" << proto_msg.receiver_id() << "]";
-      return;
+      VLOG(3) << "cannot found destination for receiver [" << signed_msg.receiver()
+              << "], will broadcast to all available node";
+      for (auto &node : proto_server->get_routing_table()) {
+        proto_server->_thread_pool->submit(Task::send_packet_tcp, get()->_port, signed_msg,
+                                           node.second.first);
+      }
     }
+    return;  // handle end since packet already redirect
   }
 
-  // hello message will be special treat since will need hello message to construct          
-  switch (proto_msg.packet_type()) {
-    case ProtoPayloadType::HELLO: {
-      // only hello message won't include signature in outside since handshake
-      ProtoHelloMessage msg;
-      proto_msg.payload().UnpackTo(&msg);
-      auto task = std::make_shared<std::packaged_task<void()>>(
-          [proto_server, msg, signed_msg, incoming_connection]() {
-            PacketUtils<ProtoHelloMessage>::handle(msg, signed_msg.prev_jump_port(),
-                                                   incoming_connection, signed_msg.ttl());
-          });
-      proto_server->_thread_pool->submit(task);
-    } break;
-    case ProtoPayloadType::PING:
-
-      break;
-    case ProtoPayloadType::PONG:
-      break;
-    case ProtoPayloadType::ACK:
-      break;
-    case ProtoPayloadType::NACK:
-      break;
-    case ProtoPayloadType::HEARTBEAT:
-      break;
-    default:
-      LOG(ERROR) << "unknown packet type [" << proto_msg.packet_type() << "]";
-      break;
-  }
+  // submit the handle task
+  proto_server->_thread_pool->submit(PacketHandler::handle, signed_msg,
+                                     static_cast<struct sockaddr_in *>(sin));
 }
 
 void P2PServerContext::event_callback(struct bufferevent *bev, short events, void *ctx) {
@@ -376,31 +352,4 @@ std::future<bool> P2PServerContext::send_pkg(const ProtoMessage &data,
   VLOG(3) << "send packet with id [" << data.packet_id() << "] to [" << *peer << "]";
   return _thread_pool->submit(Task::send_packet_tcp, _port, signed_msg, peer);
 }
-
-template <typename T>
-ProtoMessage P2PServerContext::package_pkg(const T &data, const std::string &receiver) {
-  ProtoMessage ret;
-  auto *timestamp =
-      new google::protobuf::Timestamp(google::protobuf::util::TimeUtil::GetCurrentTime());
-
-  // static assert proto message type
-  static_assert(std::is_base_of<google::protobuf::Message, T>::value,
-                "ProtoMessage must be derived from google::protobuf::Message");
-
-  // set packet type
-  if constexpr (std::is_same<T, ProtoHelloMessage>::value) {
-    ret.set_packet_type(ProtoPayloadType::HELLO);
-  }
-
-  auto packet_id = UUID::new_uuid();
-  ret.set_packet_id(packet_id);
-  ret.mutable_payload()->PackFrom(data);
-  ret.set_allocated_timestamp(timestamp);  // set allocated wil take pointer's ownership
-  ret.set_receiver_id(receiver);
-  ret.set_sender_id(_device_context->device_id());
-  free((void *)packet_id);
-  VLOG(3) << "package packet with id [" << ret.packet_id() << "]";
-  return ret;
-}
-
 }  // namespace P2PFileSync

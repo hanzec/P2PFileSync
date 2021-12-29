@@ -3,7 +3,6 @@
 //
 
 #include "user_detail_response.h"
-
 #include "model/response/public_method.h"
 
 namespace P2PFileSync::ServerKit {

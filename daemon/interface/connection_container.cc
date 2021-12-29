@@ -33,7 +33,7 @@ void ConnectionContainer::run(int socket_fd) noexcept {
   std::ostringstream command_buf;
 
   // setup timeout
-#if defined(__linux__)
+#if defined(UNIX) or defined(MACOSX)
   struct timeval tv {};
   // todo modify here avoid hard code
   tv.tv_sec = 1;

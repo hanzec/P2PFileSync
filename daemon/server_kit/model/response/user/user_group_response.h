@@ -1,10 +1,10 @@
 //
 // Created by hanzech on 11/30/21.
 //
-
 #ifndef P2P_FILE_SYNC_USER_GROUP_RESPONSE_H
 #define P2P_FILE_SYNC_USER_GROUP_RESPONSE_H
 #include "model/IJsonModel.h"
+#include <unordered_map>
 
 namespace P2PFileSync::ServerKit {
 class UserGroupResponse: public IJsonModel{

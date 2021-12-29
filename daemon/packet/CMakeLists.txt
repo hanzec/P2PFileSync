@@ -21,8 +21,14 @@ target_include_directories(daemon PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 ###############################################################################
 ## Message Handler ############################################################
 ###############################################################################
-file(GLOB MESSAGE_HANDLER_SRCS ${CMAKE_CURRENT_LIST_DIR}/message/*.cc)
+file(GLOB MESSAGE_HANDLER_SRCS ${CMAKE_CURRENT_LIST_DIR}/message/*.tcc)
+
+# add to target source
 target_sources(daemon PRIVATE ${MESSAGE_HANDLER_SRCS})
+
+# add compiler definitions for handler size
+list(LENGTH MESSAGE_HANDLER_SRCS MESSAGE_HANDLER_SRCS_SIZE)
+add_compile_definitions(PACKET_HANDLER_SIZE=${MESSAGE_HANDLER_SRCS_SIZE})
 
 ###############################################################################
 ## Package Tasks ##############################################################
@@ -30,6 +36,7 @@ target_sources(daemon PRIVATE ${MESSAGE_HANDLER_SRCS})
 target_sources(daemon
         PRIVATE
         "packet_utils.h"
+        "packet_handler.cc"
         "packet_tasks.cc" "packet_tasks.h" )
 
 ###############################################################################

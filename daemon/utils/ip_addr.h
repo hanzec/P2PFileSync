@@ -14,6 +14,7 @@
 #include <ostream>
 #include <regex>
 #include <string>
+#include <arpa/inet.h>
 
 #ifdef UNDER_UNIX
 #include <arpa/inet.h>
@@ -37,7 +38,7 @@ class IPAddr {
       auto location = ip_string.find(':');
       _ip_addr_str = ip_string.substr(0, location);
       _port_number = std::stoi(ip_string.substr(location + 1, ip_string.size()));
-#ifdef UNDER_UNIX
+#if defined(UNIX) or defined(MACOSX)
       {
         in_addr_t ip_addr = inet_addr(_ip_addr_str.c_str());
         memcpy(_ip_addr.data(), &ip_addr, sizeof(in_addr_t));

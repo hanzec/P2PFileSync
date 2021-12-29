@@ -155,18 +155,15 @@ class P2PServerContext : public Singleton<P2PServerContext>,
     EVP_MD_CTX* _evp_md_ctx = nullptr;
   };
 
+ private:
   /*
    * @brief Package utils to construct and handle the package
    *
    * @todo need change
    */
-  template <class PacketType>
-  class PacketUtils {
+  class PacketHandler {
    public:
-    template <typename... Args>
-    static bool handle(Args&&... args) {
-      return handle_internal(std::forward<Args>(args)...);
-    }
+    static void handle(SignedProtoMessage& signed_msg, const sockaddr_in* incoming_connection);
 
     template <typename... Args>
     static PacketType construct(Args&&... args) {
@@ -174,34 +171,33 @@ class P2PServerContext : public Singleton<P2PServerContext>,
     }
 
    protected:
-    /**
-     * Proto Hello Message
-     */
 
-    /**
-     *
-     * @param cert
-     * @return
-     */
-    static PacketType construct_internal(X509* cert) noexcept;
+    static ProtoHelloMessage construct_internal(X509* cert) noexcept;
 
-    /**
-     *
-     * @param message
-     * @param prev_port
-     * @param client_address
-     * @param ttl
-     * @return
-     */
-    static bool handle_internal(const ProtoHelloMessage& message, uint16_t prev_port,
-                                const sockaddr_in* client_address, uint32_t ttl) noexcept;
+
+    template <class PayloadType>
+    class _handler_impl {
+     public:
+      static bool handle(const ProtoMessage& proto_msg,
+                         const sockaddr_in* incoming_connection) noexcept {
+        PayloadType payload;
+        proto_msg.payload().UnpackTo(&payload);
+        return internal_handle(payload, incoming_connection);
+      }
+
+     private:
+      static bool internal_handle(const PayloadType& proto_msg,
+                                  const sockaddr_in* incoming_connection){
+        LOG(ERROR) << "handler [" << typeid(PayloadType).name() << "] not implemented !";
+        return false;
+      }
+    };
   };
 
- private:
   // TODO need document
   template <typename T, typename... Args>
   static T construct_payload(Args&&... args) {
-    return PacketUtils<T>::construct(std::forward<Args>(args)...);
+    return PacketHandler<T>::construct(std::forward<Args>(args)...);
   }
 
   /**

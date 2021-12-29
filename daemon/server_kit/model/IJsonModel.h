@@ -21,6 +21,7 @@
 #include <string_view>
 #include <type_traits>
 #include <vector>
+#include <array>
 
 #include "../../utils/macro.h"
 namespace P2PFileSync::ServerKit {
@@ -81,9 +82,9 @@ class IJsonModel {
    * @param json
    */
   explicit IJsonModel(const std::filesystem::path& json_file) {
-#ifdef UNDER_UNIX
+#if defined(UNIX) or defined(MACOSX)
     FILE* fp = fopen(json_file.c_str(), "rb");  // non-Windows use "r"
-#elifdef UNDER_WINDOWS
+#elif defined(WIN32)
     FILE* fp = fopen(json_file.c_str(), "r");  // non-Windows use "r"
 #endif
     std::array<char, 1024> readBuffer{};

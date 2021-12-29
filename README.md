@@ -18,6 +18,18 @@
 
 ### Source Dependencies
 
+For MacOS:
+
+```shell
+brew install pkg-config
+```
+
+For Ubuntu/Debian:
+
+```shell
+sudo apt-get install -y pkg-config
+```
+
 These Dependencies will automatically download via vcpkg or git submodule
 
 - vcpkg

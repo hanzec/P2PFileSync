@@ -1,8 +1,6 @@
-#ifndef P2P_FILE_SYNC_Serverkit_MODEL_REQUEST_SET_PEER_LIST_H
-#define P2P_FILE_SYNC_Serverkit_MODEL_REQUEST_SET_PEER_LIST_H
-
+#ifndef P2P_FILE_SYNC_SERVER_KIT_MODEL_RESPONSE_GET_PEER_LIST_H
+#define P2P_FILE_SYNC_SERVER_KIT_MODEL_RESPONSE_GET_PEER_LIST_H
 #include <string>
-
 #include "../../IJsonModel.h"
 
 namespace P2PFileSync::ServerKit {

@@ -9,6 +9,9 @@ add_executable(server_connection_test)
 # response model should be expose as public header
 file(GLOB RESPONSE_MODEL_HDRS ${CMAKE_CURRENT_LIST_DIR}/model/request/*.h)
 
+# add current directory to target include
+target_include_directories(server_connection PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+
 # response model should be expose as public header
 set_target_properties(server_connection PROPERTIES VERSION ${PROJECT_VERSION})
 set_target_properties(server_connection PROPERTIES PUBLIC_HEADER "${RESPONSE_MODEL_HDRS}")
@@ -96,8 +99,6 @@ target_sources(server_connection
         ${REQUEST_MODEL_SRCS}
         ${UTILS_SRCS} ${UTILS_HDRS}
         ${SERVER_KIT_SRCS} ${SERVER_KIT_HDRS})
-
-target_include_directories(server_connection PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 ###############################################################################
 ## Testing ####################################################################

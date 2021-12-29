@@ -2,7 +2,7 @@
 <project version="4">
   <component name="CMakeSharedSettings">
     <configurations>
-      <configuration PROFILE_NAME="Debug-LLVM" ENABLED="true" GENERATION_DIR="$PROJECT_DIR$/build" CONFIG_NAME="Debug" TOOLCHAIN_NAME="LLVM" GENERATION_OPTIONS="-G &quot;Ninja&quot;" />
+      <configuration PROFILE_NAME="Debug" ENABLED="true" GENERATION_DIR="$PROJECT_DIR$/build" CONFIG_NAME="Debug" GENERATION_OPTIONS="-G &quot;Ninja&quot;" />
     </configurations>
   </component>
 </project>

@@ -4,7 +4,7 @@
 
 #ifndef P2P_FILE_SYNC_BITPOS_H
 #define P2P_FILE_SYNC_BITPOS_H
-#include <asm/types.h>
+#include "macro.h"
 
 /**
  * Bit position operations.
@@ -21,7 +21,7 @@ namespace P2PFileSync::bitops {
  * This is defined the same way as ffs.
  * Note fls(0) = 0, fls(1) = 1, fls(0x80000000) = 32.
  */
-constexpr static __always_inline int fls(uint32_t x) {
+constexpr static ALWAYS_INLINE int fls(uint32_t x) {
   int r = 32;
 
   if (!x) return 0;
@@ -60,8 +60,8 @@ constexpr static __always_inline int fls(uint32_t x) {
  * at position 64.
  */
 
-constexpr static __always_inline int fls64(uint64_t x){
-    __u32 h = x >> 32;
+constexpr static ALWAYS_INLINE int fls64(uint64_t x){
+    uint32_t h = x >> 32;
     if (h)
       return fls(h) + 32;
     return fls(static_cast<uint32_t>(x));
