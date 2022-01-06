@@ -12,6 +12,7 @@
         "protobuf",
         "rapidjson",
         "libuuid",
-        "sqlite3"
+        "sqlite3",
+        "curl"
     ]
   }

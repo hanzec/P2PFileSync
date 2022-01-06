@@ -1,3 +1,5 @@
+include(utils)
+
 ###############################################################################
 ## Daemon Targets #############################################################
 ###############################################################################
@@ -6,6 +8,22 @@ add_executable(daemon)
 
 # test target
 add_executable(daemon_test)
+
+###############################################################################
+## Project Versions ###########################################################
+###############################################################################
+# generate build time
+string(TIMESTAMP BUILD_TIMESTAMP "%Y-%m-%d %H:%M:%S")
+
+# collect head commit hash
+set(GIT_HASH "")
+get_git_hash(GIT_HASH)
+
+# generate the configuration file
+configure_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/version.h.in
+        ${CMAKE_CURRENT_BINARY_DIR}/version.h)
+target_include_directories(daemon PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 ###############################################################################
 ## Shared Dependency ##########################################################
@@ -20,11 +38,6 @@ target_include_directories(daemon PRIVATE ${glog_INCLUDE_DIRS})
 find_package(gflags CONFIG REQUIRED)
 target_link_libraries(daemon gflags_static)
 target_include_directories(daemon PRIVATE ${GFLAGS_INCLUDE_DIR})
-
-# protobuf
-find_package(Protobuf CONFIG REQUIRED)
-target_link_libraries(daemon protobuf::libprotobuf)
-target_include_directories(daemon PRIVATE ${Protobuf_INCLUDE_DIRS})
 
 # openssl
 find_package(OpenSSL REQUIRED)
@@ -96,12 +109,11 @@ add_subdirectory(packet)
 add_subdirectory(interface)
 
 ###############################################################################
-## Server Protocol Kit ########################################################
+## Management KIT #############################################################
 ###############################################################################
-add_subdirectory(server_kit)
-target_link_libraries(daemon server_connection)
-target_include_directories(daemon PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/server_kit/server_kit.h")
-target_include_directories(daemon PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/server_kit/model/response")
+add_subdirectory(management_api)
+target_link_libraries(daemon management_api)
+target_include_directories(daemon PRIVATE ${management_api_INCLUDE_DIRS})
 
 ###############################################################################
 ## Project Source #############################################################
@@ -109,8 +121,7 @@ target_include_directories(daemon PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/server_kit
 target_sources(daemon
         PRIVATE
         "environment.h"
-        "file_database.cc" "file_database.h"
-        "common.h" "main.cc" "utils/macro.h"
+        "file_database.cc" "file_database.h" "main.cc"
         "manage_interface.cc" "manage_interface.h"
         "peer_session.cc" "p2p_server_context.cc" "p2p_interface.h")
 target_include_directories(daemon PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
@@ -118,8 +129,5 @@ target_include_directories(daemon PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 ###############################################################################
 ## Testing ####################################################################
 ###############################################################################
-# test main
-target_sources(daemon_test PRIVATE "test_main.cc" "common.h")
-
 # scan for possibale test
 gtest_discover_tests(daemon_test)

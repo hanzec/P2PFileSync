@@ -9,14 +9,14 @@
 #include <utility>
 #include <vector>
 
-#include "common.h"
+#include "management_api/include/configuration.h"
 #include "manage_interface.h"
 #include "p2p_interface.h"
-#include "server_kit/server_kit.h"
 #include "utils/data_struct/thread_pool.h"
-#include "utils/ip_addr.h"
+#include "utils/ip_address.h"
 #include "utils/log.h"
 #include "utils/config_reader.h"
+#include <management_api.h>
 
 DEFINE_string(host, "", "the known host with comma-separated list");
 DEFINE_string(config, "", "the location of config file");
@@ -38,14 +38,14 @@ int main(int argc, char *argv[], [[maybe_unused]] const char *envp[]) {
   //  }
 
   // collect ip addr info
-  std::vector<IPAddr> known_host;
+  std::vector<IPAddress> known_host;
   if (!gflags::GetCommandLineFlagInfoOrDie("host").is_default) {
     std::stringstream ip_list(FLAGS_host);
     while (ip_list.good()) {
       std::string substr;
       getline(ip_list, substr, ',');
 
-      IPAddr ip(substr);
+      IPAddress ip(substr);
       if (ip.valid()) {
         known_host.emplace_back(ip);
       } else {
@@ -83,7 +83,7 @@ int main(int argc, char *argv[], [[maybe_unused]] const char *envp[]) {
   std::shared_ptr<ThreadPool> thread_pool = std::make_shared<ThreadPool>(config->worker_thread_num());
 
   // init server context
-  ServerKit::ServerContext::init(config);
+  ManagementAPI::init(*config);
 
   // staring server handler
   std::filesystem::path server_sock = config->manage_sock();
@@ -91,7 +91,7 @@ int main(int argc, char *argv[], [[maybe_unused]] const char *envp[]) {
 
   // starring server pll
   // starting server handler
-  if (P2PServerContext::init(config, thread_pool, ServerKit::ServerContext::get_dev_ctx())){
+  if (P2PServerContext::init(config, thread_pool, ManagementAPI::dev_ctx())){
     LOG(INFO) << "p2p server listener is started!";
   } else {
     LOG(FATAL) << "p2p server handler is filed to start";

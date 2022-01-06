@@ -1,5 +1,5 @@
 #include "command_factory.h"
-
+#include <glog/logging.h>
 namespace P2PFileSync {
 // print help message
 void CommandFactory::get_help_msg(std::ostringstream& output) noexcept {

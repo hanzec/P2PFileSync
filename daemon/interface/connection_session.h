@@ -4,10 +4,11 @@
 
 #ifndef P2P_FILE_SYNC_CONNECTION_SESSION_H
 #define P2P_FILE_SYNC_CONNECTION_SESSION_H
+#include <management_api.h>
+
 #include <any>
 #include <string>
-
-#include "server_kit/server_kit.h"
+#include <unordered_map>
 
 namespace P2PFileSync {
 class ConnectionSession {
@@ -21,11 +22,11 @@ class ConnectionSession {
 
   void store_option(const std::string& key, std::any value);
 
-  ServerKit::UserContext& usr_ctx() { return _user_session; }
+  std::shared_ptr<ManagementAPI::IUserContext> usr_ctx() { return _user_session; }
 
  private:
-  ServerKit::UserContext _user_session = ServerKit::ServerContext::get_usr_ctx();
-  std::unordered_map<std::string, std::any> _session_storage;
+  std::shared_ptr<ManagementAPI::IUserContext> _user_session = ManagementAPI::usr_ctx();
+  std::unordered_map<std::string, std::any> _session_storage{};
 };
 }  // namespace P2PFileSync
 #endif  // P2P_FILE_SYNC_CONNECTION_SESSION_H

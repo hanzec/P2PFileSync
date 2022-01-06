@@ -2,6 +2,8 @@
 
 #include "command_factory.h"
 #include "environment.h"
+#include <glog/logging.h>
+#include <iterator>
 
 namespace P2PFileSync {
 

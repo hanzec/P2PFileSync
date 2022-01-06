@@ -1,0 +1,17 @@
+//
+// Created by chen_ on 2021/12/30.
+//
+
+#ifndef P2P_FILE_SYNC_MANAGEMENT_API_VERSION_H
+#define P2P_FILE_SYNC_MANAGEMENT_API_VERSION_H
+
+#define GIT_HASH "${GIT_HASH}"
+#define BUILD_TIMESTAMP "${BUILD_TIMESTAMP}"
+
+#define VERSION "@management_api_VERSION_STRING@"
+#define MAJOR_VERSION @management_api_VERSION_MAJOR@
+#define MINOR_VERSION @management_api_VERSION_MINOR@
+#define PATCH_VERSION @management_api_VERSION_PATCH@
+
+#define FULL_VERSION_WITH_GIT "@management_api_FULL_VERSION@"
+#endif  // P2P_FILE_SYNC_MANAGEMENT_API_VERSION_H

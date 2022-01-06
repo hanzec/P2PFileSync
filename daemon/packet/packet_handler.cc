@@ -16,7 +16,7 @@
 
 namespace P2PFileSync {
 void P2PServerContext::PacketHandler::handle(SignedProtoMessage& signed_msg,
-                                           const sockaddr_in* incoming_connection) {
+                                             const sockaddr_in* incoming_connection) {
   // load message
   ProtoMessage proto_msg;
   proto_msg.ParseFromString(signed_msg.signed_payload());
@@ -24,47 +24,37 @@ void P2PServerContext::PacketHandler::handle(SignedProtoMessage& signed_msg,
   /* proto hello message is a special case since need to use hello package to set up init
   routing and encryption node */
   if (proto_msg.packet_type() == ProtoPayloadType::HELLO) {
-    if (!_handler_impl<ToPayloadType<ProtoPayloadType::HELLO>>::handle(proto_msg,
-                                                                       incoming_connection)) {
-      LOG(ERROR) << "failed to handle proto hello message";
+    if (!_handler_impl<ProtoHelloMessage>::handle(proto_msg, incoming_connection)) {
+      VLOG(1) << "failed to handle proto hello message";
     } else {
       VLOG(2) << "handle proto hello message successfully";
     }
     return;
   } else {
-    if () }
-  switch (proto_msg.packet_type()) {
-    case ProtoPayloadType::HELLO: {
-      // only hello message won't include signature in outside since handshake
-      ProtoHelloMessage msg;
-      proto_msg.payload().UnpackTo(&msg);
-      auto task = std::make_shared<std::packaged_task<void()>>(
-          [proto_server, msg, signed_msg, incoming_connection]() {
-            PacketHandler<ProtoHelloMessage>::handle(msg, signed_msg.prev_jump_port(),
-                                                   incoming_connection, signed_msg.ttl());
-          });
-      proto_server->_thread_pool->submit(task);
-    } break;
-    case ProtoPayloadType::PING:
+    // check current message is already verified or not
+    auto checker = get()->_peer_pool.get_instance(proto_msg.sender());
+    if (checker == nullptr) {
+      VLOG(1) << "peer [" << proto_msg.sender() << "] not found";
+      return;
+    }
 
-      break;
-    case ProtoPayloadType::PONG:
-      break;
-    case ProtoPayloadType::ACK:
-      break;
-    case ProtoPayloadType::NACK:
-      break;
-    case ProtoPayloadType::HEARTBEAT:
-      break;
-    default:
-      LOG(ERROR) << "unknown packet type [" << proto_msg.packet_type() << "]";
-      break;
+    // verify message
+    auto data = proto_msg.payload().SerializeAsString();
+    if (checker->verify(data, signed_msg.signature(), signed_msg.sign_algorithm())) {
+      // handle message
+      switch (proto_msg.packet_type()) {
+        default:
+          VLOG(1) << "unknown packet type [" << proto_msg.packet_type() << "]";
+          break;
+      }
+    } else {
+      VLOG(1) << "failed to verify packet [" << signed_msg.signature()
+              << "] from peer: " << proto_msg.sender();
+      return;
+    }
   }
-  return _handler_impl<ToPayloadType<signed_msg.>>::handle(std::forward<Args>(args)...);
 }
 
 }  // namespace P2PFileSync
-
-#include "message/hello_message.tcc"
 
 #endif  // P2P_FILE_SYNC_PACKET_HANDLER_CC

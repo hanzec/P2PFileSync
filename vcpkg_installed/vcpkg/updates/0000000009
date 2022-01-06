@@ -1,0 +1,8 @@
+Package: libuuid
+Version: 1.0.3-7
+Architecture: x64-linux
+Multi-Arch: same
+Abi: 0a413bac4d2850293ff2ffc0008b59246fe7492b
+Description: Universally unique id library
+Type: Port
+Status: purge ok not-installed

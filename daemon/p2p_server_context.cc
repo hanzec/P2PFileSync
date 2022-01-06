@@ -18,8 +18,7 @@
 #include "packet/packet_utils.h"
 #include "utils/data_struct/fifo_cache.h"
 #include "utils/data_struct/thread_pool.h"
-#include "utils/ip_addr.h"
-#include "utils/uuid_utils.h"
+#include "utils/ip_address.h"
 
 #ifdef UNDER_UNIX
 #include <cerrno>
@@ -32,19 +31,19 @@ void P2PServerContext::block_util_server_stop() {
   }
 }
 
-const std::unordered_map<std::string, std::pair<std::shared_ptr<IPAddr>, uint32_t>>
+const std::unordered_map<std::string, std::pair<std::shared_ptr<IPAddress>, uint32_t>>
     &P2PServerContext::get_online_peers() {
   return get_routing_table();
 }
 
 bool P2PServerContext::start(int fd) {
   if (_thread_ref == nullptr) {
-    auto hello_message = PacketHandler<ProtoHelloMessage>::construct(_client_cert);
+    auto hello_message = PacketHandler::construct<ProtoHelloMessage>(_client_cert);
     _thread_ref = std::make_unique<std::thread>(listening_thread, fd);
     auto peer_list_resp = _device_context->peer_list();
     for (const auto &ip : peer_list_resp->peer_list()) {
       VLOG(3) << "send hello message to " << ip.first << ":" << ip.second;
-      auto ip_addr = std::make_shared<IPAddr>(ip.second);
+      auto ip_addr = std::make_shared<IPAddress>(ip.second);
       send_pkg(package_pkg<ProtoHelloMessage>(hello_message, ip.first), ip_addr);
     }
     return true;
@@ -56,11 +55,11 @@ bool P2PServerContext::start(int fd) {
 // initlized protol instance
 bool P2PServerContext::init(const std::shared_ptr<Config> &config,
                             std::shared_ptr<ThreadPool> thread_pool,
-                            const std::shared_ptr<ServerKit::DeviceContext> &device_context) {
+                            const std::shared_ptr<ManagementAPI::IDeviceContext> &device_context) {
   // prevent init twice
   if (get() != nullptr) return false;
 
-  // will constantly block until client is activated
+  // will constantly block until device is activated
   while (!device_context->is_enabled()) {
     LOG(INFO) << "current device is not enabled, will check activate status in 1 minutes "
                  "later";
@@ -133,10 +132,10 @@ bool P2PServerContext::init(const std::shared_ptr<Config> &config,
     LOG(ERROR) << "unable to loading [" << device_context->client_certificate() << "]!";
     return false;
   } else {
-    LOG(INFO) << "success loading client certificate to memory!";
+    LOG(INFO) << "success loading device certificate to memory!";
   }
 
-  // unpacking client certificate from PCSC12
+  // unpacking device certificate from PCSC12
   if (!PKCS12_parse(cert, device_context->device_id().c_str(), &client_priv_key, &client_cert,
                     &sign_chain)) {
     LOG(ERROR) << "Error parsing PKCS#12 file\n";
@@ -175,7 +174,7 @@ P2PServerContext::P2PServerContext(const this_is_private &, uint32_t packet_cach
   }
 
   /*
-   * Tyring to verify the client certificate
+   * Tyring to verify the device certificate
    */
   X509_STORE_CTX *_x509_store_ctx = X509_STORE_CTX_new();
 
@@ -187,7 +186,7 @@ P2PServerContext::P2PServerContext(const this_is_private &, uint32_t packet_cach
 
   if (X509_verify_cert(_x509_store_ctx) != 1) {
     X509_STORE_CTX_free(_x509_store_ctx);
-    LOG(FATAL) << "cannot verify client certificate";
+    LOG(FATAL) << "cannot verify device certificate";
   } else {
     X509_STORE_CTX_free(_x509_store_ctx);
     X509_STORE_add_cert(_x509_store, cert);
@@ -308,7 +307,7 @@ void P2PServerContext::event_callback(struct bufferevent *bev, short events, voi
 }
 
 std::future<bool> P2PServerContext::send_pkg(const ProtoMessage &data,
-                                             const std::shared_ptr<IPAddr> &peer) {
+                                             const std::shared_ptr<IPAddress> &peer) {
   size_t digest_len;
   auto raw_packet_size = data.ByteSizeLong();
   auto raw_packet = std::malloc(raw_packet_size);
@@ -345,11 +344,11 @@ std::future<bool> P2PServerContext::send_pkg(const ProtoMessage &data,
   // 10
   signed_msg.set_ttl(10);
   signed_msg.set_signature(digest, digest_len);
-  signed_msg.set_sign_algorithm("SHA256");
+  signed_msg.set_sign_algorithm(ProtoSignAlgorithm::SHA_256);
   signed_msg.set_signed_payload(raw_packet, raw_packet_size);
 
   free(raw_packet);
-  VLOG(3) << "send packet with id [" << data.packet_id() << "] to [" << *peer << "]";
+  VLOG(3) << "send packet with id [" << signed_msg.signature() << "] to [" << *peer << "]";
   return _thread_pool->submit(Task::send_packet_tcp, _port, signed_msg, peer);
 }
 }  // namespace P2PFileSync

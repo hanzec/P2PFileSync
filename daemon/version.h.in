@@ -1,0 +1,18 @@
+//
+// Created by chen_ on 2021/12/30.
+//
+
+#ifndef P2P_FILE_SYNC_VERSION_H
+#define P2P_FILE_SYNC_VERSION_H
+
+#define RELEASE_VERSION "${RELEASE}"
+#define MAJOR_VERSION "${MAJOR}"
+#define MINOR_VERSION "${MINOR}"
+#define PATCH_VERSION "${PATCH}"
+#define REVISION "${REVISION}"
+#define SVNPATH "${SVNPATH}"
+
+#define GIT_HASH "${GIT_HASH}"
+#define BUILD_TIMESTAMP "${BUILD_TIMESTAMP}"
+
+#endif  // P2P_FILE_SYNC_VERSION_H

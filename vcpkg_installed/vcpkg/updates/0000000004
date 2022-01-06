@@ -1,0 +1,8 @@
+Package: rapidjson
+Version: 2020-09-14
+Architecture: x64-linux
+Multi-Arch: same
+Abi: d7e22e10db3b6dd381f7f08b2fde87ee085e3a60
+Description: A fast JSON parser/generator for C++ with both SAX/DOM style API <http://rapidjson.org/>
+Type: Port
+Status: purge ok half-installed

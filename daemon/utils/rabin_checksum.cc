@@ -7,8 +7,8 @@
 #include <strings.h>
 
 #include <array>
-#include "macro.h"
 #include "bitpos.h"
+#include "utils/macro.h"
 
 #define INT64(n) n##LL
 #define MSB64 INT64(0x8000000000000000)

@@ -1,0 +1,8 @@
+Package: gtest
+Version: 2021-05-07
+Architecture: x64-linux
+Multi-Arch: same
+Abi: 06c69148557654d7c5ead7d7bf87fde601df919f
+Description: GoogleTest and GoogleMock testing frameworks
+Type: Port
+Status: purge ok not-installed

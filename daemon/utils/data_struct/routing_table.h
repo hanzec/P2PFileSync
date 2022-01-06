@@ -7,8 +7,8 @@
 #include <memory>
 #include <mutex>
 #include <shared_mutex>
-
-#include "../ip_addr.h"
+#include <glog/logging.h>
+#include "utils/ip_address.h"
 
 namespace P2PFileSync {
 template <typename T>
@@ -18,9 +18,9 @@ class RoutingTable {
    * @brief Get the ip address of specific destination peer
    *
    * @param dest the id of destination peer
-   * @return IPAddr& the ip address of the destination peer
+   * @return IPAddress& the ip address of the destination peer
    */
-  std::shared_ptr<IPAddr> get_next_peer(const T& dest) {
+  std::shared_ptr<IPAddress> get_next_peer(const T& dest) {
     // shared lock allows multiple thread perform search and get
     std::shared_lock<std::shared_mutex> sharedLock(_lock_mutex);
     return _routing_map.find(dest)->second.first;
@@ -40,7 +40,7 @@ class RoutingTable {
   }
 
   // TODO add document
-  bool add_new_route(const T& dest, std::shared_ptr<IPAddr> new_ip, int new_ttl) {
+  bool add_new_route(const T& dest, std::shared_ptr<IPAddress> new_ip, int new_ttl) {
     std::shared_lock<std::shared_mutex> sharedLock(_lock_mutex);
 
     if(_routing_map.find(dest) == _routing_map.end()) {
@@ -55,7 +55,7 @@ class RoutingTable {
   }
 
   // TODO add document
-  bool try_update_table(const T& dest, std::shared_ptr<IPAddr> new_ip, int new_ttl) {
+  bool try_update_table(const T& dest, std::shared_ptr<IPAddress> new_ip, int new_ttl) {
     std::shared_lock<std::shared_mutex> sharedLock(_lock_mutex);
     auto ret = _routing_map.find(dest);
     if (ret == _routing_map.end()) {
@@ -84,14 +84,14 @@ class RoutingTable {
   }
 
   // TODO add document
-  const std::unordered_map<std::string, std::pair<std::shared_ptr<IPAddr>, uint32_t>>&
+  const std::unordered_map<std::string, std::pair<std::shared_ptr<IPAddress>, uint32_t>>&
   get_routing_table() const {
     return _routing_map;
   }
 
  private:
   std::shared_mutex _lock_mutex;
-  std::unordered_map<std::string, std::pair<std::shared_ptr<IPAddr>, uint32_t>> _routing_map;
+  std::unordered_map<std::string, std::pair<std::shared_ptr<IPAddress>, uint32_t>> _routing_map;
 };
 
 }  // namespace P2PFileSync

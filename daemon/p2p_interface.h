@@ -17,17 +17,16 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include "common.h"
-#include "server_kit/server_kit.h"
 #include "utils/data_struct/fifo_cache.h"
 #include "utils/data_struct/instance_pool.h"
 #include "utils/data_struct/routing_table.h"
 #include "utils/data_struct/thread_pool.h"
 #include "utils/singleton_helper.h"
+#include <management_api.h>
 
 namespace P2PFileSync {
 
-using DeviceContextPtr = std::shared_ptr<ServerKit::DeviceContext>;
+using DeviceContextPtr = std::shared_ptr<ManagementAPI::IDeviceContext>;
 
 class P2PServerContext : public Singleton<P2PServerContext>,
                          private RoutingTable<std::string>,
@@ -57,7 +56,7 @@ class P2PServerContext : public Singleton<P2PServerContext>,
    * @brief Initial function which will need to call only once, call mutiple
    * init function will cause unexpected error. In this methods will do
    * following things:
-   *    1. this fuction will continue block until client is activated by server
+   *    1. this fuction will continue block until device is activated by server
    *       side. This function will test active status once per second.
    *    2. checking the format of listen_address, if not valid pattern then
    *       return false. Then trying to establish the listen socket, if failed
@@ -71,8 +70,8 @@ class P2PServerContext : public Singleton<P2PServerContext>,
    *           online peer
    * @note this function's return value is marked by nodiscard since suggest
    * caller to check the init process is success or not
-   * @param config the client configuration class
-   * @param device_context the device context get from server_kit handle_difficult the
+   * @param config the device configuration class
+   * @param device_context the device context get from management_api handle_difficult the
    * realted server API
    * @return true the P2PServerContext init success
    * @return false the P2PServerContext init failed
@@ -82,7 +81,7 @@ class P2PServerContext : public Singleton<P2PServerContext>,
                    const DeviceContextPtr& device_context);
 
   // TODO need document
-  std::future<bool> send_pkg(const ProtoMessage& data, const std::shared_ptr<IPAddr>& peer);
+  std::future<bool> send_pkg(const ProtoMessage& data, const std::shared_ptr<IPAddress>& peer);
 
   // TODO need document
   template <typename T>
@@ -92,7 +91,7 @@ class P2PServerContext : public Singleton<P2PServerContext>,
   void block_util_server_stop();
 
   // TODO need document
-  const std::unordered_map<std::string, std::pair<std::shared_ptr<IPAddr>, uint32_t>>&
+  const std::unordered_map<std::string, std::pair<std::shared_ptr<IPAddress>, uint32_t>>&
   get_online_peers();
 
  protected:
@@ -119,7 +118,7 @@ class P2PServerContext : public Singleton<P2PServerContext>,
     /**
      * @brief Construct new PeerSession object
      *  In this method , will check the incoming cert is valid by ca certificate bundle which
-     * come from the client certificate
+     * come from the device certificate
      * @param raw_cert the raw x509 certificate of the peer as bytes in string container
      * @param ca the stack of ca certificate used to verity the peer certificate
      * @return if cert valid then return std::shared_ptr<PeerSession> else return nullptr
@@ -140,7 +139,7 @@ class P2PServerContext : public Singleton<P2PServerContext>,
      * @return true for accepted digest, false for wong digest
      */
     bool verify(const std::string& data, const std::string& sig,
-                const std::string& method) noexcept;
+                const ProtoSignAlgorithm& method) noexcept;
 
    protected:
     /**
@@ -155,7 +154,6 @@ class P2PServerContext : public Singleton<P2PServerContext>,
     EVP_MD_CTX* _evp_md_ctx = nullptr;
   };
 
- private:
   /*
    * @brief Package utils to construct and handle the package
    *
@@ -165,16 +163,12 @@ class P2PServerContext : public Singleton<P2PServerContext>,
    public:
     static void handle(SignedProtoMessage& signed_msg, const sockaddr_in* incoming_connection);
 
-    template <typename... Args>
-    static PacketType construct(Args&&... args) {
-      return construct_internal(std::forward<Args>(args)...);
+    template <class PacketType, typename... Args>
+    static PacketType construct(Args&&... args) noexcept {
+      return _handler_impl<PacketType>::internal_construct(std::forward<Args>(args)...);
     }
 
    protected:
-
-    static ProtoHelloMessage construct_internal(X509* cert) noexcept;
-
-
     template <class PayloadType>
     class _handler_impl {
      public:
@@ -185,25 +179,28 @@ class P2PServerContext : public Singleton<P2PServerContext>,
         return internal_handle(payload, incoming_connection);
       }
 
-     private:
+     public:
       static bool internal_handle(const PayloadType& proto_msg,
-                                  const sockaddr_in* incoming_connection){
+                                  const sockaddr_in* incoming_connection) {
         LOG(ERROR) << "handler [" << typeid(PayloadType).name() << "] not implemented !";
         return false;
+      }
+
+      template <typename... Args>
+      static PayloadType internal_construct(Args&&... args) {
+        LOG(WARNING) << "constructor [" << typeid(PayloadType).name()
+                     << "] not implemented, will trying to use default constructor !";
+        return PayloadType();
       }
     };
   };
 
-  // TODO need document
-  template <typename T, typename... Args>
-  static T construct_payload(Args&&... args) {
-    return PacketHandler<T>::construct(std::forward<Args>(args)...);
-  }
+ private:
 
   /**
    * Private instance
    */
-  inline static std::shared_ptr<ServerKit::DeviceContext> _device_context = nullptr;
+  inline static std::shared_ptr<ManagementAPI::IDeviceContext> _device_context = nullptr;
 
   /**
    * Client Certificate //TODO delete those when deconstruct avoid leaking
@@ -253,7 +250,7 @@ class P2PServerContext : public Singleton<P2PServerContext>,
    *     corresponding entry existed in routing table or not. If not reachable
    *     then will ignore the packet without any log print(will only print log
    *     in VLOG=3)、
-   * @note that when handing the unsupported request type, the client will
+   * @note that when handing the unsupported request type, the device will
    * ignore the packet with out any log print(will only print log in VLOG=3)
    * @param bev libevent bufferent event structure
    * @param ctx the pointer of the P2PServerContext instance
@@ -276,4 +273,7 @@ class P2PServerContext : public Singleton<P2PServerContext>,
 };
 
 }  // namespace P2PFileSync
+
+// include handler implementation
+#include "packet/handler.tcc"
 #endif

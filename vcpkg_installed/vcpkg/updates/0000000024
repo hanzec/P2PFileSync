@@ -1,0 +1,11 @@
+Package: curl
+Version: 7.74.0
+Port-Version: 4
+Depends: zlib
+Architecture: x64-linux
+Multi-Arch: same
+Abi: d0f7aac8d7cd9fc7d19c50a3700b78a166823394
+Description: A library for transferring data with URLs
+Type: Port
+Default-Features: non-http, ssl
+Status: purge ok not-installed

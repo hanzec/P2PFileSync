@@ -1,0 +1,9 @@
+Package: glog
+Version: 0.4.0-3
+Depends: gflags
+Architecture: x64-linux
+Multi-Arch: same
+Abi: 62e751ef3c0042c2fb805b599bf00a201daa86c5
+Description: C++ implementation of the Google logging module
+Type: Port
+Status: purge ok half-installed

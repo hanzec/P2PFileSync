@@ -8,13 +8,14 @@
 
 #include <memory>
 
-#include "macro.h"
+#include "management_api_export.h"
+
 namespace P2PFileSync {
 template <typename T>
 class Singleton {
  public:
   template <typename... Args>
-  EXPORT_FUNC static std::shared_ptr<T> init(Args &&...args) {
+  MANAGEMENT_API_EXPORT static std::shared_ptr<T> init(Args &&...args) {
     if (_instance == nullptr) {
       return create(std::forward<Args>(args)...);
     } else {
@@ -29,7 +30,7 @@ class Singleton {
    * @note nullptr will be returned if the init() is not called
    * @return std::shared_ptr<T> instance of Singleton class
    */
-  EXPORT_FUNC static ::std::shared_ptr<T> get() { return _instance; }
+  MANAGEMENT_API_EXPORT static ::std::shared_ptr<T> get() { return _instance; }
 
  protected:
   /**
@@ -53,7 +54,7 @@ class Singleton {
   /**
    * Blocker avoid call public constructor
    */
-  struct this_is_private {
+  struct MANAGEMENT_API_EXPORT this_is_private {
     explicit this_is_private(int) {}
   };
 

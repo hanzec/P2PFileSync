@@ -1,0 +1,10 @@
+Package: libevent
+Version: 2.1.12
+Port-Version: 1
+Architecture: x64-linux
+Multi-Arch: same
+Abi: 74583afa5ca3d5747aacd90324239aad3920561d
+Description: An event notification library
+Type: Port
+Default-Features: thread
+Status: purge ok half-installed

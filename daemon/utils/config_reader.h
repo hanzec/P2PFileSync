@@ -10,7 +10,7 @@
 #include <filesystem>
 #include <memory>
 
-#include "../common.h"
+#include "management_api/include/configuration.h"
 
 namespace P2PFileSync {
 /**

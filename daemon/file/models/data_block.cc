@@ -5,7 +5,7 @@
 
 #include <openssl/sha.h>
 
-#include "utils/uuid_utils.h"
+#include "utils/uuid_util.h"
 
 namespace P2PFileSync {
 DataBlock::DataBlock(void* data, uint32_t block_size, int block_index,

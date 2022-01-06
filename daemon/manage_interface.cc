@@ -21,6 +21,7 @@
 #include "interface/connection_container.h"
 #include "interface/utils/command_parser.h"
 #include "utils/log.h"
+#include "utils/ip_address.h"
 
 namespace P2PFileSync {
 ManagementInterface::ManagementInterface(const ManagementInterface::this_is_private &,
@@ -54,13 +55,13 @@ ManagementInterface::ManagementInterface(const ManagementInterface::this_is_priv
     memcpy(addr_un->sun_path, socket_addr.c_str(), socket_addr.length());
     VLOG(3) << "socket is AF_UNIT and socket path is [" << addr_un->sun_path << "]";
   } else if (listen_type == AF_INET) {  // ipv4 socket
-    IPAddr ip_addr(socket_addr);
+    IPAddress ip_addr(socket_addr);
     actual_size = sizeof(struct sockaddr_in);
     auto *addr_in = (struct sockaddr_in *)&addr;
     addr_in->sin_family = listen_type;
     addr_in->sin_port = htons(ip_addr.port());
-    inet_aton(ip_addr.ip().c_str(), &addr_in->sin_addr);
-    VLOG(3) << "socket is AF_INET and ip is: " << ip_addr.ip()
+    inet_aton(ip_addr.ip_address().c_str(), &addr_in->sin_addr);
+    VLOG(3) << "socket is AF_INET and ip is: " << ip_addr.ip_address()
             << " and port is: " << ip_addr.port();
   } else {
     LOG(FATAL) << "unsupported listen type";

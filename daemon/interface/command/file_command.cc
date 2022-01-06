@@ -17,7 +17,7 @@ class FileCommand : public AutoRegCommand<FileCommand> {
     }
 
     // check if the user is logged in
-    if(!user_ctx.is_logged_in()){
+    if(!user_ctx->is_logged_in()){
       out << "You are not logged in.\n";
       return;
     }

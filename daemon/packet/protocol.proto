@@ -15,7 +15,7 @@ enum ProtoPayloadType{
   FILE_REQUEST = 3;
 }
 
-enum SignAlgorithm{
+enum ProtoSignAlgorithm{
   SHA_256 = 0;
 }
 
@@ -34,16 +34,18 @@ message ProtoMessage {
 
 message SignedProtoMessage{
   // sender/receiver information
-  bytes sender = 5;
-  bytes receiver = 6;
+  bytes sender = 1;
+  bytes receiver = 2;
+  uint32 last_forward_port = 3;
 
   // packet information
-  uint32 ttl = 8;
+  uint32 ttl = 4;
 
   // signature part
-  bytes signature = 7;
-  string sign_algorithm = 3;
-  bytes signed_payload = 2;
+  bytes signature = 5;
+  bytes signed_payload = 6;
+  ProtoSignAlgorithm sign_algorithm = 7;
+
 }
 
 message ProtoHelloMessage {

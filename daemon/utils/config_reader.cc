@@ -14,7 +14,7 @@
 #include <fstream>
 #include <string>
 
-#include "../common.h"
+#include "management_api/include/configuration.h"
 
 namespace P2PFileSync {
 [[nodiscard]] bool save_config(const std::shared_ptr<Config>& config,

@@ -92,7 +92,7 @@ std::shared_ptr<P2PServerContext::PeerSession> P2PServerContext::PeerSession::ne
 
   // construct X509 Certificate from raw
   if (nullptr == (cert = d2i_X509(nullptr, &data, raw_cert.size()))) {
-    LOG(ERROR) << "failed to unpack the client's X509 certificate";
+    LOG(ERROR) << "failed to unpack the device's X509 certificate";
     return nullptr;
   }
 
@@ -114,42 +114,52 @@ std::shared_ptr<P2PServerContext::PeerSession> P2PServerContext::PeerSession::ne
 
 P2PServerContext::PeerSession::~PeerSession() {
   EVP_PKEY_free(_public_key);
-  if(_evp_md_ctx != nullptr) EVP_MD_CTX_free(_evp_md_ctx);
+  if (_evp_md_ctx != nullptr) EVP_MD_CTX_free(_evp_md_ctx);
 }
 
-P2PServerContext::PeerSession::PeerSession(EVP_PKEY* _public_key) noexcept : _public_key(_public_key){
+P2PServerContext::PeerSession::PeerSession(EVP_PKEY* _public_key) noexcept
+    : _public_key(_public_key) {
   LOG(INFO) << "create peer instance";
 }
 
 // TODO modify here using protobuf enum of digest Algorithm
 bool P2PServerContext::PeerSession::verify(const std::string& data, const std::string& sig,
-                                         const std::string& method) noexcept{
-  if(_evp_md_ctx == nullptr){
-    // creating ctx
+                                           const ProtoSignAlgorithm& method) noexcept {
+  // creating ctx if not initialized
+  if (_evp_md_ctx == nullptr) {
     if ((_evp_md_ctx = EVP_MD_CTX_new()) == nullptr) {
-      LOG(ERROR) << "EVP_MD_CTX_create failed, error" << std::hex << ERR_get_error() ;
+      LOG(ERROR) << "EVP_MD_CTX_create failed, error" << std::hex << ERR_get_error();
       return false;
     }
 
-    // setting up ctx
-    if(method == "SHA256"){
-      if(1 != EVP_DigestVerifyInit(_evp_md_ctx, nullptr, EVP_sha256(), nullptr, _public_key)){
-        LOG(ERROR) << "EVP_DigestVerifyInit failed, error" << std::hex << ERR_get_error() ;
+    // looking for encryption method
+    const EVP_MD* algorithm = nullptr;
+    switch (method) {
+      case SHA_256:
+        algorithm = EVP_sha256();
+        break;
+      default:
+        LOG(ERROR) << "unsupported digest algorithm";
+        EVP_MD_CTX_free(_evp_md_ctx);
         return false;
-      }
-    } else{
-      LOG(ERROR) << "unsupported hashing method [" << method << "]";
+    }
+
+    // setting up encryption context
+    if (1 != EVP_DigestVerifyInit(_evp_md_ctx, nullptr, algorithm, nullptr, _public_key)) {
+      LOG(ERROR) << "EVP_DigestVerifyInit failed, error" << std::hex << ERR_get_error();
       return false;
     }
   }
 
   // verify the sig
-  if(1 != EVP_DigestVerifyUpdate(_evp_md_ctx, data.c_str(), data.length())){
-    LOG(ERROR) << "EVP_DigestVerifyUpdate failed, error" << std::hex << ERR_get_error() ;
+  if (1 != EVP_DigestVerifyUpdate(_evp_md_ctx, data.c_str(), data.length())) {
+    LOG(ERROR) << "EVP_DigestVerifyUpdate failed, error" << std::hex << ERR_get_error();
     return false;
   }
 
-  return 1 == EVP_DigestVerifyFinal(_evp_md_ctx, reinterpret_cast<const unsigned char*>(sig.c_str()), sig.length());
+  return 1 == EVP_DigestVerifyFinal(_evp_md_ctx,
+                                    reinterpret_cast<const unsigned char*>(sig.c_str()),
+                                    sig.length());
 }
 
-}  // namespace P2PFileSync::Protocol
+}  // namespace P2PFileSync

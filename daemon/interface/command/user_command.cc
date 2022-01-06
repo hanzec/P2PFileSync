@@ -14,7 +14,7 @@ class UserCommand : public AutoRegCommand<UserCommand> {
       return;
     }
 
-    auto& user_ctx = session()->usr_ctx();
+    auto user_ctx = session()->usr_ctx();
 
     // Handle login
     if (args[0] == "LOGIN") {
@@ -23,12 +23,12 @@ class UserCommand : public AutoRegCommand<UserCommand> {
         return;
       }
 
-      if (user_ctx.is_logged_in()) {
+      if (user_ctx->is_logged_in()) {
         out << "You are already logged in.";
         return;
       }
 
-      auto login_result = user_ctx.login(args[1], args[2]);
+      auto login_result = user_ctx->login(args[1], args[2]);
       if (login_result.first) {
         out << "Login successful.";
       } else {
@@ -41,11 +41,11 @@ class UserCommand : public AutoRegCommand<UserCommand> {
         return;
       }
 
-      if (!user_ctx.is_logged_in()) {
+      if (!user_ctx->is_logged_in()) {
         out << "You are not logged in.";
         return;
       }
-      auto info = user_ctx.user_detail();
+      auto info = user_ctx->user_detail();
       out << "User info:" << std::endl;
       out << "  name: " << info->name() << std::endl;
       out << "  email: " << info->email() << std::endl;
@@ -64,12 +64,12 @@ class UserCommand : public AutoRegCommand<UserCommand> {
         return;
       }
 
-      if (!user_ctx.is_logged_in()) {
+      if (!user_ctx->is_logged_in()) {
         out << "You are not logged in.";
         return;
       }
 
-      user_ctx.logout();
+      user_ctx->logout();
     } else {
       out << "Unknown command: " << args[0];
     }

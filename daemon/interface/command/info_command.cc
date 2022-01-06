@@ -13,7 +13,7 @@ class InfoCommand : public AutoRegCommand<InfoCommand> {
       return;
     }
 
-    auto device_ctx = ServerKit::ServerContext::get_dev_ctx();
+    auto device_ctx = ManagementAPI::dev_ctx();
     auto device_info = device_ctx->device_info();
 
     out << "Device info: " << std::endl;

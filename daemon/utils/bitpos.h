@@ -4,7 +4,7 @@
 
 #ifndef P2P_FILE_SYNC_BITPOS_H
 #define P2P_FILE_SYNC_BITPOS_H
-#include "macro.h"
+#include <utils/macro.h>
 
 /**
  * Bit position operations.

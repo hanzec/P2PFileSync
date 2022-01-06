@@ -39,3 +39,5 @@ build/
 
 # clion
 .idea/
+cmake-build-*/
+/cmake-build-release/
